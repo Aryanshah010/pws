@@ -6,6 +6,8 @@ dist/
 dist-ssr/
 build/
 
+High-fidelity UX prototype Main/
+
 .env
 .env.local
 .env.development.local
