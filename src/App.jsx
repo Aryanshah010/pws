@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/layout/Header';
+import Nav from './components/layout/Nav';
 import Footer from './components/layout/Footer';
 import LanguageModal from './components/ui/LanguageModal';
 import LandingPage from './features/home/LandingPage';
@@ -14,8 +14,8 @@ import './config/i18n'; // Initialize i18next translation configurations
 function Layout({ children }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">{children}</main>
+      <Nav />
+      <main className="grow">{children}</main>
       <Footer />
     </div>
   );

@@ -25,7 +25,7 @@ export default function LanguageModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-md animate-fade-in">
-      <div className="w-full max-w-md bg-surface-lowest rounded-lg border border-outline-variant shadow-level-4 p-xl flex flex-col gap-lg transform hover:scale-[1.01] transition-transform duration-long ease-standard">
+      <div className="w-full max-w-md bg-surface-lowest rounded-lg border border-outline-variant shadow-level-4 p-xl flex flex-col gap-lg transition-shadow duration-long ease-standard">
         
         {/* Header */}
         <div className="text-center">
