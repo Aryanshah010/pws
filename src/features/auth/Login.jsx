@@ -1,166 +1,299 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate, Link } from 'react-router-dom';
-import { useStore } from '../../store/store';
-import { Phone, Lock, ArrowLeft } from 'lucide-react';
+import { Lock, Phone } from "lucide-react";
+import Nav from "../../components/layout/Nav";
+import Footer from "../../components/layout/Footer";
 
-export default function Login() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const setUser = useStore((state) => state.setUser);
-  
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [recoverySent, setRecoverySent] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!phoneNumber || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-    
-    // Simulate login and set a mock user
-    const mockUser = {
-      name: phoneNumber === '9812345678' ? 'Hari Prasad (Kirana Shop)' : 'Sita Devi',
-      phone: phoneNumber,
-      type: phoneNumber === '9812345678' ? 'shop' : 'household',
-    };
-    
-    setUser(mockUser);
-    
-    // Request notification permission after login (Sprint 1 task 8)
-    if ('Notification' in window) {
-      Notification.requestPermission();
-    }
-    
-    navigate('/');
-  };
-
-  const handleRecovery = () => {
-    if (!phoneNumber) {
-      setError('Please enter your phone number first');
-      return;
-    }
-    setRecoverySent(true);
-    setError('');
-    setTimeout(() => {
-      alert(`OTP code sent to ${phoneNumber}. (Use '1234' to reset)`);
-    }, 500);
-  };
-
+export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center py-2xl px-md">
-      <div className="max-w-md w-full mx-auto bg-surface-lowest rounded-lg border border-outline-variant shadow-level-3 p-xl">
-        
-        {/* Back Link */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
+    <main className="bg-background">
+      <Nav />
+      <section
+        className="
+                    min-h-[calc(100vh-160px)]
+                    px-[24px]
+                    py-[72px]
+                    flex
+                    items-center
+                    justify-center
+                "
+      >
+        <div
+          className="
+                        w-full
+                        max-w-[920px]
+                        rounded-[8px]
+                        overflow-hidden
+                        bg-surface-lowest
+                        border
+                        border-outline-variant
+                        shadow-[var(--shadow-level-1)]
+                    "
         >
-          <ArrowLeft size={16} />
-          Back to Home
-        </button>
-
-        {/* Title */}
-        <div className="text-center mb-xl">
-          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-headline-sm mx-auto mb-sm">
-            P
-          </div>
-          <h2 className="font-sans text-headline-sm font-bold text-on-surface">
-            Log In to Pathivara
-          </h2>
-          <p className="font-sans text-body-md text-on-surface-variant mt-xs">
-            Access wholesale and retail prices
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-md p-md bg-error-container text-on-error-container rounded-default text-body-md font-semibold">
-            {error}
-          </div>
-        )}
-
-        {recoverySent && (
-          <div className="mb-md p-md bg-primary-fixed/30 text-on-primary-fixed rounded-default text-body-md font-semibold">
-            Password recovery SMS sent! Please check your messages.
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-md">
-          {/* Phone Number Input */}
-          <div className="flex flex-col gap-xs">
-            <label className="font-sans text-label-sm font-bold text-on-surface">
-              Phone Number
-            </label>
-            <div className="relative">
-              <Phone size={18} className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                type="tel"
-                placeholder="98XXXXXXXX"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="w-full pl-xl pr-md py-sm bg-surface-low border border-outline-variant rounded-default text-body-md text-on-surface focus:border-primary focus:outline-none transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Password Input */}
-          <div className="flex flex-col gap-xs">
-            <label className="font-sans text-label-sm font-bold text-on-surface">
-              Password
-            </label>
-            <div className="relative">
-              <Lock size={18} className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                type="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-xl pr-md py-sm bg-surface-low border border-outline-variant rounded-default text-body-md text-on-surface focus:border-primary focus:outline-none transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Recovery link */}
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={handleRecovery}
-              className="text-label-sm font-bold text-secondary hover:underline"
-            >
-              Forgot Password? (Recover via SMS)
-            </button>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full py-md bg-primary text-white font-sans text-label-md font-bold rounded-default hover:bg-primary-container shadow-level-1 hover:shadow-level-2 transition-all"
+          <div
+            className="
+                            grid
+                            grid-cols-[1.12fr_0.88fr]
+                            min-h-[560px]
+                        "
           >
-            Log In
-          </button>
-        </form>
+            {/* IMAGE AREA */}
+            <div
+              className="
+                                bg-surface
+                                border-r
+                                border-outline-variant
+                            "
+            >
+              {/*
+                            Insert later
 
-        {/* Register footer */}
-        <div className="mt-xl text-center text-body-md text-on-surface-variant">
-          New to Pathivara?{' '}
-          <Link to="/register" className="font-bold text-primary hover:underline">
-            Register Account
-          </Link>
+                            <img
+                                src={loginImage}
+                                alt=""
+                                className="
+                                    h-full
+                                    w-full
+                                    object-cover
+                                "
+                            />
+                            */}
+            </div>
+
+            {/* FORM */}
+            <div
+              className="
+                                px-[42px]
+                                py-[48px]
+                                flex
+                                flex-col
+                                justify-center
+                            "
+            >
+              <h1
+                className="
+                                    text-headline-md
+                                    font-bold
+
+                                    text-primary
+                                "
+              >
+                Login to Pathivara
+              </h1>
+
+              <p
+                className="
+                                    mt-[8px]
+                                    text-body-md
+                                    text-on-surface-variant
+                                    max-w-[280px]
+                                "
+              >
+                Welcome back. Please enter your credentials to continue.
+              </p>
+
+              {/* PHONE */}
+              <div className="mt-[30px]">
+                <label
+                  className="
+                                        mb-[8px]
+                                        block
+                                        text-label-sm
+                                        text-on-surface-variant
+                                    "
+                >
+                  Phone Number
+                </label>
+
+                <div className="relative">
+                  <div
+                    className="
+                                            absolute
+                                            left-[12px]
+                                            top-1/2
+                                            -translate-y-1/2
+                                            flex
+                                            h-[24px]
+                                            w-[24px]
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-[#F4FBF4]
+                                        "
+                  >
+                    <Phone size={14} color="#717973" />
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Enter your number"
+                    className="
+                                            h-[44px]
+                                            w-full
+                                            rounded-[8px]
+                                            border
+                                            border-outline-variant
+                                            bg-surface
+                                            pl-[48px]
+                                            pr-3.5
+                                            text-body-md
+                                            outline-none
+                                            focus:border-primary
+                                        "
+                  />
+                </div>
+              </div>
+
+              {/* PASSWORD */}
+              <div className="mt-4.5">
+                <label
+                  className="
+                                        mb-[8px]
+                                        block
+                                        text-label-sm
+                                        text-on-surface-variant
+                                    "
+                >
+                  Password
+                </label>
+
+                <div className="relative">
+                  <div
+                    className="
+                                            absolute
+                                            left-3
+                                            top-1/2
+                                            -translate-y-1/2
+                                            flex
+                                            h-[24px]
+                                            w-[24px]
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-[#F4FBF4]
+                                        "
+                  >
+                    <Lock size={14} color="#717973" />
+                  </div>
+
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className="
+                                            h-11
+                                            w-full
+                                            rounded-default
+                                            border
+                                            border-outline-variant
+                                            bg-surface
+                                            pl-[48px]
+                                            pr-3.5
+                                            text-body-md
+                                            outline-none
+                                            focus:border-primary
+                                        "
+                  />
+                </div>
+              </div>
+
+              {/* LINKS */}
+              <div
+                className="
+                                    mt-2.5
+                                    flex
+                                    justify-between
+                                    items-center
+                                "
+              >
+                <button
+                  className="
+                                        text-[12px]
+                                        text-[#3F81EA]
+                                    "
+                >
+                  Forgot password?
+                </button>
+
+                <div className="flex items-center gap-0.5">
+                  <span
+                    className="
+                                            text-[12px]
+                                            font-semibold
+                                            text-black
+                                        "
+                  >
+                    New Buyer?
+                  </span>
+
+                  <button
+                    className="
+                                            text-[12px]
+                                            font-normal
+                                            text-[#D4820A]
+                                        "
+                  >
+                    Register
+                  </button>
+                </div>
+              </div>
+
+              {/* LOGIN */}
+              <button
+                className="
+                                    mt-6.5
+                                    h-13
+                                    rounded-default
+                                    bg-primary
+                                    text-label-md
+                                    font-medium
+                                    text-on-primary
+                                "
+              >
+                Login
+              </button>
+
+              {/* DIVIDER */}
+              <div
+                className="
+                                    mt-5.5
+                                    flex
+                                    items-center
+                                    gap-3
+                                "
+              >
+                <div className="flex-1 h-px bg-outline-variant" />
+
+                <span
+                  className="
+                                        text-label-sm
+                                        text-outline
+                                    "
+                >
+                  OR
+                </span>
+
+                <div className="flex-1 h-px bg-outline-variant" />
+              </div>
+
+              {/* GUEST */}
+              <button
+                className="
+                                    mt-4.5
+                                    h-[48px]
+                                    rounded-default
+                                    border
+                                    border-[#C1C8C1]
+                                    bg-transparent
+                                    text-[12px]
+                                    font-semibold
+                                    text-on-surface
+                                "
+              >
+                Continue browsing as guest
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* Info Box */}
-        <div className="mt-lg p-md bg-surface-container rounded-default text-label-sm text-on-surface-variant flex flex-col gap-xs">
-          <p className="font-bold">Test Accounts:</p>
-          <p>• Shop/Wholesale: <code className="bg-white px-1">9812345678</code> / password</p>
-          <p>• Household: <code className="bg-white px-1">9876543210</code> / password</p>
-        </div>
-
-      </div>
-    </div>
+      </section>
+      <Footer/>
+    </main>
   );
 }
