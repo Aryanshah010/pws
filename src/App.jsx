@@ -10,6 +10,7 @@ import Products from './features/home/Products';
 import About from './features/home/About';
 import Contact from './features/home/Contact';
 import './config/i18n'; // Initialize i18next translation configurations
+import ForgetPassword from './features/auth/ForgetPassword';
 
 function Layout({ children }) {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/" element={<Layout><LandingPage /></Layout>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/products" element={<Layout><Products /></Layout>} />
         <Route path="/about" element={<Layout><About /></Layout>} />
         <Route path="/contact" element={<Layout><Contact /></Layout>} />
