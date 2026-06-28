@@ -1,188 +1,366 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useStore } from '../../store/store';
-import { User, Phone, Lock, Home, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Lock, Phone, User, ChevronDown } from "lucide-react";
+import Nav from "../../components/layout/Nav";
+import Footer from "../../components/layout/Footer";
 
-export default function Register() {
-  const navigate = useNavigate();
-  const setUser = useStore((state) => state.setUser);
-
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [buyerType, setBuyerType] = useState('household'); // 'household' or 'shop'
-  const [error, setError] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!name || !phone || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
-    const mockUser = {
-      name,
-      phone,
-      type: buyerType,
-    };
-
-    setUser(mockUser);
-    
-    // Request notification permission after registration (Sprint 1 task 8)
-    if ('Notification' in window) {
-      Notification.requestPermission();
-    }
-
-    navigate('/');
-  };
-
+export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center py-2xl px-md">
-      <div className="max-w-md w-full mx-auto bg-surface-lowest rounded-lg border border-outline-variant shadow-level-3 p-xl">
-        
-        {/* Back Link */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
+    <main className="bg-background">
+      <Nav />
+      <section
+        className="
+          min-h-[calc(100vh-160px)]
+          px-[24px]
+          py-[72px]
+          flex
+          items-center
+          justify-center
+        "
+      >
+        <div
+          className="
+            w-full
+            max-w-[920px]
+            rounded-[8px]
+            overflow-hidden
+            bg-surface-lowest
+            border
+            border-outline-variant
+            shadow-[var(--shadow-level-1)]
+          "
         >
-          <ArrowLeft size={16} />
-          Back to Home
-        </button>
-
-        {/* Title */}
-        <div className="text-center mb-xl">
-          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-headline-sm mx-auto mb-sm">
-            P
-          </div>
-          <h2 className="font-sans text-headline-sm font-bold text-on-surface">
-            Create Pathivara Account
-          </h2>
-          <p className="font-sans text-body-md text-on-surface-variant mt-xs">
-            Join Jhapa's premium e-grocery hub
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-md p-md bg-error-container text-on-error-container rounded-default text-body-md font-semibold">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-md">
-          
-          {/* Full Name */}
-          <div className="flex flex-col gap-xs">
-            <label className="font-sans text-label-sm font-bold text-on-surface">
-              Full Name / Business Name
-            </label>
-            <div className="relative">
-              <User size={18} className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                type="text"
-                placeholder="Enter full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-xl pr-md py-sm bg-surface-low border border-outline-variant rounded-default text-body-md text-on-surface focus:border-primary focus:outline-none transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Phone Number */}
-          <div className="flex flex-col gap-xs">
-            <label className="font-sans text-label-sm font-bold text-on-surface">
-              Phone Number
-            </label>
-            <div className="relative">
-              <Phone size={18} className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                type="tel"
-                placeholder="98XXXXXXXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full pl-xl pr-md py-sm bg-surface-low border border-outline-variant rounded-default text-body-md text-on-surface focus:border-primary focus:outline-none transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className="flex flex-col gap-xs">
-            <label className="font-sans text-label-sm font-bold text-on-surface">
-              Password
-            </label>
-            <div className="relative">
-              <Lock size={18} className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                type="password"
-                placeholder="Choose a password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-xl pr-md py-sm bg-surface-low border border-outline-variant rounded-default text-body-md text-on-surface focus:border-primary focus:outline-none transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Buyer Type Selector */}
-          <div className="flex flex-col gap-xs">
-            <label className="font-sans text-label-sm font-bold text-on-surface">
-              Account Type (Select One)
-            </label>
-            <div className="grid grid-cols-2 gap-sm">
-              
-              {/* Household */}
-              <button
-                type="button"
-                onClick={() => setBuyerType('household')}
-                className={`p-md rounded-default border-2 flex flex-col items-center gap-xs text-center transition-all ${
-                  buyerType === 'household'
-                    ? 'border-primary bg-primary-fixed/30 text-on-primary-fixed'
-                    : 'border-outline-variant text-on-surface-variant hover:border-outline'
-                }`}
-              >
-                <Home size={20} />
-                <span className="font-sans text-label-sm font-bold">Household</span>
-                <span className="text-[10px] opacity-80 font-medium">Standard Retail Rates</span>
-              </button>
-
-              {/* Shop/Bulk Buyer */}
-              <button
-                type="button"
-                onClick={() => setBuyerType('shop')}
-                className={`p-md rounded-default border-2 flex flex-col items-center gap-xs text-center transition-all ${
-                  buyerType === 'shop'
-                    ? 'border-primary bg-primary-fixed/30 text-on-primary-fixed'
-                    : 'border-outline-variant text-on-surface-variant hover:border-outline'
-                }`}
-              >
-                <ShoppingBag size={20} />
-                <span className="font-sans text-label-sm font-bold">Shop Owner</span>
-                <span className="text-[10px] opacity-80 font-medium">Wholesale Pricing Tiers</span>
-              </button>
-
-            </div>
-          </div>
-
-          {/* Register Button */}
-          <button
-            type="submit"
-            className="w-full py-md bg-primary text-white font-sans text-label-md font-bold rounded-default hover:bg-primary-container shadow-level-1 hover:shadow-level-2 transition-all mt-sm"
+          <div
+            className="
+              grid
+              grid-cols-[1.12fr_0.88fr]
+              min-h-[560px]
+            "
           >
-            Create Account
-          </button>
+            {/* IMAGE AREA */}
+            <div
+              className="
+                bg-surface
+                border-r
+                border-outline-variant
+              "
+            >
+              <img
+                src="src/assets/rawfood.jpg"
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </div>
 
-        </form>
+            {/* FORM */}
+            <div
+              className="
+                px-[42px]
+                py-[48px]
+                flex
+                flex-col
+                justify-center
+              "
+            >
+              <h1
+                className="
+                  text-headline-lg
+                  font-bold
+                  text-primary
+                "
+              >
+                Create Account
+              </h1>
 
-        {/* Login footer */}
-        <div className="mt-xl text-center text-body-md text-on-surface-variant">
-          Already have an account?{' '}
-          <Link to="/login" className="font-bold text-primary hover:underline">
-            Log In
-          </Link>
+              {/* FULL NAME */}
+              <div className="mt-[30px]">
+                <label
+                  className="
+                    mb-[8px]
+                    block
+                    text-label-sm
+                    font-semibold
+                    text-on-surface-variant
+                  "
+                >
+                  Full Name
+                </label>
+
+                <div className="relative">
+                  <div
+                    className="
+                      absolute
+                      left-[12px]
+                      top-1/2
+                      -translate-y-1/2
+                      flex
+                      h-[24px]
+                      w-[24px]
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#F4FBF4]
+                    "
+                  >
+                    <User size={14} color="#9EA5A0" />
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    className="
+                      h-[44px]
+                      w-full
+                      rounded-[8px]
+                      border
+                      border-[#C1C8C1]
+                      bg-[#F4FBF4]
+                      pl-[48px]
+                      pr-3.5
+                      text-body-md
+                      outline-none
+                      focus:border-primary
+                    "
+                  />
+                </div>
+              </div>
+
+              {/* PHONE NUMBER */}
+              <div className="mt-4.5">
+                <label
+                  className="
+                    mb-[8px]
+                    block
+                    text-label-sm
+                    font-semibold
+                    text-on-surface-variant
+                  "
+                >
+                  Phone Number
+                </label>
+
+                <div className="relative">
+                  <div
+                    className="
+                      absolute
+                      left-[12px]
+                      top-1/2
+                      -translate-y-1/2
+                      flex
+                      h-[24px]
+                      w-[24px]
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#F4FBF4]
+                    "
+                  >
+                    <Phone size={14} color="#9EA5A0" />
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Enter your number"
+                    className="
+                      h-[44px]
+                      w-full
+                      rounded-[8px]
+                      border
+                      border-[#C1C8C1]
+                      bg-[#F4FBF4]
+                      pl-[48px]
+                      pr-3.5
+                      text-body-md
+                      outline-none
+                      focus:border-primary
+                    "
+                  />
+                </div>
+              </div>
+
+              {/* PASSWORD */}
+              <div className="mt-4.5">
+                <label
+                  className="
+                    mb-[8px]
+                    block
+                    text-label-sm
+                    font-semibold
+                    text-on-surface-variant
+                  "
+                >
+                  Password
+                </label>
+
+                <div className="relative">
+                  <div
+                    className="
+                      absolute
+                      left-[12px]
+                      top-1/2
+                      -translate-y-1/2
+                      flex
+                      h-[24px]
+                      w-[24px]
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#F4FBF4]
+                    "
+                  >
+                    <Lock size={14} color="#9EA5A0" />
+                  </div>
+
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className="
+                      h-[44px]
+                      w-full
+                      rounded-[8px]
+                      border
+                      border-[#C1C8C1]
+                      bg-[#F4FBF4]
+                      pl-[48px]
+                      pr-3.5
+                      text-body-md
+                      outline-none
+                      focus:border-primary
+                    "
+                  />
+                </div>
+              </div>
+
+              {/* Buyer Type */}
+              <div className="mt-4.5">
+                <label
+                  className="
+                    mb-[8px]
+                    block
+                    text-label-sm
+                    font-semibold
+                    text-on-surface-variant
+                  "
+                >
+                  Buyer Type
+                </label>
+
+                <div className="relative">
+                  <select
+                    defaultValue=""
+                    className="
+                      h-[44px]
+                      w-full
+                      rounded-[8px]
+                      border
+                      border-[#C1C8C1]
+                      bg-[#F4FBF4]
+                      pl-[14px]
+                      pr-[40px]
+                      text-body-md
+                      text-on-surface-variant
+                      outline-none
+                      focus:border-primary
+                      appearance-none
+                    "
+                  >
+                    <option value="" disabled>
+                      Choose buyer type
+                    </option>
+                    <option value="individual">Household/Regular Buyer</option>
+                    <option value="bulk">Shop/Bulk Buyer</option>
+                  </select>
+
+                  <div
+                    className="
+                      pointer-events-none
+                      absolute
+                      right-[12px]
+                      top-1/2
+                      -translate-y-1/2
+                    "
+                  >
+                    <ChevronDown size={16} color="#6B7280" />
+                  </div>
+                </div>
+              </div>
+
+              {/* CONTINUE */}
+              <button
+                className="
+                  mt-6.5
+                  h-[52px]
+                  rounded-default
+                  bg-primary
+                  text-headline-xs
+                  font-semibold
+                  text-on-primary
+                "
+              >
+                Continue
+              </button>
+
+              {/* ALREADY HAVE ACCOUNT */}
+              <div
+                className="
+                  mt-[18px]
+                  flex
+                  items-center
+                  justify-center
+                  gap-[2px]
+                "
+              >
+                <span
+                  className="
+                    text-[12px]
+                    text-on-surface
+                  "
+                >
+                  Already have an account?
+                </span>
+
+                <button
+                  className="
+                    text-[12px]
+                    text-[#3F81EA]
+                    underline
+                    underline-offset-[2px]
+                  "
+                >
+                  Login
+                </button>
+              </div>
+
+              <div
+                className="
+                  mt-[14px]
+                  flex
+                  items-center
+                  justify-center
+                  gap-[6px]
+                "
+              >
+                <span
+                  className="
+                    text-[12px]
+                    text-outline
+                  "
+                >
+                  or
+                </span>
+              </div>
+              <button
+                className="
+                    text-[12px]
+                    text-[#3F81EA]
+                    font-bold
+                  "
+              >
+                Browse as a guest →
+              </button>
+            </div>
+          </div>
         </div>
-
-      </div>
-    </div>
+      </section>
+      <Footer />
+    </main>
   );
 }
