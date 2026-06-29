@@ -1,162 +1,237 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { Database, BadgePercent, ShieldAlert, ArrowRight, Activity, Percent, Clock } from 'lucide-react';
-import { useStore } from '../../store/store';
+import rice from "../../assets/rice.svg";
+import oil from "../../assets/oil.svg";
+import flour from "../../assets/flour.svg";
+import dal from "../../assets/dal.svg";
+
+import { ShieldCheck, LayoutGrid, RotateCcw, Truck } from "lucide-react";
 
 export default function LandingPage() {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const { language } = useStore();
-
-  const categories = [
-    { id: 'oils', name: t('shelf.oils'), color: 'bg-primary-fixed/40 text-on-primary-fixed' },
-    { id: 'grains', name: t('shelf.grains'), color: 'bg-secondary-fixed/40 text-on-secondary-fixed' },
-    { id: 'lentils', name: t('shelf.lentils'), color: 'bg-error-container/40 text-on-error-container' },
-    { id: 'spices', name: t('shelf.spices'), color: 'bg-primary-fixed/40 text-on-primary-fixed' },
-  ];
-
   return (
-    <div className="w-full bg-background min-h-screen pb-3xl">
-      
-      {/* 1. Hero Section */}
-      <section className="max-w-7xl mx-auto px-md py-xl md:py-2xl grid grid-cols-1 md:grid-cols-2 items-center gap-xl">
-        
-        {/* Left: Text & CTA */}
-        <div className="flex flex-col gap-md">
-          <div className="flex items-center gap-xs text-primary font-bold text-label-sm uppercase tracking-widest">
-            <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
-            Pathivara Jhapa Hub
-          </div>
-          
-          <h1 className="font-sans text-[44px] md:text-[56px] leading-[1.1] font-black text-on-background tracking-tight">
-            {t('hero.title')}
-          </h1>
-          
-          <p className="font-sans text-headline-sm font-bold text-primary-container leading-snug">
-            {t('hero.subtitle')}
-          </p>
-          
-          <p className="font-sans text-body-lg text-on-surface-variant leading-relaxed">
-            {t('hero.description')}
-          </p>
-
-          <div className="mt-sm">
-            <button
-              onClick={() => navigate('/products')}
-              className="group px-xl py-lg rounded-default bg-primary text-white font-sans text-label-md font-bold hover:bg-primary-container shadow-level-2 hover:shadow-level-3 hover:translate-y-[-1px] active:translate-y-[0px] flex items-center gap-sm transition-all duration-medium ease-standard"
+    <main className="min-h-screen bg-background text-on-background">
+      <section className="mx-auto max-w-378 px-17 pt-11.5 pb-20">
+        {/* HERO */}
+        <div className="grid grid-cols-[520px_1fr] items-start gap-46">
+          {/* LEFT */}
+          <div className="pt-14.5">
+            <h1
+              className="
+                            text-[56px]
+                            leading-[64px]
+                            font-extrabold
+                            tracking-[-0.02em]
+                            text-primary
+                        "
             >
-              {t('hero.cta')}
-              <ArrowRight size={18} className="group-hover:translate-x-xs transition-transform duration-medium ease-standard" />
+              Pickup only
+            </h1>
+
+            <div className="mt-7">
+              <p className="text-[18px] font-semibold leading-7">
+                Live stock before order
+              </p>
+
+              <div className="mt-2.5 flex items-center gap-2.5">
+                <span className="text-[18px] font-semibold">
+                 💬 WhatsApp/SMS confirmation
+                </span>
+              </div>
+
+              <p
+                className="
+                                mt-[24px]
+                                max-w-105
+                                text-body-md
+                                leading-5.5
+                                text-on-surface-variant
+                            "
+              >
+                You receive exactly what you ordered or can raise an issue with
+                photo proof. Our guarantee ensures transparency and quality with
+                every pickup.
+              </p>
+            </div>
+
+            <button
+              className="
+                            mt-9
+                            h-14
+                            rounded-default
+                            bg-primary
+                            px-7
+                            text-[15px]
+                            font-semibold
+                            text-on-primary
+                        "
+            >
+              Register Now
             </button>
           </div>
-        </div>
 
-        {/* Right: Decorative Image */}
-        <div className="relative w-full aspect-[4/3] md:aspect-[16/10] rounded-lg border border-outline-variant bg-[#E8F0E8] overflow-hidden shadow-level-2 transform hover:scale-[1.01] transition-transform duration-long ease-standard">
-          <img
-            src="/staples_hero.png"
-            alt="Organic grocery staples"
-            className="w-full h-full object-cover"
-          />
-          {/* Subtle overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent pointer-events-none"></div>
-        </div>
-
-      </section>
-
-      {/* 2. Key Benefits Section */}
-      <section className="bg-surface-low border-y border-outline-variant py-2xl px-md">
-        <div className="max-w-7xl mx-auto">
-          
-          <div className="text-center mb-xl">
-            <h2 className="font-sans text-headline-md md:text-headline-lg font-bold text-on-surface">
-              {t('benefits.title')}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
-            
-            {/* Card 1: Live Stock Visibility */}
-            <div className="bg-surface-lowest rounded-md border border-outline-variant p-lg shadow-level-1 hover:shadow-level-2 transition-all duration-medium ease-standard flex flex-col gap-md">
-              <div className="w-12 h-12 rounded-default bg-[#BFEDD0] flex items-center justify-center text-primary-container">
-                <Activity size={24} />
-              </div>
-              <div className="flex flex-col gap-sm">
-                <h3 className="font-sans text-headline-sm font-bold text-on-surface">
-                  {t('benefits.card1_title')}
-                </h3>
-                <p className="font-sans text-body-md text-on-surface-variant leading-relaxed">
-                  {t('benefits.card1_desc')}
-                </p>
-              </div>
-            </div>
-
-            {/* Card 2: Role-Based Pricing */}
-            <div className="bg-surface-lowest rounded-md border border-outline-variant p-lg shadow-level-1 hover:shadow-level-2 transition-all duration-medium ease-standard flex flex-col gap-md">
-              <div className="w-12 h-12 rounded-default bg-[#FFDCBC] flex items-center justify-center text-[#895100]">
-                <Percent size={24} />
-              </div>
-              <div className="flex flex-col gap-sm">
-                <h3 className="font-sans text-headline-sm font-bold text-on-surface">
-                  {t('benefits.card2_title')}
-                </h3>
-                <p className="font-sans text-body-md text-on-surface-variant leading-relaxed">
-                  {t('benefits.card2_desc')}
-                </p>
-              </div>
-            </div>
-
-            {/* Card 3: Zero Delivery Complexity */}
-            <div className="bg-surface-lowest rounded-md border border-outline-variant p-lg shadow-level-1 hover:shadow-level-2 transition-all duration-medium ease-standard flex flex-col gap-md">
-              <div className="w-12 h-12 rounded-default bg-[#FFDBD2] flex items-center justify-center text-[#ba1a1a]">
-                <Clock size={24} />
-              </div>
-              <div className="flex flex-col gap-sm">
-                <h3 className="font-sans text-headline-sm font-bold text-on-surface">
-                  {t('benefits.card3_title')}
-                </h3>
-                <p className="font-sans text-body-md text-on-surface-variant leading-relaxed">
-                  {t('benefits.card3_desc')}
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Category shelf */}
-      <section className="max-w-7xl mx-auto px-md mt-2xl">
-        <h2 className="font-sans text-headline-sm md:text-headline-md font-bold text-on-surface mb-lg">
-          {t('shelf.title')}
-        </h2>
-        
-        {/* Horizontal Category Shelf Row */}
-        <div className="flex items-center gap-md overflow-x-auto pb-sm scrollbar-thin">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => navigate(`/products?category=${cat.id}`)}
-              className={`flex items-center gap-sm px-xl py-md rounded-full bg-white border border-outline-variant font-sans text-label-md font-bold hover:border-primary hover:shadow-level-1 whitespace-nowrap transition-all duration-medium ease-standard`}
+          {/* RIGHT */}
+          <div className="w-160">
+            {/* GUARANTEE */}
+            <div
+              className="
+                            mb-4.5
+                            flex
+                            h-14.5
+                            items-center
+                            gap-3
+                            rounded-default
+                            bg-[#DDE7DE]
+                            px-4.5
+                        "
             >
-              <span className={`w-8 h-8 rounded-full ${cat.color} flex items-center justify-center text-label-sm`}>
-                {cat.name.charAt(0)}
-              </span>
-              {cat.name}
-            </button>
-          ))}
-          
-          {/* See All Category */}
-          <button
-            onClick={() => navigate('/products')}
-            className="px-xl py-md rounded-full bg-[#E2EAE3] text-primary border border-[#C1C8C1] font-sans text-label-md font-bold hover:bg-[#D4DFD6] hover:shadow-level-1 whitespace-nowrap transition-all duration-medium ease-standard"
-          >
-            {t('shelf.all')}
-          </button>
-        </div>
-      </section>
+              <div
+                className="
+                                flex
+                                h-6.5
+                                w-6.5
+                                items-center
+                                justify-center
+                                rounded-full
+                                bg-primary
+                            "
+              >
+                <ShieldCheck size={14} color="white" />
+              </div>
 
+              <div>
+                <div className="text-[13px] font-bold">
+                  First order guarantee:
+                  <span className="font-medium">
+                    {" "}
+                    receive exactly what you ordered.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* IMAGE */}
+            <div
+              className="
+                            overflow-hidden
+                            rounded-default
+                            border
+                            border-outline-variant
+                        "
+            >
+              <img
+                src="/src/assets/warehouse.jpg"
+                alt=""
+                className="
+                                h-90
+                                w-full
+                                object-cover
+                            "
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* FEATURES */}
+        <section className="mt-21">
+          <h2 className="text-[34px] font-bold leading-10">Features</h2>
+
+          <div className="mt-7 grid grid-cols-3 gap-15">
+            <FeatureCard
+              icon={<LayoutGrid size={18} />}
+              iconBg="#CFE7D4"
+              title="Browse Products"
+              text="Explore our curated selection of fresh produce and pantry essentials available for immediate pickup."
+            />
+
+            <FeatureCard
+              icon={<RotateCcw size={18} />}
+              iconBg="#F6DFC7"
+              title="My Orders / Reorder"
+              text="Quickly access your purchase history and restock your favorites with just a single click."
+            />
+
+            <FeatureCard
+              icon={<Truck size={18} />}
+              iconBg="#F5D1C8"
+              title="Track Order"
+              text="Real-time status updates from order confirmation through to your scheduled pickup time."
+            />
+          </div>
+        </section>
+
+        {/* QUICK ACCESS */}
+        <section className="mt-18">
+          <h3 className="text-[34px] font-bold">Staples Quick Access</h3>
+
+          <div className="mt-6.5 flex gap-[16px]">
+            <Chip image={rice} label="Rice" />
+            <Chip image={oil} label="Oil" />
+            <Chip image={flour} label="Flour" />
+            <Chip image={dal} label="Dal" />
+            <Chip label="More" />
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function FeatureCard({ icon, iconBg, title, text }) {
+  return (
+    <div
+      className="
+            rounded-[10px]
+            border
+            border-outline-variant
+            bg-surface-lowest
+            p-5.5
+            shadow-(--shadow-level-1)
+        "
+    >
+      <div
+        className="
+                mb-4.5
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-default
+            "
+        style={{
+          background: iconBg,
+        }}
+      >
+        {icon}
+      </div>
+
+      <h3 className="text-[18px] font-bold">{title}</h3>
+
+      <p className="mt-2.5 text-body-md text-on-surface-variant">{text}</p>
     </div>
+  );
+}
+
+function Chip({ image, label }) {
+  return (
+    <button
+      className="
+                flex
+                h-[54px]
+                items-center
+                gap-[10px]
+                rounded-full
+                border
+                border-outline-variant
+                bg-surface
+                px-[18px]
+                text-[14px]
+                font-[600]
+            "
+    >
+      {image && (
+        <img src={image} alt="" className="h-[18px] w-[18px] object-contain" />
+      )}
+
+      <span>{label}</span>
+    </button>
   );
 }

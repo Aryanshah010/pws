@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/layout/Header';
+import Nav from './components/layout/Nav';
 import Footer from './components/layout/Footer';
 import LanguageModal from './components/ui/LanguageModal';
 import LandingPage from './features/home/LandingPage';
@@ -10,12 +10,15 @@ import Products from './features/home/Products';
 import About from './features/home/About';
 import Contact from './features/home/Contact';
 import './config/i18n'; // Initialize i18next translation configurations
+import ForgetPassword from './features/auth/ForgetPassword';
+import OtpVerification from './features/auth/Otp';
+import ChangePassword from './features/auth/ChangePassword';
 
 function Layout({ children }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">{children}</main>
+      <Nav />
+      <main className="grow">{children}</main>
       <Footer />
     </div>
   );
@@ -29,6 +32,9 @@ function App() {
         <Route path="/" element={<Layout><LandingPage /></Layout>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/otp" element={<OtpVerification />} />
+        <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/products" element={<Layout><Products /></Layout>} />
         <Route path="/about" element={<Layout><About /></Layout>} />
         <Route path="/contact" element={<Layout><Contact /></Layout>} />

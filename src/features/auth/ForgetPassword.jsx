@@ -1,8 +1,15 @@
-import { Lock, Phone } from "lucide-react";
+import { useState } from "react";
+import { Phone, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 
-export default function LoginPage() {
+const ForgetPassword = () => {
+  const [phone, setPhone] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
+
   return (
     <main className="bg-background">
       <Nav />
@@ -44,7 +51,7 @@ export default function LoginPage() {
               "
             >
               <img
-                src="src/assets/bora.jpg"
+                src="src/assets/fp.png"
                 alt=""
                 className="h-full w-full object-cover"
               />
@@ -67,7 +74,7 @@ export default function LoginPage() {
                   text-primary
                 "
               >
-                Login to Pathivara
+                Forgot Password?
               </h1>
 
               <p
@@ -78,10 +85,11 @@ export default function LoginPage() {
                   max-w-[280px]
                 "
               >
-                Welcome back. Please enter your credentials to continue.
+                Enter your registered phone number to receive a One- Time
+                Password (OTP) for account recovery.
               </p>
 
-              {/* PHONE */}
+              {/* PHONE NUMBER */}
               <div className="mt-[30px]">
                 <label
                   className="
@@ -116,7 +124,9 @@ export default function LoginPage() {
 
                   <input
                     type="text"
-                    placeholder="Enter your number"
+                    placeholder="98XXXXXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     className="
                       h-[44px]
                       w-full
@@ -134,106 +144,13 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* PASSWORD */}
-              <div className="mt-4.5">
-                <label
-                  className="
-                    mb-[8px]
-                    block
-                    text-label-sm
-                    font-semibold
-                    text-on-surface-variant
-                  "
-                >
-                  Password
-                </label>
-
-                <div className="relative">
-                  <div
-                    className="
-                      absolute
-                      left-3
-                      top-1/2
-                      -translate-y-1/2
-                      flex
-                      h-[24px]
-                      w-[24px]
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-[#F4FBF4]
-                    "
-                  >
-                    <Lock size={14} color="#9EA5A0" />
-                  </div>
-
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="
-                      h-11
-                      w-full
-                      rounded-default
-                      border
-                      border-[#C1C8C1]
-                      bg-[#F4FBF4]
-                      pl-[48px]
-                      pr-3.5
-                      text-body-md
-                      outline-none
-                      focus:border-primary
-                    "
-                  />
-                </div>
-              </div>
-
-              {/* LINKS */}
-              <div
-                className="
-                  mt-2.5
-                  flex
-                  justify-between
-                  items-center
-                "
-              >
-                <button
-                  className="
-                    text-[12px]
-                    font-semibold
-                    text-[#3F81EA]
-                  "
-                >
-                  Forgot password?
-                </button>
-
-                <div className="flex items-center gap-0.5">
-                  <span
-                    className="
-                      text-[12px]
-                      font-semibold
-                      text-black
-                    "
-                  >
-                    New Buyer?
-                  </span>
-
-                  <button
-                    className="
-                      text-[12px]
-                      font-semibold
-                      text-[#D4820A]
-                    "
-                  >
-                    Register
-                  </button>
-                </div>
-              </div>
-
-              {/* LOGIN */}
+              {/* SUBMIT */}
               <button
+                type="submit"
+                onClick={handleSubmit}
                 className="
                   mt-6.5
-                  h-13
+                  h-[52px]
                   rounded-default
                   bg-primary
                   text-headline-xs
@@ -241,39 +158,26 @@ export default function LoginPage() {
                   text-on-primary
                 "
               >
-                Login
+                Send OTP
               </button>
 
-              {/* DIVIDER */}
-              <div
+              {/* BACK TO LOGIN */}
+              <a
+                href="/login"
                 className="
-                  mt-5.5
+                  mt-[18px]
                   flex
                   items-center
-                  gap-3
-                "
-              >
-                <div className="flex-1 h-px bg-outline-variant" />
-                <span className="text-label-sm text-outline">OR</span>
-                <div className="flex-1 h-px bg-outline-variant" />
-              </div>
-
-              {/* GUEST */}
-              <button
-                className="
-                  mt-4.5
-                  h-[48px]
-                  rounded-default
-                  border
-                  border-[#C1C8C1]
-                  bg-transparent
-                  text-[12px]
+                  justify-center
+                  gap-[6px]
+                  text-label-sm
                   font-semibold
-                  text-on-surface
+                  text-primary
                 "
               >
-                Continue browsing as guest
-              </button>
+                <ArrowLeft size={14} />
+                Cancel
+              </a>
             </div>
           </div>
         </div>
@@ -281,4 +185,6 @@ export default function LoginPage() {
       <Footer />
     </main>
   );
-}
+};
+
+export default ForgetPassword;

@@ -1,8 +1,18 @@
-import { Lock, Phone, User, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 
-export default function RegisterPage() {
+const ChangePassword = () => {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
+
   return (
     <main className="bg-background">
       <Nav />
@@ -44,7 +54,7 @@ export default function RegisterPage() {
               "
             >
               <img
-                src="src/assets/rawfood.jpg"
+                src="src/assets/reset_pass.png"
                 alt=""
                 className="h-full w-full object-cover"
               />
@@ -67,10 +77,21 @@ export default function RegisterPage() {
                   text-primary
                 "
               >
-                Create Account
+                Change your Password
               </h1>
 
-              {/* FULL NAME */}
+              <p
+                className="
+                  mt-[8px]
+                  text-body-md
+                  text-on-surface-variant
+                  max-w-[280px]
+                "
+              >
+                Enter a new secure password below to update your account access.
+              </p>
+
+              {/* NEW PASSWORD */}
               <div className="mt-[30px]">
                 <label
                   className="
@@ -81,113 +102,7 @@ export default function RegisterPage() {
                     text-on-surface-variant
                   "
                 >
-                  Full Name
-                </label>
-
-                <div className="relative">
-                  <div
-                    className="
-                      absolute
-                      left-[12px]
-                      top-1/2
-                      -translate-y-1/2
-                      flex
-                      h-[24px]
-                      w-[24px]
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-[#F4FBF4]
-                    "
-                  >
-                    <User size={14} color="#9EA5A0" />
-                  </div>
-
-                  <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    className="
-                      h-[44px]
-                      w-full
-                      rounded-[8px]
-                      border
-                      border-[#C1C8C1]
-                      bg-[#F4FBF4]
-                      pl-[48px]
-                      pr-3.5
-                      text-body-md
-                      outline-none
-                      focus:border-primary
-                    "
-                  />
-                </div>
-              </div>
-
-              {/* PHONE NUMBER */}
-              <div className="mt-4.5">
-                <label
-                  className="
-                    mb-[8px]
-                    block
-                    text-label-sm
-                    font-semibold
-                    text-on-surface-variant
-                  "
-                >
-                  Phone Number
-                </label>
-
-                <div className="relative">
-                  <div
-                    className="
-                      absolute
-                      left-[12px]
-                      top-1/2
-                      -translate-y-1/2
-                      flex
-                      h-[24px]
-                      w-[24px]
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-[#F4FBF4]
-                    "
-                  >
-                    <Phone size={14} color="#9EA5A0" />
-                  </div>
-
-                  <input
-                    type="text"
-                    placeholder="Enter your number"
-                    className="
-                      h-[44px]
-                      w-full
-                      rounded-[8px]
-                      border
-                      border-[#C1C8C1]
-                      bg-[#F4FBF4]
-                      pl-[48px]
-                      pr-3.5
-                      text-body-md
-                      outline-none
-                      focus:border-primary
-                    "
-                  />
-                </div>
-              </div>
-
-              {/* PASSWORD */}
-              <div className="mt-4.5">
-                <label
-                  className="
-                    mb-[8px]
-                    block
-                    text-label-sm
-                    font-semibold
-                    text-on-surface-variant
-                  "
-                >
-                  Password
+                  New Password
                 </label>
 
                 <div className="relative">
@@ -210,8 +125,10 @@ export default function RegisterPage() {
                   </div>
 
                   <input
-                    type="password"
-                    placeholder="••••••••"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
                     className="
                       h-[44px]
                       w-full
@@ -220,16 +137,30 @@ export default function RegisterPage() {
                       border-[#C1C8C1]
                       bg-[#F4FBF4]
                       pl-[48px]
-                      pr-3.5
+                      pr-[44px]
                       text-body-md
                       outline-none
                       focus:border-primary
                     "
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="
+                      absolute
+                      right-[12px]
+                      top-1/2
+                      -translate-y-1/2
+                      text-outline
+                    "
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 
-              {/* Buyer Type */}
+              {/* CONFIRM PASSWORD */}
               <div className="mt-4.5">
                 <label
                   className="
@@ -240,12 +171,33 @@ export default function RegisterPage() {
                     text-on-surface-variant
                   "
                 >
-                  Buyer Type
+                  Confirm Password
                 </label>
 
                 <div className="relative">
-                  <select
-                    defaultValue=""
+                  <div
+                    className="
+                      absolute
+                      left-[12px]
+                      top-1/2
+                      -translate-y-1/2
+                      flex
+                      h-[24px]
+                      w-[24px]
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#F4FBF4]
+                    "
+                  >
+                    <Lock size={14} color="#9EA5A0" />
+                  </div>
+
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
                     className="
                       h-[44px]
                       w-full
@@ -253,109 +205,68 @@ export default function RegisterPage() {
                       border
                       border-[#C1C8C1]
                       bg-[#F4FBF4]
-                      pl-[14px]
-                      pr-[40px]
+                      pl-[48px]
+                      pr-[44px]
                       text-body-md
-                      text-on-surface-variant
                       outline-none
                       focus:border-primary
-                      appearance-none
                     "
-                  >
-                    <option value="" disabled>
-                      Choose buyer type
-                    </option>
-                    <option value="individual">Household/Regular Buyer</option>
-                    <option value="bulk">Shop/Bulk Buyer</option>
-                  </select>
+                  />
 
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="
-                      pointer-events-none
                       absolute
                       right-[12px]
                       top-1/2
                       -translate-y-1/2
+                      text-outline
                     "
                   >
-                    <ChevronDown size={16} color="#6B7280" />
-                  </div>
+                    {showConfirmPassword ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* CONTINUE */}
+              {/* CHANGE PASSWORD */}
               <button
+                type="submit"
+                onClick={handleSubmit}
                 className="
                   mt-6.5
-                  h-[52px]
+                  h-13
                   rounded-default
                   bg-primary
                   text-headline-xs
-                  font-semibold
+                  font-bold
                   text-on-primary
                 "
               >
-                Continue
+                Reset Password
               </button>
 
-              {/* ALREADY HAVE ACCOUNT */}
-              <div
+              {/* BACK TO LOGIN */}
+              <a
+                href="/login"
                 className="
                   mt-[18px]
                   flex
                   items-center
                   justify-center
-                  gap-[2px]
-                "
-              >
-                <span
-                  className="
-                    text-[12px]
-                    text-on-surface
-                  "
-                >
-                  Already have an account?
-                </span>
-
-                <button
-                  className="
-                    text-[12px]
-                    text-[#3F81EA]
-                    underline
-                    underline-offset-[2px]
-                  "
-                >
-                  Login
-                </button>
-              </div>
-
-              <div
-                className="
-                  mt-[14px]
-                  flex
-                  items-center
-                  justify-center
                   gap-[6px]
+                  text-label-sm
+                  font-semibold
+                  text-primary
                 "
               >
-                <span
-                  className="
-                    text-[12px]
-                    text-outline
-                  "
-                >
-                  or
-                </span>
-              </div>
-              <button
-                className="
-                    text-[12px]
-                    text-[#3F81EA]
-                    font-bold
-                  "
-              >
-                Browse as a guest →
-              </button>
+                <ArrowLeft size={14} />
+                Back to login
+              </a>
             </div>
           </div>
         </div>
@@ -363,4 +274,6 @@ export default function RegisterPage() {
       <Footer />
     </main>
   );
-}
+};
+
+export default ChangePassword;
