@@ -14,6 +14,7 @@ import ForgetPassword from "./features/auth/ForgetPassword";
 import OtpVerification from "./features/auth/Otp";
 import ChangePassword from "./features/auth/ChangePassword";
 import MainNavbar from "./components/layout/MainNav";
+import WholesaleForm from "./features/wholesale/WholesaleForm";
 
 function Layout({ children }) {
   return (
@@ -53,6 +54,14 @@ function App() {
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />
+        <Route
+          path="/wholesale-form"
+          element={
+            <Layout>
+              <WholesaleForm />
+            </Layout>
+          }
+        />
         <Route
           path="/homepage"
           element={
