@@ -16,6 +16,7 @@ import ChangePassword from "./features/auth/ChangePassword";
 import MainNavbar from "./components/layout/MainNav";
 import WholesaleForm from "./features/wholesale/WholesaleForm";
 import WholesalePending from "./features/wholesale/WholesalePending";
+import WholesaleApproved from "./features/wholesale/WholesaleApprove";
 
 function Layout({ children }) {
   return (
@@ -76,6 +77,14 @@ function App() {
           element={
             <Layout2>
               <Home />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/wholesale-approved"
+          element={
+            <Layout2>
+              <WholesaleApproved />
             </Layout2>
           }
         />
