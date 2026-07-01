@@ -1,9 +1,3 @@
-/* ─────────────────────────────────────────────────────────────
-   Forest Reserve — Footer Component
-   Single source of truth: index.css custom properties only.
-   SVG: 1512×111px — three-column layout centered at max-width
-   ───────────────────────────────────────────────────────────── */
-
 function ShareIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
