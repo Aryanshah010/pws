@@ -62,6 +62,8 @@
   /* Outline */
   --color-outline: #707972;
   --color-outline-variant: #bfc9c0;
+  --color-outline-border: #c1c8c1;
+  --color-outline-border-pill: #d4820a;
 
   /* Error */
   --color-error: #ba1a1a;
