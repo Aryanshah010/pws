@@ -42,15 +42,13 @@ const products = [
 
 const categories = ["Rice", "Oil", "Soap", "Flour", "Dal"];
 
-const STOCK_COLORS = {
+export const STOCK_COLORS = {
   "IN STOCK": "var(--color-primary-fixed)",
   "LOW STOCK": "var(--color-secondary-fixed)",
   "OUT OF STOCK": "var(--color-error-container)",
 };
 
-/* Keep products, categories, STOCK_COLORS unchanged */
-
-function StockBadge({ stock }) {
+export function StockBadge({ stock }) {
   return (
     <span
       style={{
@@ -72,7 +70,7 @@ function StockBadge({ stock }) {
   );
 }
 
-function ActionButton({ action }) {
+export function ActionButton({ action }) {
   const notify = action === "Notify";
 
   return (
@@ -108,7 +106,7 @@ function ActionButton({ action }) {
   );
 }
 
-function ProductCard({ product }) {
+export function ProductCard({ product }) {
   return (
     <article
       style={{
@@ -443,8 +441,6 @@ export default function Home() {
           </div>
         </section>
       </div>
-
-      {/* Footer */}
     </main>
   );
 }

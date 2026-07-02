@@ -17,6 +17,7 @@ import MainNavbar from "./components/layout/MainNav";
 import WholesaleForm from "./features/wholesale/WholesaleForm";
 import WholesalePending from "./features/wholesale/WholesalePending";
 import WholesaleApproved from "./features/wholesale/WholesaleApprove";
+import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 
 function Layout({ children }) {
   return (
@@ -77,6 +78,14 @@ function App() {
           element={
             <Layout2>
               <Home />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/view-product"
+          element={
+            <Layout2>
+              <ViewProductDetailIS />
             </Layout2>
           }
         />
