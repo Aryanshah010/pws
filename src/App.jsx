@@ -19,6 +19,7 @@ import WholesalePending from "./features/wholesale/WholesalePending";
 import WholesaleApproved from "./features/wholesale/WholesaleApprove";
 import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 import CartPage from "./features/checkout/CartPage";
+import ProductDetailOS from "./features/products/VIewProductDetailsOS";
 
 function Layout({ children }) {
   return (
@@ -87,6 +88,14 @@ function App() {
           element={
             <Layout2>
               <ViewProductDetailIS />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/view-product-os"
+          element={
+            <Layout2>
+              <ProductDetailOS />
             </Layout2>
           }
         />
