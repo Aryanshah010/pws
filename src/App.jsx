@@ -18,6 +18,7 @@ import WholesaleForm from "./features/wholesale/WholesaleForm";
 import WholesalePending from "./features/wholesale/WholesalePending";
 import WholesaleApproved from "./features/wholesale/WholesaleApprove";
 import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
+import CartPage from "./features/checkout/CartPage";
 
 function Layout({ children }) {
   return (
@@ -94,6 +95,14 @@ function App() {
           element={
             <Layout2>
               <WholesaleApproved />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <Layout2>
+              <CartPage />
             </Layout2>
           }
         />
