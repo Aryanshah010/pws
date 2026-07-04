@@ -20,6 +20,7 @@ import WholesaleApproved from "./features/wholesale/WholesaleApprove";
 import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 import CartPage from "./features/checkout/CartPage";
 import ProductDetailOS from "./features/products/VIewProductDetailsOS";
+import Checkout from "./features/checkout/CheckoutPage";
 
 function Layout({ children }) {
   return (
@@ -112,6 +113,14 @@ function App() {
           element={
             <Layout2>
               <CartPage />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <Layout2>
+              <Checkout />
             </Layout2>
           }
         />
