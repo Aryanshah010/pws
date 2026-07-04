@@ -14,6 +14,13 @@ import ForgetPassword from "./features/auth/ForgetPassword";
 import OtpVerification from "./features/auth/Otp";
 import ChangePassword from "./features/auth/ChangePassword";
 import MainNavbar from "./components/layout/MainNav";
+import WholesaleForm from "./features/wholesale/WholesaleForm";
+import WholesalePending from "./features/wholesale/WholesalePending";
+import WholesaleApproved from "./features/wholesale/WholesaleApprove";
+import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
+import CartPage from "./features/checkout/CartPage";
+import ProductDetailOS from "./features/products/VIewProductDetailsOS";
+import Checkout from "./features/checkout/CheckoutPage";
 
 function Layout({ children }) {
   return (
@@ -54,10 +61,66 @@ function App() {
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />
         <Route
+          path="/wholesale-pending"
+          element={
+            <Layout>
+              <WholesalePending />
+            </Layout>
+          }
+        />
+        <Route
+          path="/wholesale-form"
+          element={
+            <Layout>
+              <WholesaleForm />
+            </Layout>
+          }
+        />
+        <Route
           path="/homepage"
           element={
             <Layout2>
               <Home />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/view-product"
+          element={
+            <Layout2>
+              <ViewProductDetailIS />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/view-product-os"
+          element={
+            <Layout2>
+              <ProductDetailOS />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/wholesale-approved"
+          element={
+            <Layout2>
+              <WholesaleApproved />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <Layout2>
+              <CartPage />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <Layout2>
+              <Checkout />
             </Layout2>
           }
         />

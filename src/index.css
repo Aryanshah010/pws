@@ -6,8 +6,8 @@
   /*COLORS */
 
   /* Primary */
-  --color-primary: #00452b;
-  --color-primary-container: #1b5e40;
+  --color-primary: #1b5e40;
+  --color-primary-container: #00452b;
   --color-on-primary: #ffffff;
   --color-on-primary-container: #93d5af;
   --color-primary-inverse: #93d5af;
@@ -62,6 +62,8 @@
   /* Outline */
   --color-outline: #707972;
   --color-outline-variant: #bfc9c0;
+  --color-outline-border: #c1c8c1;
+  --color-outline-border-pill: #d4820a;
 
   /* Error */
   --color-error: #ba1a1a;
