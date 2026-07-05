@@ -21,6 +21,7 @@ import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 import CartPage from "./features/checkout/CartPage";
 import ProductDetailOS from "./features/products/VIewProductDetailsOS";
 import Checkout from "./features/checkout/CheckoutPage";
+import PaymentQr from "./features/checkout/PaymentQrPage";
 
 function Layout({ children }) {
   return (
@@ -121,6 +122,14 @@ function App() {
           element={
             <Layout2>
               <Checkout />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/payment"
+          element={
+            <Layout2>
+              <PaymentQr />
             </Layout2>
           }
         />
