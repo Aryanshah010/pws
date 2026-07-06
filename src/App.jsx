@@ -22,6 +22,9 @@ import CartPage from "./features/checkout/CartPage";
 import ProductDetailOS from "./features/products/VIewProductDetailsOS";
 import Checkout from "./features/checkout/CheckoutPage";
 import PaymentQr from "./features/checkout/PaymentQrPage";
+import PaymentProofPage from "./features/checkout/PaymentQrPage";
+import PaymentConfirm from "./features/checkout/PaymentProofSubmitted";
+import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
 
 function Layout({ children }) {
   return (
@@ -130,6 +133,14 @@ function App() {
           element={
             <Layout2>
               <PaymentQr />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/paymentProofSubmitted"
+          element={
+            <Layout2>
+              <PaymentProofSubmitted />
             </Layout2>
           }
         />
