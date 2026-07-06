@@ -1,5 +1,11 @@
 import { Link } from "react-router-dom";
-import { CheckCircle2, Info, Download, MessageCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Info,
+  Download,
+  MessageCircle,
+  Truck,
+} from "lucide-react";
 
 export default function PaymentProofSubmitted() {
   return (
@@ -44,15 +50,16 @@ export default function PaymentProofSubmitted() {
         <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:gap-4 mt-2">
           <Link
             to="/track-order"
-            className="flex h-[60px] w-full items-center justify-center rounded-[10px] bg-[var(--color-primary)] px-6 text-lg font-semibold text-[var(--color-on-primary)] shadow-[var(--shadow-level-1)] transition-opacity hover:opacity-90 sm:w-auto sm:min-w-[189px] cursor-pointer"
+            className="flex h-[60px] w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--color-primary)] px-6 text-lg font-semibold text-(--color-on-primary) shadow-[var(--shadow-level-1)] transition-opacity hover:opacity-90 sm:w-auto sm:min-w-[189px] cursor-pointer"
           >
+            <Truck className="h-5 w-5" />
             Track Order
           </Link>
 
           <button
             type="button"
             style={{ borderColor: "#C1C8C1" }}
-            className="flex h-15 w-full max-w-[256px] items-center  gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-on-surface-variant transition-colors hover:bg-surface-low sm:w-[256px] cursor-pointer"
+            className="flex h-15 w-full max-w-[256px] items-center justify-center  gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-on-surface-variant transition-colors hover:bg-surface-low sm:w-[256px] cursor-pointer"
           >
             <Download className="h-5 w-5" />
             Download PDF Receipt

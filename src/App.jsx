@@ -25,6 +25,7 @@ import PaymentQr from "./features/checkout/PaymentQrPage";
 import PaymentProofPage from "./features/checkout/PaymentQrPage";
 import PaymentConfirm from "./features/checkout/PaymentProofSubmitted";
 import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
+import OrderSuccess from "./features/checkout/OrderSuccess";
 
 function Layout({ children }) {
   return (
@@ -150,6 +151,14 @@ function App() {
             <Layout>
               <About />
             </Layout>
+          }
+        />
+        <Route
+          path="/orderSuccess"
+          element={
+            <Layout2>
+              <OrderSuccess />
+            </Layout2>
           }
         />
         <Route
