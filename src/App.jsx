@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Nav from "./components/layout/Nav";
 import Footer from "./components/layout/Footer";
-import LanguageModal from "./components/ui/LanguageModal";
+import LanguageModal from "./features/home/LanguageModal";
 import LandingPage from "./features/home/LandingPage";
 import Login from "./features/auth/Login";
 import Register from "./features/auth/Register";
@@ -25,7 +25,8 @@ import PaymentQr from "./features/checkout/PaymentQrPage";
 import PaymentProofPage from "./features/checkout/PaymentQrPage";
 import PaymentConfirm from "./features/checkout/PaymentProofSubmitted";
 import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
-import OrderSuccess from "./features/checkout/OrderSuccess";
+import TrackOrderPage from "./features/order/TrackOrder";
+import OrderSuccess from "./features/order/OrderSuccess";
 
 function Layout({ children }) {
   return (
@@ -50,7 +51,6 @@ function Layout2({ children }) {
 function App() {
   return (
     <Router>
-      <LanguageModal />
       <Routes>
         <Route
           path="/"
@@ -65,6 +65,7 @@ function App() {
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/language-model" element={<LanguageModal />} />
         <Route
           path="/wholesale-pending"
           element={
@@ -138,10 +139,26 @@ function App() {
           }
         />
         <Route
-          path="/paymentProofSubmitted"
+          path="/payment-proof"
           element={
             <Layout2>
               <PaymentProofSubmitted />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/order-success"
+          element={
+            <Layout2>
+              <OrderSuccess />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/track-order"
+          element={
+            <Layout2>
+              <TrackOrderPage />
             </Layout2>
           }
         />
@@ -151,14 +168,6 @@ function App() {
             <Layout>
               <About />
             </Layout>
-          }
-        />
-        <Route
-          path="/orderSuccess"
-          element={
-            <Layout2>
-              <OrderSuccess />
-            </Layout2>
           }
         />
         <Route

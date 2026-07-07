@@ -24,7 +24,7 @@ export default function PaymentProofPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1512px] px-6 py-8 md:px-14 md:py-12  bg-(--color-background) text-[var(--color-on-background)]">
+    <div className="mx-auto w-full max-w-378 px-6 py-8 md:px-14 md:py-12  bg-(--color-background) text-(--color-on-background)">
       <Link
         to="/"
         aria-label="Go back"
