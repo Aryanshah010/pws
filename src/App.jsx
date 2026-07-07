@@ -27,6 +27,7 @@ import PaymentConfirm from "./features/checkout/PaymentProofSubmitted";
 import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
 import TrackOrderPage from "./features/order/TrackOrder";
 import OrderSuccess from "./features/order/OrderSuccess";
+import MyOrder from "./features/order/MyOrderPage";
 
 function Layout({ children }) {
   return (
@@ -159,6 +160,14 @@ function App() {
           element={
             <Layout2>
               <TrackOrderPage />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/myorder"
+          element={
+            <Layout2>
+              <MyOrder />
             </Layout2>
           }
         />
