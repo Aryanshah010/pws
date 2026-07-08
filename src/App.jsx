@@ -29,6 +29,7 @@ import TrackOrderPage from "./features/order/TrackOrder";
 import OrderSuccess from "./features/order/OrderSuccess";
 import MyOrder from "./features/order/MyOrderPage";
 import BasketReview from "./features/order/BasketReview";
+import CustomBasketTemplate from "./features/order/CustomBasket";
 
 function Layout({ children }) {
   return (
@@ -177,6 +178,14 @@ function App() {
           element={
             <Layout2>
               <BasketReview />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/custom-basket"
+          element={
+            <Layout2>
+              <CustomBasketTemplate />
             </Layout2>
           }
         />
