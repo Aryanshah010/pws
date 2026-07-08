@@ -8,9 +8,7 @@ function TemplateCard({ title, description }) {
         <h3 className="text-base font-semibold text-(--color-primary-container)">
           {title}
         </h3>
-        <p className="text-base text-[#414943]">
-          {description}
-        </p>
+        <p className="text-base text-[#414943]">{description}</p>
       </div>
       <button
         type="button"

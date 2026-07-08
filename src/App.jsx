@@ -28,6 +28,7 @@ import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
 import TrackOrderPage from "./features/order/TrackOrder";
 import OrderSuccess from "./features/order/OrderSuccess";
 import MyOrder from "./features/order/MyOrderPage";
+import BasketReview from "./features/order/BasketReview";
 
 function Layout({ children }) {
   return (
@@ -168,6 +169,14 @@ function App() {
           element={
             <Layout2>
               <MyOrder />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/basket-review"
+          element={
+            <Layout2>
+              <BasketReview />
             </Layout2>
           }
         />
