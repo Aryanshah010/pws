@@ -30,6 +30,7 @@ import OrderSuccess from "./features/order/OrderSuccess";
 import MyOrder from "./features/order/MyOrderPage";
 import BasketReview from "./features/order/BasketReview";
 import CustomBasketTemplate from "./features/order/CustomBasket";
+import SubmitComplaint from "./features/order/Complain";
 
 function Layout({ children }) {
   return (
@@ -186,6 +187,14 @@ function App() {
           element={
             <Layout2>
               <CustomBasketTemplate />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/complain"
+          element={
+            <Layout2>
+              <SubmitComplaint />
             </Layout2>
           }
         />
