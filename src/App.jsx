@@ -31,6 +31,7 @@ import MyOrder from "./features/order/MyOrderPage";
 import BasketReview from "./features/order/BasketReview";
 import CustomBasketTemplate from "./features/order/CustomBasket";
 import SubmitComplaint from "./features/order/Complain";
+import AccountActive from "./features/auth/AccountActive";
 
 function Layout({ children }) {
   return (
@@ -70,6 +71,14 @@ function App() {
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/language-model" element={<LanguageModal />} />
+        <Route
+          path="/account-active"
+          element={
+            <Layout>
+              <AccountActive />
+            </Layout>
+          }
+        />
         <Route
           path="/wholesale-pending"
           element={
