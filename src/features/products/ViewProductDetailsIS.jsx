@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ShoppingCart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useStore } from "../../store/store";
 
 // Reuse the exact same card component the Homepage uses, instead of a
 // hand-duplicated copy. This is the single source of truth for product
@@ -32,9 +33,54 @@ const similarProducts = [
 
 export default function ViewProductDetailIS() {
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const id = searchParams.get("id");
+
+  const { user, addToCart } = useStore();
+  const isWholesale = user?.role === "verified_wholesale";
+
+  useEffect(() => {
+    if (id) {
+      fetch(`http://localhost:5050/api/products/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setProduct(data.data);
+          }
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
 
   const incrementQty = () => setQuantity((q) => q + 1);
   const decrementQty = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
+
+  if (loading) return <div className="p-8 text-center">Loading product details...</div>;
+  if (!product) return <div className="p-8 text-center text-red-500">Product not found.</div>;
+
+  let displayPrice = product.retailPrice;
+  let oldPrice = null;
+
+  if (isWholesale && product.tierPrices && product.tierPrices.length > 0) {
+    oldPrice = product.retailPrice;
+    displayPrice = product.tierPrices[0].price; // Default wholesale base
+    // If quantity hits a tier, adjust price dynamically
+    const sortedTiers = [...product.tierPrices].sort((a, b) => b.minQuantity - a.minQuantity);
+    const applicableTier = sortedTiers.find((t) => quantity >= t.minQuantity);
+    if (applicableTier) {
+      displayPrice = applicableTier.price;
+    }
+  }
+
+  const isOutOfStock = product.stock <= 0;
+  const stockText = product.stockStatus || (isOutOfStock ? "Out of Stock" : "In Stock");
 
   return (
     <div className="min-h-screen bg-(--color-background) ">
@@ -73,12 +119,10 @@ export default function ViewProductDetailIS() {
                 <div className="flex-1 p-6 md:p-8 md:pl-0 ml-6  flex flex-col justify-center">
                   <div className="mb-4">
                     <h2 className="text-headline-md md:text-headline-lg font-[900] md:font-bold text-on-primary-fixed mb-3">
-                      Mustard Oil 1L
+                      {product.name}
                     </h2>
                     <p className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] leading-relaxed">
-                      Pure cold-pressed mustard oil, extracted from premium
-                      mustard seeds. Rich in aroma and natural nutrients,
-                      perfect for traditional cooking.
+                      High quality {product.category} for your daily needs. Best in class {product.unit} packaging.
                     </p>
                   </div>
 
@@ -89,15 +133,17 @@ export default function ViewProductDetailIS() {
                     </p>
                     <div className="flex items-baseline gap-3 mb-3">
                       <span className="text-3xl md:text-4xl font-bold text-[var(--color-on-primary-fixed)]">
-                        Rs. 160
+                        Rs. {displayPrice}
                       </span>
-                      <span className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] line-through opacity-60">
-                        Rs. 185
-                      </span>
+                      {oldPrice && (
+                        <span className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] line-through opacity-60">
+                          Rs. {oldPrice}
+                        </span>
+                      )}
                     </div>
                     <div>
-                      <span className="h-6.25 mt-4 px-[8px] py-[4px] rounded-full bg-primary-fixed inline-flex items-center text-(--text-label-sm) leading-(--text-label-sm--line-height) font-bold">
-                        IN STOCK
+                      <span className={`h-6.25 mt-4 px-[8px] py-[4px] rounded-full inline-flex items-center text-(--text-label-sm) leading-(--text-label-sm--line-height) font-bold ${isOutOfStock ? 'bg-red-100 text-red-800' : 'bg-primary-fixed'}`}>
+                        {stockText}
                       </span>
                     </div>
                   </div>
@@ -136,11 +182,16 @@ export default function ViewProductDetailIS() {
                     </div>
 
                     <div className="flex mt-4 justify-between flex-col sm:flex-row gap-3 sm:gap-0">
-                      <button className="w-62 h-[48px] border-0 cursor-pointer rounded-default bg-primary flex items-center justify-center gap-1.5  text-(--color-on-primary) font-bold">
+                      <button 
+                        disabled={isOutOfStock}
+                        onClick={() => addToCart(product, quantity, displayPrice)}
+                        className={`w-62 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold ${isOutOfStock ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-(--color-on-primary) cursor-pointer hover:opacity-90'}`}>
                         <ShoppingCart size={16} />
-                        Add to Cart
+                        {isOutOfStock ? "Out of Stock" : "Add to Cart"}
                       </button>
-                      <button className="w-30.25 h-[48px] border-0 cursor-pointer rounded-default bg-outline-border-pill text-(--color-on-secondary) flex items-center justify-center gap-1.5  font-bold shadow-(--shadow-level-2)">
+                      <button 
+                        disabled={isOutOfStock}
+                        className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100'}`}>
                         Rs. Buy
                       </button>
                     </div>
@@ -167,33 +218,32 @@ export default function ViewProductDetailIS() {
 
                 <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-(--color-surface-lowest) rounded-default border border-outline-variant/20">
                   <div className="text-sm font-medium text-(--color-on-surface)">
-                    1 - 9
+                    Retail
                   </div>
                   <div className="text-sm font-bold text-[var(--color-on-primary-fixed)]">
-                    Rs. 160
+                    Rs. {product.retailPrice}
                   </div>
                   <div className="text-right text-xs text-[var(--color-on-surface-variant)] italic opacity-60">
                     None
                   </div>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30">
-                  <div className="text-sm font-medium text-[var(--color-on-surface)]">
-                    10 - 49
-                  </div>
-                  <div className="text-sm font-bold text-[var(--color-secondary)]">
-                    Rs. 150
-                  </div>
-                  <div className="text-right text-xs font-bold text-[var(--color-secondary)]">
-                    6% Off
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-primary)] rounded-default text-[var(--color-on-primary)]">
-                  <div className="text-sm font-medium">50+</div>
-                  <div className="text-sm font-bold">Rs. 145</div>
-                  <div className="text-right text-xs font-bold">Best Rate</div>
-                </div>
+                
+                {product.tierPrices?.map((tier, index) => {
+                  const saving = ((product.retailPrice - tier.price) / product.retailPrice * 100).toFixed(1);
+                  return (
+                    <div key={index} className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30">
+                      <div className="text-sm font-medium text-[var(--color-on-surface)]">
+                        {tier.minQuantity}+
+                      </div>
+                      <div className="text-sm font-bold text-[var(--color-secondary)]">
+                        Rs. {tier.price}
+                      </div>
+                      <div className="text-right text-xs font-bold text-[var(--color-secondary)]">
+                        {saving}% Off
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

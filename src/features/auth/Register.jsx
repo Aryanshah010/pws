@@ -1,8 +1,48 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Lock, Phone, User, ChevronDown } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
 
 export default function RegisterPage() {
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("household/individual");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { setUser } = useStore();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5050/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, phone, password, role }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // Automatically login the user? The backend register doesn't return a token in authController, wait let's check.
+        // Actually, authController.js says "user: { id, fullName, phone, role }" but no token for register.
+        // Let's redirect them to login page after successful registration.
+        navigate("/login");
+      } else {
+        setError(data.message || "Registration failed");
+      }
+    } catch (err) {
+      setError("Failed to connect to server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="bg-background">
       <Nav />
@@ -70,23 +110,30 @@ export default function RegisterPage() {
                 Create Account
               </h1>
 
-              {/* FULL NAME */}
-              <div className="mt-[30px]">
-                <label
-                  className="
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleRegister}>
+                {/* FULL NAME */}
+                <div className="mt-[30px]">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Full Name
-                </label>
+                  >
+                    Full Name
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -99,14 +146,17 @@ export default function RegisterPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <User size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <User size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    className="
+                    <input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -119,27 +169,27 @@ export default function RegisterPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* PHONE NUMBER */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* PHONE NUMBER */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Phone Number
-                </label>
+                  >
+                    Phone Number
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -152,14 +202,17 @@ export default function RegisterPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Phone size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Phone size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your number"
-                    className="
+                    <input
+                      type="text"
+                      placeholder="Enter your number"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -172,27 +225,27 @@ export default function RegisterPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* PASSWORD */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* PASSWORD */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Password
-                </label>
+                  >
+                    Password
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -205,14 +258,17 @@ export default function RegisterPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Lock size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Lock size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -225,28 +281,30 @@ export default function RegisterPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Buyer Type */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* Buyer Type */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Buyer Type
-                </label>
+                  >
+                    Buyer Type
+                  </label>
 
-                <div className="relative">
-                  <select
-                    defaultValue=""
-                    className="
+                  <div className="relative">
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -261,42 +319,49 @@ export default function RegisterPage() {
                       focus:border-primary
                       appearance-none
                     "
-                  >
-                    <option value="" disabled>
-                      Choose buyer type
-                    </option>
-                    <option value="individual">Household/Regular Buyer</option>
-                    <option value="bulk">Shop/Bulk Buyer</option>
-                  </select>
+                    >
+                      <option value="" disabled>
+                        Choose buyer type
+                      </option>
+                      <option value="household/individual">
+                        Household/Regular Buyer
+                      </option>
+                      <option value="bulk/shop">Shop/Bulk Buyer</option>
+                    </select>
 
-                  <div
-                    className="
+                    <div
+                      className="
                       pointer-events-none
                       absolute
                       right-[12px]
                       top-1/2
                       -translate-y-1/2
                     "
-                  >
-                    <ChevronDown size={16} color="#6B7280" />
+                    >
+                      <ChevronDown size={16} color="#6B7280" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* CONTINUE */}
-              <button
-                className="
+                {/* CONTINUE */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
                   mt-6.5
                   h-[52px]
+                  w-full
                   rounded-default
                   bg-primary
                   text-headline-xs
                   font-semibold
                   text-on-primary
+                  disabled:opacity-70
                 "
-              >
-                Continue
-              </button>
+                >
+                  {loading ? "Registering..." : "Continue"}
+                </button>
+              </form>
 
               {/* ALREADY HAVE ACCOUNT */}
               <div
@@ -317,7 +382,8 @@ export default function RegisterPage() {
                   Already have an account?
                 </span>
 
-                <button
+                <Link
+                  to="/login"
                   className="
                     text-[12px]
                     text-[#3F81EA]
@@ -326,7 +392,7 @@ export default function RegisterPage() {
                   "
                 >
                   Login
-                </button>
+                </Link>
               </div>
 
               <div
@@ -348,6 +414,7 @@ export default function RegisterPage() {
                 </span>
               </div>
               <button
+                onClick={() => navigate("/homepage")}
                 className="
                     text-[12px]
                     text-[#3F81EA]

@@ -1,51 +1,14 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { ShoppingCart, Bell, ChevronRight, ChevronDown } from "lucide-react";
-const products = [
-  {
-    name: "Mustard Oil 1L",
-    price: "Rs. 160",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Tea Box",
-    price: "Rs. 320",
-    stock: "LOW STOCK",
-    action: "Add",
-  },
-  {
-    name: "Rice 25kg",
-    price: "Rs. 2100",
-    oldPrice: "Rs. 2350",
-    stock: "LOW STOCK",
-    action: "Add",
-  },
-  {
-    name: "Flour 10kg",
-    price: "Rs. 720",
-    stock: "OUT OF STOCK",
-    action: "Notify",
-  },
-  {
-    name: "Sugar 5kg",
-    price: "Rs. 475",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Dal 5kg",
-    price: "Rs. 650",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-];
+import { useStore } from "../../store/store";
 
 const categories = ["Rice", "Oil", "Soap", "Flour", "Dal"];
 
 export const STOCK_COLORS = {
-  "IN STOCK": "var(--color-primary-fixed)",
-  "LOW STOCK": "var(--color-secondary-fixed)",
-  "OUT OF STOCK": "var(--color-error-container)",
+  "In Stock": "var(--color-primary-fixed)",
+  "Low Stock": "var(--color-secondary-fixed)",
+  "Out of Stock": "var(--color-error-container)",
 };
 
 export function StockBadge({ stock }) {
@@ -70,32 +33,26 @@ export function StockBadge({ stock }) {
   );
 }
 
-export function ActionButton({ action }) {
+export function ActionButton({ action, onClick }) {
   const notify = action === "Notify";
 
   return (
     <button
+      onClick={onClick}
       style={{
         width: 121,
         height: 48,
-
         border: 0,
         cursor: "pointer",
-
         borderRadius: "var(--radius-default)",
-
         background: notify
           ? "var(--color-on-surface-variant)"
           : "var(--color-primary)",
-
         color: "var(--color-on-primary)",
-
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-
         gap: 6,
-
         fontSize: "var(--text-label-md)",
         fontWeight: 700,
       }}
@@ -107,9 +64,37 @@ export function ActionButton({ action }) {
 }
 
 export function ProductCard({ product }) {
+  const { user, addToCart } = useStore();
+  const isWholesale = user?.role === "verified_wholesale";
+
+  // Determine price
+  let displayPrice = product.retailPrice;
+  let oldPrice = null;
+  
+  if (isWholesale && product.tierPrices && product.tierPrices.length > 0) {
+    // Show retail price as crossed out, wholesale as main
+    oldPrice = product.retailPrice;
+    displayPrice = product.tierPrices[0].price; // assuming first tier is the base wholesale price
+  }
+
+  const stockText = product.stockStatus || "Out of Stock";
+  const actionText = stockText === "Out of Stock" ? "Notify" : "Add";
+  
+  const handleActionClick = (e) => {
+    e.preventDefault(); // Prevent navigating to the product page
+    if (actionText === "Add") {
+      addToCart(product, 1, displayPrice);
+    } else {
+      alert("Notification set!"); // Stub for notify
+    }
+  };
+
   return (
-    <article
+    <Link
+      to={`/view-product?id=${product._id}`}
       style={{
+        textDecoration: "none",
+        color: "inherit",
         background: "var(--color-surface-lowest)",
         borderRadius: "var(--radius-md)",
         overflow: "hidden",
@@ -186,52 +171,63 @@ export function ProductCard({ product }) {
             gap: "var(--spacing-sm)",
           }}
         >
-          <div
-            style={{
-              fontSize: "var(--text-headline-md)",
-
-              fontWeight: "var(--font-weight-extrabold)",
-            }}
-          >
-            {product.price}
-          </div>
-
-          {product.oldPrice && (
             <div
               style={{
-                color: "var(--color-outline)",
-
-                textDecoration: "line-through",
+                fontSize: "var(--text-headline-md)",
+                fontWeight: "var(--font-weight-extrabold)",
+                color: isWholesale ? "var(--color-primary-container)" : "inherit",
               }}
             >
-              {product.oldPrice}
+              Rs. {displayPrice}
             </div>
-          )}
-        </div>
+
+            {oldPrice && (
+              <div
+                style={{
+                  color: "var(--color-outline)",
+                  textDecoration: "line-through",
+                  fontSize: "var(--text-body-md)"
+                }}
+              >
+                Rs. {oldPrice}
+              </div>
+            )}
+          </div>
 
         <div
           style={{
             marginTop: "auto",
-
             paddingTop: "var(--spacing-lg)",
-
             display: "flex",
-
             justifyContent: "space-between",
-
             alignItems: "center",
           }}
         >
-          <StockBadge stock={product.stock} />
+          <StockBadge stock={stockText} />
 
-          <ActionButton action={product.action} />
+          <ActionButton action={actionText} onClick={handleActionClick} />
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
 export default function Home() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:5050/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setProducts(data.data);
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <main
       style={{
@@ -429,15 +425,15 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-
               gridTemplateColumns: "repeat(auto-fit,minmax(297px,1fr))",
-
               gap: 34,
             }}
           >
-            {products.map((p) => (
-              <ProductCard key={p.name} product={p} />
-            ))}
+            {loading ? (
+              <div>Loading products...</div>
+            ) : (
+              products.map((p) => <ProductCard key={p._id} product={p} />)
+            )}
           </div>
         </section>
       </div>

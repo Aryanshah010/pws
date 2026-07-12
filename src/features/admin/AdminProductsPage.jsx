@@ -212,9 +212,7 @@ function PricingTierEditor({ tiers, onChange }) {
   const updateTier = (idx, field, value) => {
     onChange(
       tiers.map((t, i) =>
-        i === idx
-          ? { ...t, [field]: value === "" ? null : Number(value) }
-          : t,
+        i === idx ? { ...t, [field]: value === "" ? null : Number(value) } : t,
       ),
     );
   };
@@ -345,14 +343,11 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
     reader.readAsDataURL(file);
   };
 
-  const handleDrop = useCallback(
-    (e) => {
-      e.preventDefault();
-      setDragOver(false);
-      handleImageFile(e.dataTransfer.files[0]);
-    },
-    [],
-  );
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleImageFile(e.dataTransfer.files[0]);
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -366,7 +361,8 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
 
   const inputCls =
     "w-full px-3 py-2.5 rounded-xl border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition placeholder:text-[#9EA5A0]";
-  const labelCls = "block text-xs font-bold text-[#404943] mb-1.5 uppercase tracking-wider";
+  const labelCls =
+    "block text-xs font-bold text-[#404943] mb-1.5 uppercase tracking-wider";
 
   return (
     <>
@@ -722,8 +718,7 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
 // ─────────────────────────────────────────────
 
 function ProductRow({ product, onEdit, onDelete }) {
-  const stockStyle =
-    STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
+  const stockStyle = STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
 
   return (
     <tr className="hover:bg-[#F5F3F0]/50 transition group">
@@ -820,8 +815,7 @@ function ProductRow({ product, onEdit, onDelete }) {
 // ─────────────────────────────────────────────
 
 function ProductMobileCard({ product, onEdit, onDelete }) {
-  const stockStyle =
-    STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
+  const stockStyle = STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
   return (
     <div className="p-4 flex gap-3 border-b border-[#C1C8C1]/30 last:border-0">
       <div className="w-14 h-14 rounded-xl flex-shrink-0 border border-[#C1C8C1]/40 bg-[#aef1ca]/20 flex items-center justify-center overflow-hidden">
@@ -912,8 +906,7 @@ export default function AdminProductsPage() {
         p.id.toLowerCase().includes(q);
       const matchCat =
         categoryFilter === "all" || p.category === categoryFilter;
-      const matchStock =
-        stockFilter === "all" || p.stock === stockFilter;
+      const matchStock = stockFilter === "all" || p.stock === stockFilter;
       return matchSearch && matchCat && matchStock;
     })
     .sort((a, b) => {

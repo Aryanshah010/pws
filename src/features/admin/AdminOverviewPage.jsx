@@ -68,7 +68,9 @@ export default function AdminOverviewPage() {
   ).length;
 
   const totalProducts = products.length;
-  const lowStock = products.filter((p) => p.stock === "LOW STOCK" || p.stock === "OUT OF STOCK").length;
+  const lowStock = products.filter(
+    (p) => p.stock === "LOW STOCK" || p.stock === "OUT OF STOCK",
+  ).length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

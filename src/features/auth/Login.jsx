@@ -1,8 +1,44 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Lock, Phone } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
 
 export default function LoginPage() {
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { setUser } = useStore();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5050/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setUser(data.user, data.token);
+        navigate("/homepage");
+      } else {
+        setError(data.message || "Login failed");
+      }
+    } catch (err) {
+      setError("Failed to connect to server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="bg-background">
       <Nav />
@@ -81,23 +117,30 @@ export default function LoginPage() {
                 Welcome back. Please enter your credentials to continue.
               </p>
 
-              {/* PHONE */}
-              <div className="mt-[30px]">
-                <label
-                  className="
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleLogin}>
+                {/* PHONE */}
+                <div className="mt-[30px]">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Phone Number
-                </label>
+                  >
+                    Phone Number
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -110,14 +153,17 @@ export default function LoginPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Phone size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Phone size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your number"
-                    className="
+                    <input
+                      type="text"
+                      placeholder="Enter your number"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -130,27 +176,27 @@ export default function LoginPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* PASSWORD */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* PASSWORD */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Password
-                </label>
+                  >
+                    Password
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-3
                       top-1/2
@@ -163,14 +209,17 @@ export default function LoginPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Lock size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Lock size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="
                       h-11
                       w-full
                       rounded-default
@@ -183,55 +232,58 @@ export default function LoginPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* LINKS */}
-              <div
-                className="
+                {/* LINKS */}
+                <div
+                  className="
                   mt-2.5
                   flex
                   justify-between
                   items-center
                 "
-              >
-                <button
-                  className="
+                >
+                  <button
+                    className="
                     text-[12px]
                     font-semibold
                     text-[#3F81EA]
                   "
-                >
-                  Forgot password?
-                </button>
+                  >
+                    Forgot password?
+                  </button>
 
-                <div className="flex items-center gap-0.5">
-                  <span
-                    className="
+                  <div className="flex items-center gap-0.5">
+                    <span
+                      className="
                       text-[12px]
                       font-semibold
                       text-black
                     "
-                  >
-                    New Buyer?
-                  </span>
+                    >
+                      New Buyer?
+                    </span>
 
-                  <button
-                    className="
+                    <Link
+                      to="/register"
+                      className="
                       text-[12px]
                       font-semibold
                       text-[#D4820A]
                     "
-                  >
-                    Register
-                  </button>
+                    >
+                      Register
+                    </Link>
+                  </div>
                 </div>
-              </div>
 
-              {/* LOGIN */}
-              <button
-                className="
+                {/* LOGIN */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
                   mt-6.5
                   h-13
                   rounded-default
@@ -239,10 +291,13 @@ export default function LoginPage() {
                   text-headline-xs
                   font-semibold
                   text-on-primary
+                  w-full
+                  disabled:opacity-70
                 "
-              >
-                Login
-              </button>
+                >
+                  {loading ? "Logging in..." : "Login"}
+                </button>
+              </form>
 
               {/* DIVIDER */}
               <div
@@ -260,9 +315,11 @@ export default function LoginPage() {
 
               {/* GUEST */}
               <button
+                onClick={() => navigate("/homepage")}
                 className="
                   mt-4.5
                   h-[48px]
+                  w-full
                   rounded-default
                   border
                   border-[#C1C8C1]

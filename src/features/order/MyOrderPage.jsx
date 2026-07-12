@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, TrendingUp, ArrowRight } from "lucide-react";
+import { useStore } from "../../store/store";
 
 function TemplateCard({ title, description }) {
   return (
@@ -51,7 +52,7 @@ function OrderRow({
       <div className="flex flex-col gap-2 sm:col-span-6">
         <p className="text-base  text-(--color-primary-container)">{items}</p>
         <p className="text-sm font-semibold text-(--color-on-surface)">
-          Total: {total}
+          Total: Rs. {total}
         </p>
         {priceAlert && (
           <div className="flex w-fit items-center gap-1 rounded-[var(--radius-full)] bg-[#FFDAD6] border-none px-2.5 py-1">
@@ -94,25 +95,32 @@ const templates = [
   { title: "Monthly Stock-UP", description: "Bulk re-usable list" },
 ];
 
-const orders = [
-  {
-    orderId: "PWS-001",
-    orderStatus: "Completed",
-    paymentStatus: "Confirmed",
-    items: "Mustard oil 1L, Rice 20kg",
-    total: "Rs. 1900",
-    priceAlert: "Mustard oil +Rs.10 since last order",
-  },
-  {
-    orderId: "PWS-000",
-    orderStatus: "Collected",
-    paymentStatus: "Pay at Pickup",
-    items: "Rice 25kg, Soyabean 20kg",
-    total: "Rs. 1800",
-  },
-];
-
 export default function MyOrder() {
+  const { token } = useStore();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch("http://localhost:5050/api/orders/myorders", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setOrders(data.orders);
+        }
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (token) fetchOrders();
+  }, [token]);
+
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-6 py-8 sm:px-10 font-sans bg-[var(--color-background)] text-[var(--color-on-background)]">
       <div className="flex items-center justify-between">
@@ -152,9 +160,25 @@ export default function MyOrder() {
           </span>
         </div>
         <div className="flex flex-col">
-          {orders.map((order) => (
-            <OrderRow key={order.orderId} {...order} />
-          ))}
+          {loading ? (
+            <div className="p-8 text-center text-on-surface-variant">Loading orders...</div>
+          ) : orders.length === 0 ? (
+            <div className="p-8 text-center text-on-surface-variant">No orders found.</div>
+          ) : (
+            orders.map((order) => {
+              const itemString = order.items.map(i => `${i.product.name} ${i.quantity}${i.product.unit}`).join(", ");
+              return (
+                <OrderRow 
+                  key={order._id} 
+                  orderId={`PWS-${order._id.substring(order._id.length - 4).toUpperCase()}`}
+                  orderStatus={order.orderStatus}
+                  paymentStatus={order.paymentStatus}
+                  items={itemString}
+                  total={order.totalAmount}
+                />
+              );
+            })
+          )}
         </div>
       </section>
     </div>

@@ -1,28 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, ArrowLeft, TriangleAlert } from "lucide-react";
-
-// --- INITIAL DATA ---
-const INITIAL_ITEMS = [
-  {
-    id: "mustard-oil",
-    name: "Mustard Oil",
-    unit: "pack",
-    pricePerUnit: 1200,
-    quantity: 9,
-    discountThreshold: 10,
-    discountAmount: 50,
-  },
-  {
-    id: "rice-20kg",
-    name: "Rice 20kg",
-    unit: "bora",
-    pricePerUnit: 2215,
-    quantity: 10,
-    discountThreshold: 10,
-    discountAmount: 50,
-  },
-];
+import { useStore } from "../../store/store";
 
 // --- COMPONENTS ---
 
@@ -104,41 +83,38 @@ function OrderSummary({ subtotal, discount, tax, onCheckout }) {
 }
 
 function CartItemRow({ item, onIncrement, onDecrement, onRemove }) {
-  const subtotal = item.pricePerUnit * item.quantity;
-  const unlocked = item.quantity >= item.discountThreshold;
-  const discount = unlocked ? item.discountAmount : 0;
-  const final = subtotal - discount;
+  const { product, quantity, price } = item;
+  const subtotal = price * quantity;
 
-  const segments = Math.min(
-    3,
-    Math.floor((item.quantity / item.discountThreshold) * 3),
-  );
-  const remaining = item.discountThreshold - item.quantity;
+  // Note: we're using the base tier price to check if discount applies.
+  // We can just keep it simple. The price in the cart is already the discounted tier price
+  // from when they clicked Add, but if they change qty we should recompute.
+  // Actually, we'll just display the current price.
 
   return (
     <div className="grid grid-cols-1 gap-4 border-b border-[#C1C8C1] p-6 last:border-b-0 sm:grid-cols-12 sm:items-start">
       <div className="sm:col-span-4">
-        <p className="text-base font-semibold text-[#1B1C1A]">{item.name}</p>
+        <p className="text-base font-semibold text-[#1B1C1A]">{product.name}</p>
       </div>
 
       <div className="flex flex-col items-center gap-1.75 sm:col-span-4">
         <div className="flex items-center gap-2">
           <button
             type="button"
-            aria-label={`Decrease ${item.name} quantity`}
-            onClick={() => onDecrement(item.id)}
+            aria-label={`Decrease ${product.name} quantity`}
+            onClick={() => onDecrement(product._id, quantity)}
             className="flex h-8 w-8 items-center justify-center rounded border border-[#C1C8C1] bg-[#fbf9f5] transition-colors hover:bg-[#efeeea]"
           >
             <Minus className="h-[11px] w-[11px] text-[#1B1C1A]" />
           </button>
           <div className="flex items-center gap-1 rounded border border-[#C1C8C1] bg-white px-3 py-1">
-            <span className="text-base text-[#1B1C1A]">{item.quantity}</span>
-            <span className="text-base text-[#404943]">({item.unit})</span>
+            <span className="text-base text-[#1B1C1A]">{quantity}</span>
+            <span className="text-base text-[#404943]">({product.unit})</span>
           </div>
           <button
             type="button"
-            aria-label={`Increase ${item.name} quantity`}
-            onClick={() => onIncrement(item.id)}
+            aria-label={`Increase ${product.name} quantity`}
+            onClick={() => onIncrement(product._id, quantity)}
             className="flex h-8 w-8 items-center justify-center rounded border border-[#C1C8C1] bg-[#fbf9f5] transition-colors hover:bg-[#efeeea]"
           >
             <Plus className="h-[11px] w-[11px] text-[#1B1C1A]" />
@@ -147,42 +123,22 @@ function CartItemRow({ item, onIncrement, onDecrement, onRemove }) {
 
         <div className="flex w-full max-w-[200px] flex-col items-center gap-1">
           <p className="text-[13px] font-semibold text-[#404943]">
-            {unlocked ? "Discount unlocked!" : "No discount yet"}
+            Unit Price: Rs. {price}
           </p>
-          {/* Progress Milestone Indicators */}
-          <div className="flex h-3 w-full items-start justify-center gap-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={
-                  "h-full flex-1 rounded-sm " +
-                  (i < segments ? "bg-[#00452b]" : "bg-[#e4e2df]")
-                }
-              />
-            ))}
-          </div>
-          {!unlocked && (
-            <p className="text-center text-[13px] leading-[140%] text-[#404943]">
-              Add {remaining} more {item.unit}
-              {remaining > 1 ? "s" : ""} to unlock discount
-            </p>
-          )}
         </div>
       </div>
 
       <div className="flex flex-col items-start gap-1 pt-2 sm:col-span-3">
-        <p className="text-base text-[#1B1C1A]">Subtotal: Rs. {subtotal}</p>
-        <p className="text-base text-[#1B1C1A]">Discount: Rs. {discount}</p>
         <p className="text-base font-semibold text-[#1B1C1A]">
-          Final: Rs. {final}
+          Subtotal: Rs. {subtotal}
         </p>
       </div>
 
       <div className="flex justify-end sm:col-span-1 sm:justify-center sm:pt-2">
         <button
           type="button"
-          aria-label={`Remove ${item.name} from cart`}
-          onClick={() => onRemove(item.id)}
+          aria-label={`Remove ${product.name} from cart`}
+          onClick={() => onRemove(product._id)}
           className="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-70"
         >
           <Trash2 className="h-6 w-6 text-[#ba1a1a]" />
@@ -194,42 +150,31 @@ function CartItemRow({ item, onIncrement, onDecrement, onRemove }) {
 
 // --- MAIN CONTAINER ---
 export default function CartPage() {
-  const [items, setItems] = useState(INITIAL_ITEMS);
-  const [showPriceAlert, setShowPriceAlert] = useState(true);
+  const { cart, updateQuantity, removeFromCart } = useStore();
+  const [showPriceAlert, setShowPriceAlert] = useState(false);
+  const navigate = useNavigate();
 
-  const increment = (id) =>
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
-      ),
-    );
+  const increment = (id, currentQty) => updateQuantity(id, currentQty + 1);
+  const decrement = (id, currentQty) => {
+    if (currentQty > 1) {
+      updateQuantity(id, currentQty - 1);
+    }
+  };
 
-  const decrement = (id) =>
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id && item.quantity > 1
-          ? { ...item, quantity: item.quantity - 1 }
-          : item,
-      ),
-    );
-
-  const removeItem = (id) =>
-    setItems((prev) => prev.filter((item) => item.id !== id));
+  const removeItem = (id) => removeFromCart(id);
 
   const totals = useMemo(() => {
-    return items.reduce(
+    return cart.reduce(
       (acc, item) => {
-        const subtotal = item.pricePerUnit * item.quantity;
-        const discount =
-          item.quantity >= item.discountThreshold ? item.discountAmount : 0;
+        const subtotal = item.price * item.quantity;
         return {
           subtotal: acc.subtotal + subtotal,
-          discount: acc.discount + discount,
+          discount: 0,
         };
       },
       { subtotal: 0, discount: 0 },
     );
-  }, [items]);
+  }, [cart]);
 
   const grandTotal = totals.subtotal - totals.discount;
 
@@ -243,18 +188,7 @@ export default function CartPage() {
         <ArrowLeft className="h-5 w-5" />
       </Link>
 
-      {showPriceAlert && items.some((i) => i.id === "mustard-oil") && (
-        <PriceChangeAlert
-          message="Price changed: Mustard Oil was Rs.150, now Rs.160."
-          onRemove={() => {
-            removeItem("mustard-oil");
-            setShowPriceAlert(false);
-          }}
-          onKeep={() => setShowPriceAlert(false)}
-        />
-      )}
-
-      {items.length === 0 ? (
+      {!cart || cart.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-[#C1C8C1] bg-white py-24 text-center">
           <p className="text-lg font-semibold text-[#1B1C1A]">
             Your cart is empty
@@ -282,9 +216,9 @@ export default function CartPage() {
               </span>
             </div>
 
-            {items.map((item) => (
+            {cart.map((item) => (
               <CartItemRow
-                key={item.id}
+                key={item.product._id}
                 item={item}
                 onIncrement={increment}
                 onDecrement={decrement}
@@ -308,7 +242,7 @@ export default function CartPage() {
               subtotal={totals.subtotal}
               discount={totals.discount}
               tax={0}
-              onCheckout={() => {}}
+              onCheckout={() => navigate("/checkout")}
             />
           </div>
         </div>

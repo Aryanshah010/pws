@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronDown, Upload, Store, Info } from "lucide-react";
+import { useStore } from "../../store/store";
 
 const BUSINESS_TYPES = [
   "Retail Store",
@@ -12,10 +13,19 @@ const BUSINESS_TYPES = [
 ];
 
 export default function WholesaleForm() {
+  const [shopName, setShopName] = useState("");
+  const [shopLocation, setShopLocation] = useState("");
   const [businessType, setBusinessType] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
+  const { token, user, setUser } = useStore();
 
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
@@ -25,6 +35,50 @@ export default function WholesaleForm() {
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files?.[0]) setUploadedFile(e.dataTransfer.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!shopName || !shopLocation || !businessType) {
+      setError("Please fill out all required fields.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        "http://localhost:5050/api/auth/wholesale-request",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            shopName,
+            shopLocation,
+            businessType,
+            panNumber,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update user in store with new role
+        setUser(data.user, token);
+        navigate("/wholesale-pending");
+      } else {
+        setError(data.message || "Failed to submit request.");
+      }
+    } catch (err) {
+      setError("Server error. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,6 +116,8 @@ export default function WholesaleForm() {
                   <input
                     type="text"
                     placeholder="e.g. Ram Grocery Store"
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
                     className="w-full px-3 py-[10px] rounded-[10px] border border-[var(--color-outline-variant)] bg-[#F4FBF4] text-body-lg text-[var(--color-on-surface-variant)] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[var(--color-primary-container)]/30 focus:border-[var(--color-primary-container)] transition"
                   />
                 </div>
@@ -81,6 +137,8 @@ export default function WholesaleForm() {
                     <input
                       type="text"
                       placeholder="e.g. Birtamode-3, Jhapa"
+                      value={shopLocation}
+                      onChange={(e) => setShopLocation(e.target.value)}
                       className="w-full pl-10 pr-3 py-[10px] rounded-[10px] border border-[var(--color-outline-variant)] bg-[#F4FBF4] text-body-lg text-[var(--color-on-surface-variant)] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[var(--color-primary-container)]/30 focus:border-[var(--color-primary-container)] transition"
                     />
                   </div>
@@ -152,6 +210,8 @@ export default function WholesaleForm() {
                   <input
                     type="text"
                     placeholder="Enter your 9-digit PAN"
+                    value={panNumber}
+                    onChange={(e) => setPanNumber(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-[10px] border border-outline-variant bg-[#F4FBF4] text-body-lg text-on-surface-variant placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-primary-container/30 focus:border-primary-container transition"
                   />
                 </div>
@@ -241,12 +301,20 @@ export default function WholesaleForm() {
                 </p>
               </div>
 
+              {error && (
+                <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-md">
+                  {error}
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="button"
-                className="w-full py-4.25 rounded-[10px] bg-primary-container text-(--color-on-primary) text-lg font-semibold leading-[25.2px] shadow-(--shadow-level-1) hover:bg-[#164f35] active:bg-[#0f3a27] transition-colors mb-4"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full py-4.25 rounded-[10px] bg-primary-container text-(--color-on-primary) text-lg font-semibold leading-[25.2px] shadow-(--shadow-level-1) hover:bg-[#164f35] active:bg-[#0f3a27] transition-colors mb-4 disabled:opacity-70"
               >
-                Request Wholesale Access
+                {loading ? "Submitting..." : "Request Wholesale Access"}
               </button>
 
               {/* Cancel link */}

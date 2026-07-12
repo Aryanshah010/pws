@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Nav from "./components/layout/Nav";
 import Footer from "./components/layout/Footer";
+import NotificationPrompt from "./components/layout/NotificationPrompt";
 import LanguageModal from "./features/home/LanguageModal";
 import LandingPage from "./features/home/LandingPage";
 import Login from "./features/auth/Login";
@@ -38,6 +39,7 @@ import AdminUsersPage from "./features/admin/AdminUsersPage";
 import AdminWholesalePage from "./features/admin/AdminWholesalePage";
 import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
 import AdminProductsPage from "./features/admin/AdminProductsPage";
+import ProfilePage from "./features/auth/ProfilePage";
 
 function Layout({ children }) {
   return (
@@ -45,6 +47,7 @@ function Layout({ children }) {
       <Nav />
       <main className="grow">{children}</main>
       <Footer />
+      <NotificationPrompt />
     </div>
   );
 }
@@ -55,6 +58,7 @@ function Layout2({ children }) {
       <MainNavbar />
       <main className="grow">{children}</main>
       <Footer />
+      <NotificationPrompt />
     </div>
   );
 }
@@ -118,6 +122,14 @@ function App() {
           }
         />
         <Route
+          path="/profile"
+          element={
+            <Layout2>
+              <ProfilePage />
+            </Layout2>
+          }
+        />
+        <Route
           path="/view-product-os"
           element={
             <Layout2>
@@ -174,7 +186,7 @@ function App() {
           }
         />
         <Route
-          path="/track-order"
+          path="/track"
           element={
             <Layout2>
               <TrackOrderPage />

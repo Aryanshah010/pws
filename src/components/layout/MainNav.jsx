@@ -1,10 +1,26 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Bell, ShoppingCart, Menu, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useStore } from "../../store/store";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const { i18n } = useTranslation();
+  const { language, setLanguage, logout, user } = useStore();
+  const navigate = useNavigate();
+
+  const toggleLanguage = () => {
+    const newLang = language === "en" ? "ne" : "en";
+    i18n.changeLanguage(newLang);
+    setLanguage(newLang);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <header className="w-full sticky top-0 z-50">
@@ -17,12 +33,35 @@ export default function Navbar() {
           >
             About
           </Link>
-          <button className="text-[#0052D5] font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity bg-white/10 px-2 py-0.5 rounded">
-            EN/NE
+          <button
+            onClick={toggleLanguage}
+            className="text-[#0052D5] font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity bg-white/10 px-2 py-0.5 rounded"
+          >
+            {language === "en" ? "EN/NE" : "NE/EN"}
           </button>
-          <button className="text-[#BA1A1A] font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity">
-            Logout
-          </button>
+          {user ? (
+            <>
+              <Link
+                to="/profile"
+                className="text-white font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
+              >
+                Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="text-[#BA1A1A] font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="text-white font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
+            >
+              Login
+            </Link>
+          )}
         </div>
       </div>
 

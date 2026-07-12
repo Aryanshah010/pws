@@ -9,6 +9,7 @@ import {
   CreditCard,
   BadgeCheck,
 } from "lucide-react";
+import { useStore } from "../../store/store";
 
 const timeSlots = [
   { id: "9-11", label: "9-11 AM", disabled: true },
@@ -18,10 +19,56 @@ const timeSlots = [
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { user, token, cart, clearCart } = useStore();
   const [day, setDay] = useState("today");
   const [timeSlot, setTimeSlot] = useState("11-1");
   const [payment, setPayment] = useState("digital");
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Compute totals
+  const subtotal = cart.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0,
+  );
+  const grandTotal = subtotal; // no tax/discount applied for simplicity in this view
+
+  const handleConfirm = async () => {
+    if (!cart || cart.length === 0) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("http://localhost:5050/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: cart.map((item) => ({
+            product: item.product._id,
+            quantity: item.quantity,
+          })),
+          pickupSlot: `${day} ${timeSlot}`,
+          paymentMethod:
+            payment === "digital" ? "Digital QR Transfer" : "Pay at Pickup",
+          notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Checkout failed");
+
+      clearCart();
+      navigate("/payment-submitted"); // or /my-orders, but there's a PaymentProofSubmitted route probably?
+      // User says checkout confirmation screen. Let's redirect to my-orders to show the order.
+      navigate("/profile");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1512px] px-4 py-10 sm:px-8 lg:px-[100px] lg:py-14 2xl:px-[202px]  bg-background text-on-background">
@@ -56,9 +103,11 @@ export default function Checkout() {
             </div>
             <div className="flex flex-col items-start gap-1">
               <p className="text-base font-semibold text-on-surface">
-                Aryan Shah
+                {user?.fullName || "Guest"}
               </p>
-              <p className="text-base text-on-surface-variant">98XXXXXXX</p>
+              <p className="text-base text-on-surface-variant">
+                {user?.phone || "No Phone"}
+              </p>
             </div>
           </section>
 
@@ -162,15 +211,7 @@ export default function Checkout() {
                     Subtotal
                   </span>
                   <span className="text-base text-on-surface-variant">
-                    Rs.2000
-                  </span>
-                </div>
-                <div className="flex w-full items-start justify-between">
-                  <span className="text-base font-medium text-outline-border-pill">
-                    Bulk discount
-                  </span>
-                  <span className="text-base font-medium text-outline-border-pill">
-                    - Rs.900
+                    Rs.{subtotal}
                   </span>
                 </div>
                 <div className="flex w-full items-start justify-between">
@@ -187,7 +228,7 @@ export default function Checkout() {
                   Total Due
                 </span>
                 <span className="text-2xl font-semibold text-on-surface">
-                  Rs.1100
+                  Rs.{grandTotal}
                 </span>
               </div>
             </div>
@@ -263,8 +304,15 @@ export default function Checkout() {
                   First order guarantee: receive exactly what you ordered.
                 </p>
               </div>
-              <button className="flex w-full items-center justify-center rounded-[10px] bg-primary py-4.25 text-lg font-semibold text-white  transition-opacity hover:opacity-90">
-                Confirm Order
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              <button
+                onClick={handleConfirm}
+                disabled={isSubmitting || cart.length === 0}
+                className="flex w-full items-center justify-center rounded-[10px] bg-primary py-4.25 text-lg font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {isSubmitting ? "Processing..." : "Confirm Order"}
               </button>
             </div>
           </div>
