@@ -32,6 +32,11 @@ import BasketReview from "./features/order/BasketReview";
 import CustomBasketTemplate from "./features/order/CustomBasket";
 import SubmitComplaint from "./features/order/Complain";
 import AccountActive from "./features/auth/AccountActive";
+import AdminLayout from "./components/layout/AdminLayout";
+import AdminOverviewPage from "./features/admin/AdminOverviewPage";
+import AdminUsersPage from "./features/admin/AdminUsersPage";
+import AdminWholesalePage from "./features/admin/AdminWholesalePage";
+import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
 
 function Layout({ children }) {
   return (
@@ -221,6 +226,40 @@ function App() {
             <Layout>
               <Contact />
             </Layout>
+          }
+        />
+
+        {/* ── Admin Routes ─────────────────────── */}
+        <Route
+          path="/admin"
+          element={
+            <AdminLayout>
+              <AdminOverviewPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminLayout>
+              <AdminUsersPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/wholesale"
+          element={
+            <AdminLayout>
+              <AdminWholesalePage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            <AdminLayout>
+              <AdminPaymentsPage />
+            </AdminLayout>
           }
         />
       </Routes>
