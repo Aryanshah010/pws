@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
       const q = search.toLowerCase();
       const matchSearch =
         u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
+        u.phone.toLowerCase().includes(q) ||
         u.location.toLowerCase().includes(q);
       const matchRole =
         roleFilter === "all" ||
@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
           />
           <input
             type="text"
-            placeholder="Search by name, email, or location…"
+            placeholder="Search by name, phone, or location…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] placeholder:text-[#707972] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition"
@@ -139,6 +139,9 @@ export default function AdminUsersPage() {
                   User
                 </th>
                 <th className="text-left px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-[#404943]">
+                  Phone
+                </th>
+                <th className="text-left px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-[#404943]">
                   Location
                 </th>
                 <th className="text-left px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-[#404943]">
@@ -172,9 +175,11 @@ export default function AdminUsersPage() {
                           <p className="text-sm font-semibold text-[#1b1c1a]">
                             {user.name}
                           </p>
-                          <p className="text-xs text-[#707972]">{user.email}</p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-[#404943]">
+                      {user.phone}
                     </td>
                     <td className="px-4 py-4 text-sm text-[#404943]">
                       {user.location}
@@ -234,7 +239,7 @@ export default function AdminUsersPage() {
                       <p className="text-sm font-semibold text-[#1b1c1a]">
                         {user.name}
                       </p>
-                      <p className="text-xs text-[#707972]">{user.email}</p>
+                      <p className="text-xs text-[#707972]">{user.phone}</p>
                     </div>
                     <span
                       className={`flex-shrink-0 inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${roleInfo.color}`}

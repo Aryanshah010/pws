@@ -37,6 +37,7 @@ import AdminOverviewPage from "./features/admin/AdminOverviewPage";
 import AdminUsersPage from "./features/admin/AdminUsersPage";
 import AdminWholesalePage from "./features/admin/AdminWholesalePage";
 import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
+import AdminProductsPage from "./features/admin/AdminProductsPage";
 
 function Layout({ children }) {
   return (
@@ -235,6 +236,14 @@ function App() {
           element={
             <AdminLayout>
               <AdminOverviewPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <AdminLayout>
+              <AdminProductsPage />
             </AdminLayout>
           }
         />

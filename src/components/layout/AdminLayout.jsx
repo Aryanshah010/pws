@@ -10,11 +10,13 @@ import {
   LogOut,
   ChevronRight,
   Bell,
+  Package,
 } from "lucide-react";
 import { useAdminStore } from "../../store/adminStore";
 
 const NAV_ITEMS = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/users", label: "All Users", icon: Users },
   { to: "/admin/wholesale", label: "Wholesale Requests", icon: Store },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },

@@ -6,6 +6,7 @@ import {
   TrendingUp,
   ShoppingBag,
   ArrowRight,
+  Package,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -54,7 +55,7 @@ function ActivityRow({ label, time, badge, badgeColor }) {
 }
 
 export default function AdminOverviewPage() {
-  const { users, wholesaleRequests, payments } = useAdminStore();
+  const { users, wholesaleRequests, payments, products } = useAdminStore();
 
   const totalUsers = users.length;
   const activeWholesale = users.filter((u) => u.role === "wholesale").length;
@@ -65,6 +66,9 @@ export default function AdminOverviewPage() {
   const approvedPayments = payments.filter(
     (p) => p.status === "approved",
   ).length;
+
+  const totalProducts = products.length;
+  const lowStock = products.filter((p) => p.stock === "LOW STOCK" || p.stock === "OUT OF STOCK").length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -79,7 +83,7 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           icon={Users}
           label="Total Users"
@@ -111,6 +115,22 @@ export default function AdminOverviewPage() {
           sub="All time"
           color="bg-[#aef1ca]/40 text-[#1b5e40]"
           to="/admin/payments"
+        />
+        <StatCard
+          icon={Package}
+          label="Total Products"
+          value={totalProducts}
+          sub="In catalogue"
+          color="bg-[#E2EAE3] text-[#1b5e40]"
+          to="/admin/products"
+        />
+        <StatCard
+          icon={Package}
+          label="Low/Out of Stock"
+          value={lowStock}
+          sub="Needs attention"
+          color="bg-[#ffdad6] text-[#ba1a1a]"
+          to="/admin/products"
         />
       </div>
 
