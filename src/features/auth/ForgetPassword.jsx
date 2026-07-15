@@ -1,13 +1,34 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Phone, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
+import { apiRequest } from "../../services/api";
 
 const ForgetPassword = () => {
   const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { setRecovery } = useStore();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiRequest("/auth/password-reset/request", {
+        method: "POST",
+        body: JSON.stringify({ phone }),
+      });
+      setRecovery({ phone, demoOtp: data.demoOtp || null });
+      navigate("/otp");
+    } catch (err) {
+      setError(err.message || "Could not send OTP");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,6 +110,12 @@ const ForgetPassword = () => {
                 Password (OTP) for account recovery.
               </p>
 
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
+
               {/* PHONE NUMBER */}
               <div className="mt-[30px]">
                 <label
@@ -127,6 +154,7 @@ const ForgetPassword = () => {
                     placeholder="98XXXXXXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    required
                     className="
                       h-[44px]
                       w-full
@@ -148,6 +176,7 @@ const ForgetPassword = () => {
               <button
                 type="submit"
                 onClick={handleSubmit}
+                disabled={loading}
                 className="
                   mt-6.5
                   h-[52px]
@@ -158,7 +187,7 @@ const ForgetPassword = () => {
                   text-on-primary
                 "
               >
-                Send OTP
+                {loading ? "Sending..." : "Send OTP"}
               </button>
 
               {/* BACK TO LOGIN */}

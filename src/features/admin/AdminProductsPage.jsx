@@ -87,12 +87,12 @@ function formatPrice(p) {
 function DeleteModal({ product, onConfirm, onCancel }) {
   if (!product) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onCancel}
       />
-      <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 z-10">
+      <div className="relative w-[calc(100%-2rem)] sm:w-100  shrink-0 bg-white rounded-2xl shadow-xl p-6 z-10">
         <div className="w-12 h-12 rounded-full bg-[#ffdad6] flex items-center justify-center mb-4">
           <Trash2 size={20} className="text-[#ba1a1a]" />
         </div>

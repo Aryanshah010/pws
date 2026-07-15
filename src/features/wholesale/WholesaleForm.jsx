@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronDown, Upload, Store, Info } from "lucide-react";
 import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
 const BUSINESS_TYPES = [
   "Retail Store",
@@ -25,7 +26,7 @@ export default function WholesaleForm() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
-  const { token, user, setUser } = useStore();
+  const { token, setUser } = useStore();
 
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
@@ -47,14 +48,16 @@ export default function WholesaleForm() {
     setLoading(true);
     setError("");
 
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
-      const response = await fetch(
-        "http://localhost:5050/api/auth/wholesale-request",
-        {
+      const data = await apiRequest("/auth/wholesale-request", {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...authHeader(token),
           },
           body: JSON.stringify({
             shopName,
@@ -62,20 +65,12 @@ export default function WholesaleForm() {
             businessType,
             panNumber,
           }),
-        },
-      );
+      });
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Update user in store with new role
-        setUser(data.user, token);
-        navigate("/wholesale-pending");
-      } else {
-        setError(data.message || "Failed to submit request.");
-      }
+      setUser(data.user, token);
+      navigate("/wholesale-pending");
     } catch (err) {
-      setError("Server error. Please try again later.");
+      setError(err.message || "Server error. Please try again later.");
     } finally {
       setLoading(false);
     }

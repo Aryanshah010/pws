@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Nav from "./components/layout/Nav";
 import Footer from "./components/layout/Footer";
@@ -23,8 +23,6 @@ import CartPage from "./features/checkout/CartPage";
 import ProductDetailOS from "./features/products/VIewProductDetailsOS";
 import Checkout from "./features/checkout/CheckoutPage";
 import PaymentQr from "./features/checkout/PaymentQrPage";
-import PaymentProofPage from "./features/checkout/PaymentQrPage";
-import PaymentConfirm from "./features/checkout/PaymentProofSubmitted";
 import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
 import TrackOrderPage from "./features/order/TrackOrder";
 import OrderSuccess from "./features/order/OrderSuccess";
@@ -40,6 +38,33 @@ import AdminWholesalePage from "./features/admin/AdminWholesalePage";
 import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
 import AdminProductsPage from "./features/admin/AdminProductsPage";
 import ProfilePage from "./features/auth/ProfilePage";
+import { useStore } from "./store/store";
+import { apiRequest, authHeader } from "./services/api";
+
+function AuthSession() {
+  const { token, setUser, logout } = useStore();
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const refresh = async () => {
+      try {
+        const data = await apiRequest("/auth/me", {
+          headers: authHeader(token),
+        });
+        setUser(data.user, token);
+      } catch {
+        logout();
+      }
+    };
+
+    refresh();
+    const intervalId = window.setInterval(refresh, 30000);
+    return () => window.clearInterval(intervalId);
+  }, [token, setUser, logout]);
+
+  return null;
+}
 
 function Layout({ children }) {
   return (
@@ -66,6 +91,8 @@ function Layout2({ children }) {
 function App() {
   return (
     <Router>
+      <AuthSession />
+      <LanguageModal />
       <Routes>
         <Route
           path="/"
@@ -80,7 +107,6 @@ function App() {
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />
-        <Route path="/language-model" element={<LanguageModal />} />
         <Route
           path="/account-active"
           element={

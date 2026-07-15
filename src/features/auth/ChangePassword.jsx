@@ -1,16 +1,43 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
+import { apiRequest } from "../../services/api";
 
 const ChangePassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { recovery, setRecovery } = useStore();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (newPassword !== confirmPassword)
+      return setError("Passwords do not match");
+    if (!recovery?.resetToken) return navigate("/forget-password");
+    setError("");
+    setLoading(true);
+    try {
+      await apiRequest("/auth/password-reset", {
+        method: "PUT",
+        body: JSON.stringify({
+          resetToken: recovery.resetToken,
+          password: newPassword,
+        }),
+      });
+      setRecovery(null);
+      navigate("/login");
+    } catch (err) {
+      setError(err.message || "Could not change password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,6 +118,12 @@ const ChangePassword = () => {
                 Enter a new secure password below to update your account access.
               </p>
 
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
+
               {/* NEW PASSWORD */}
               <div className="mt-[30px]">
                 <label
@@ -128,6 +161,7 @@ const ChangePassword = () => {
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    required
                     placeholder="Enter new password"
                     className="
                       h-[44px]
@@ -197,6 +231,7 @@ const ChangePassword = () => {
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
                     placeholder="Confirm new password"
                     className="
                       h-[44px]
@@ -237,6 +272,7 @@ const ChangePassword = () => {
               <button
                 type="submit"
                 onClick={handleSubmit}
+                disabled={loading}
                 className="
                   mt-6.5
                   h-13
@@ -247,7 +283,7 @@ const ChangePassword = () => {
                   text-on-primary
                 "
               >
-                Reset Password
+                {loading ? "Resetting..." : "Reset Password"}
               </button>
 
               {/* BACK TO LOGIN */}

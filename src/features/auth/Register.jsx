@@ -4,6 +4,7 @@ import { Lock, Phone, User, ChevronDown } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 import { useStore } from "../../store/store";
+import { apiRequest } from "../../services/api";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -21,23 +22,17 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5050/api/auth/register", {
+      const data = await apiRequest("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, phone, password, role }),
       });
-      const data = await response.json();
-
-      if (data.success) {
-        // Automatically login the user? The backend register doesn't return a token in authController, wait let's check.
-        // Actually, authController.js says "user: { id, fullName, phone, role }" but no token for register.
-        // Let's redirect them to login page after successful registration.
-        navigate("/login");
-      } else {
-        setError(data.message || "Registration failed");
-      }
+      setUser(data.user, data.token);
+      navigate(
+        data.user.role === "bulk/shop" ? "/wholesale-form" : "/account-active",
+      );
     } catch (err) {
-      setError("Failed to connect to server");
+      setError(err.message || "Failed to connect to server");
     } finally {
       setLoading(false);
     }

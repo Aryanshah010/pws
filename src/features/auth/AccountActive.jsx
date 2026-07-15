@@ -1,7 +1,10 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
+import { useStore } from "../../store/store";
 
 export default function AccountActive() {
+  const { user } = useStore();
+  const navigate = useNavigate();
   return (
     <main
       className="flex flex-col items-center justify-center flex-1 w-full min-h-[75vh] px-(--spacing-md) py-(--spacing-2xl)"
@@ -58,8 +61,8 @@ export default function AccountActive() {
             marginTop: "var(--spacing-sm)",
           }}
         >
-          <p>Name: XXXXXXXXXX</p>
-          <p>Phone Number: 98XXXXXXXX</p>
+          <p>Name: {user?.fullName || "XXXXXXXXXX"}</p>
+          <p>Phone Number: {user?.phone || "98XXXXXXXX"}</p>
         </div>
 
         {/* Account Classification Pill */}
@@ -119,6 +122,7 @@ export default function AccountActive() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "var(--color-primary)")
             }
+            onClick={() => navigate("/homepage")}
           >
             Go to home
           </button>
@@ -144,6 +148,7 @@ export default function AccountActive() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "transparent")
             }
+            onClick={() => navigate("/profile")}
           >
             Complete Profile
           </button>

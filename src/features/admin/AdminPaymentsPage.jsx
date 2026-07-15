@@ -25,7 +25,7 @@ function ConfirmModal({
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onCancel}
       />
-      <div className="relative w-[calc(100%-2rem)] sm:w-[400px] flex-shrink-0 bg-white rounded-2xl shadow-xl p-6 z-10">
+      <div className="relative w-[calc(100%-2rem)] sm:w-100 shrink-0 bg-white rounded-2xl shadow-xl p-6 z-10">
         <h3 className="text-base font-bold text-[#1b1c1a] mb-2">{title}</h3>
         <p className="text-sm text-[#707972] mb-6">{message}</p>
         <div className="flex gap-3 justify-end">

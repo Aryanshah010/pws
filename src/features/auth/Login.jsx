@@ -4,6 +4,7 @@ import { Lock, Phone } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 import { useStore } from "../../store/store";
+import { apiRequest } from "../../services/api";
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
@@ -19,21 +20,15 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5050/api/auth/login", {
+      const data = await apiRequest("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, password }),
       });
-      const data = await response.json();
-
-      if (data.success) {
-        setUser(data.user, data.token);
-        navigate("/homepage");
-      } else {
-        setError(data.message || "Login failed");
-      }
+      setUser(data.user, data.token);
+      navigate("/homepage");
     } catch (err) {
-      setError("Failed to connect to server");
+      setError(err.message || "Failed to connect to server");
     } finally {
       setLoading(false);
     }
@@ -245,7 +240,8 @@ export default function LoginPage() {
                   items-center
                 "
                 >
-                  <button
+                  <Link
+                    to="/forget-password"
                     className="
                     text-[12px]
                     font-semibold
@@ -253,7 +249,7 @@ export default function LoginPage() {
                   "
                   >
                     Forgot password?
-                  </button>
+                  </Link>
 
                   <div className="flex items-center gap-0.5">
                     <span
