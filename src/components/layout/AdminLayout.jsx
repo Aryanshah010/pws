@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -12,7 +12,8 @@ import {
   Bell,
   Package,
 } from "lucide-react";
-import { useAdminStore } from "../../store/adminStore";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
 const NAV_ITEMS = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -25,12 +26,27 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const { wholesaleRequests, payments } = useAdminStore();
-
-  const pendingWholesale = wholesaleRequests.filter(
-    (r) => r.status === "pending",
-  ).length;
-  const pendingPayments = payments.filter((p) => p.status === "pending").length;
+  const { token, logout } = useStore();
+  const [pendingWholesale, setPendingWholesale] = useState(0);
+  const [pendingPayments, setPendingPayments] = useState(0);
+  useEffect(() => {
+    if (!token) return;
+    Promise.all([
+      apiRequest("/auth/wholesale-requests", { headers: authHeader(token) }),
+      apiRequest("/orders/admin/all", { headers: authHeader(token) }),
+    ])
+      .then(([wholesale, orders]) => {
+        setPendingWholesale(
+          wholesale.users.filter((item) => item.wholesaleStatus === "pending")
+            .length,
+        );
+        setPendingPayments(
+          orders.orders.filter((item) => item.paymentStatus === "Verifying")
+            .length,
+        );
+      })
+      .catch(() => {});
+  }, [token]);
 
   const badges = {
     "/admin/wholesale": pendingWholesale,
@@ -108,7 +124,10 @@ export default function AdminLayout({ children }) {
             Back to Store
           </Link>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
           >
             <LogOut size={16} />

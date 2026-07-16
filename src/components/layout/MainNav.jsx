@@ -1,15 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Bell, ShoppingCart, Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
+import { API_URL, apiRequest, authHeader } from "../../services/api";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
   const { i18n } = useTranslation();
-  const { language, setLanguage, logout, user } = useStore();
+  const {
+    language,
+    setLanguage,
+    logout,
+    user,
+    catalogSearch,
+    setCatalogSearch,
+  } = useStore();
   const navigate = useNavigate();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const loadNotifications = async () => {
+    if (!user || !localStorage.getItem("pathivara_token")) return;
+    try {
+      const data = await apiRequest("/orders/notifications", {
+        headers: authHeader(localStorage.getItem("pathivara_token")),
+      });
+      setNotifications(data.notifications);
+    } catch {
+      setNotifications([]);
+    }
+  };
+  useEffect(() => {
+    loadNotifications();
+    const stream = new EventSource(`${API_URL}/events`);
+    stream.addEventListener("order-updated", loadNotifications);
+    return () => stream.close();
+  }, [user]);
 
   const toggleLanguage = () => {
     const newLang = language === "en" ? "ne" : "en";
@@ -99,19 +126,26 @@ export default function Navbar() {
               <input
                 type="text"
                 placeholder="Search rice, tori tel..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
                 className="w-full pl-11 pr-4 py-2.5 bg-[#E2EAE3] rounded-full text-sm text-[#1D1B20] placeholder:text-[#6B7280] font-[Montserrat] font-normal focus:outline-none focus:ring-2 focus:ring-[#1B5E40]/30"
               />
             </div>
           </div>
 
           {/* Desktop nav links */}
-          <div className="hidden text-[#414943] font-[Montserrat] text-base font-medium hover:text-[#1B5E40] transition-colors whitespace-nowrap lg:flex items-center gap-6 mx-0 flex-shrink-0">
-            <Link to="/cart">Cart</Link>
-            <Link to="/orders">My Orders</Link>
-            <Link to="/track">Track Order</Link>
-            <button className="relative p-1 hover:opacity-80 transition-opacity">
+          <div className="hidden text-[#414943] font-[Montserrat] text-base font-medium whitespace-nowrap lg:flex items-center gap-6 mx-0 flex-shrink-0">
+            <Link to="/cart" className="hover:text-[#1B5E40] transition-colors">Cart</Link>
+            <Link to="/myorder" className="hover:text-[#1B5E40] transition-colors">My Orders</Link>
+            <Link to="/track" className="hover:text-[#1B5E40] transition-colors">Track Order</Link>
+            <button
+              onClick={() => {
+                setNotificationsOpen((open) => !open);
+                setProfileOpen(false);
+                loadNotifications();
+              }}
+              className="relative p-1 hover:opacity-80 transition-opacity"
+            >
               <svg
                 width="17"
                 height="21"
@@ -124,22 +158,91 @@ export default function Navbar() {
                   fill="#1D1B20"
                 />
               </svg>
+              {notifications.some((item) => !item.read) && (
+                <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-[#BA1A1A]" />
+              )}
             </button>
-            <button className="w-7 h-7 rounded-full bg-white border border-[#C1C8C1]/20 flex items-center justify-center hover:opacity-80 transition-opacity shadow-sm">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setProfileOpen(!profileOpen);
+                  setNotificationsOpen(false);
+                }}
+                className="w-7 h-7 rounded-full bg-white border border-[#C1C8C1]/20 flex items-center justify-center hover:opacity-80 transition-opacity shadow-sm"
               >
-                <path
-                  d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
-                  fill="#1D1B20"
-                />
-              </svg>
-            </button>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"
+                    fill="#1D1B20"
+                  />
+                </svg>
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 mt-4 z-50 w-56 rounded-xl border border-[#C1C8C1] bg-white p-4 shadow-lg">
+                  <div className="mb-3 border-b border-[#E2EAE3] pb-3 flex flex-col gap-1">
+                    <p className="text-sm font-bold text-[#1B1C1A]">{user?.name || "User Profile"}</p>
+                    {user?.role === "verified_wholesale" && (
+                      <span className="inline-block rounded-full bg-[#c6e9d2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1B5E40] w-max">
+                        Verified Bulk Buyer
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="text-sm font-medium text-[#414943] hover:text-[#1B5E40] transition-colors"
+                    >
+                      Edit Profile
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+
+          {notificationsOpen && (
+            <div className="absolute right-4 top-22 z-50 w-80 rounded-xl border border-[#C1C8C1] bg-white p-3 shadow-lg">
+              <div className="mb-2 flex items-center justify-between">
+                <strong className="text-sm">Notifications</strong>
+                <button
+                  onClick={async () => {
+                    await apiRequest("/orders/notifications/read", {
+                      method: "PUT",
+                      headers: authHeader(
+                        localStorage.getItem("pathivara_token"),
+                      ),
+                    });
+                    loadNotifications();
+                  }}
+                  className="text-xs text-primary"
+                >
+                  Mark all read
+                </button>
+              </div>
+              {notifications.length ? (
+                notifications.map((item) => (
+                  <div
+                    key={item._id}
+                    className={`border-t border-[#E2EAE3] py-3 text-sm ${item.read ? "text-[#717973]" : "text-[#1B1C1A]"}`}
+                  >
+                    <p className="font-semibold">{item.title}</p>
+                    <p>{item.message}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="p-3 text-sm text-[#717973]">
+                  No notifications yet.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Mobile right section */}
           <div className="flex items-center gap-3 ml-auto lg:hidden">
@@ -168,6 +271,8 @@ export default function Navbar() {
             <input
               type="text"
               placeholder="Search rice, tori tel..."
+              value={catalogSearch}
+              onChange={(e) => setCatalogSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-[#E2EAE3] rounded-full text-sm text-[#1D1B20] placeholder:text-[#6B7280] font-[Montserrat] focus:outline-none focus:ring-2 focus:ring-[#1B5E40]/30"
             />
           </div>
@@ -184,7 +289,7 @@ export default function Navbar() {
               Cart
             </Link>
             <Link
-              to="/orders"
+              to="/myorder"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[#414943] font-[Montserrat] text-base font-medium py-2 border-b border-[#C1C8C1]/40"
             >

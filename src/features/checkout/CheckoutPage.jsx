@@ -10,6 +10,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
 const timeSlots = [
   { id: "9-11", label: "9-11 AM", disabled: true },
@@ -19,7 +20,14 @@ const timeSlots = [
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user, token, cart, clearCart } = useStore();
+  const {
+    user,
+    token,
+    cart,
+    clearCart,
+    setCheckoutOrder,
+    synchronizeCartPrices,
+  } = useStore();
   const [day, setDay] = useState("today");
   const [timeSlot, setTimeSlot] = useState("11-1");
   const [payment, setPayment] = useState("digital");
@@ -36,19 +44,20 @@ export default function Checkout() {
 
   const handleConfirm = async () => {
     if (!cart || cart.length === 0) return;
+    if (!user || !token) return navigate("/login");
     setIsSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5050/api/orders", {
+      const data = await apiRequest("/orders", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...authHeader(token),
         },
         body: JSON.stringify({
           items: cart.map((item) => ({
             product: item.product._id,
             quantity: item.quantity,
+            expectedUnitPrice: item.price,
           })),
           pickupSlot: `${day} ${timeSlot}`,
           paymentMethod:
@@ -56,14 +65,11 @@ export default function Checkout() {
           notes,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Checkout failed");
-
+      setCheckoutOrder(data.order);
       clearCart();
-      navigate("/payment-submitted"); // or /my-orders, but there's a PaymentProofSubmitted route probably?
-      // User says checkout confirmation screen. Let's redirect to my-orders to show the order.
-      navigate("/profile");
+      navigate(payment === "digital" ? "/payment" : "/order-success");
     } catch (err) {
+      if (err.data?.items) synchronizeCartPrices(err.data.items);
       setError(err.message);
     } finally {
       setIsSubmitting(false);

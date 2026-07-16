@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Info, UploadCloud } from "lucide-react";
 import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
 const ORDER_ID = "PWS-001";
 const AMOUNT = "Rs. 32900";
@@ -12,15 +14,47 @@ export default function PaymentProofPage() {
   const [transactionId, setTransactionId] = useState("");
   const [note, setNote] = useState("");
   const [file, setFile] = useState(null);
+  const { checkoutOrder, token, setCheckoutOrder } = useStore();
+  const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    toast.success("Payment proof submitted", {
-      description: "We'll verify your payment and update the order status.",
-    });
-    setTransactionId("");
-    setNote("");
-    setFile(null);
+    if (!checkoutOrder || !token) return navigate("/login");
+    if (file && file.size > 5 * 1024 * 1024)
+      return toast.error("Screenshot must be 5MB or smaller");
+    const imageDataUrl = file
+      ? await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        })
+      : "";
+    try {
+      const data = await apiRequest(
+        `/orders/${checkoutOrder._id}/payment-proof`,
+        {
+          method: "PUT",
+          headers: authHeader(token),
+          body: JSON.stringify({
+            transactionId,
+            note,
+            imageName: file?.name || "",
+            imageDataUrl,
+          }),
+        },
+      );
+      setCheckoutOrder(data.order);
+      toast.success("Payment proof submitted", {
+        description: "We'll verify your payment and update the order status.",
+      });
+      setTransactionId("");
+      setNote("");
+      setFile(null);
+      navigate("/payment-proof");
+    } catch (error) {
+      toast.error(error.message || "Could not submit payment proof");
+    }
   };
 
   return (
@@ -38,7 +72,10 @@ export default function PaymentProofPage() {
         <div className="flex flex-col gap-6">
           <div className="rounded-md border border-outline-border bg-(--color-surface-lowest) p-6 shadow-(--shadow-level-1)">
             <h1 className="text-xl font-bold text-[#00452B] sm:text-[22px]">
-              Order {ORDER_ID}
+              Order{" "}
+              {checkoutOrder
+                ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
+                : ORDER_ID}
             </h1>
 
             <div className="mt-6 flex items-center justify-between border-b border-[var(--color-outline-border)] pb-4">
@@ -46,7 +83,7 @@ export default function PaymentProofPage() {
                 Total due
               </span>
               <span className="text-xl font-bold text-[#00452B]  sm:text-[22px]">
-                {AMOUNT}
+                Rs. {checkoutOrder?.totalAmount ?? AMOUNT.replace("Rs. ", "")}
               </span>
             </div>
 

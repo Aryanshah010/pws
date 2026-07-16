@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from "react";
-import { useAdminStore } from "../../store/adminStore";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import {
   Plus,
   Search,
@@ -879,8 +880,8 @@ function ProductMobileCard({ product, onEdit, onDelete }) {
 // ─────────────────────────────────────────────
 
 export default function AdminProductsPage() {
-  const { products, addProduct, updateProduct, deleteProduct } =
-    useAdminStore();
+  const { token } = useStore();
+  const [products, setProducts] = useState([]);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -890,6 +891,38 @@ export default function AdminProductsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const mapProduct = (product) => ({
+    id: product._id,
+    name: product.name,
+    price: product.retailPrice,
+    oldPrice: product.priceHistory?.[0]?.price,
+    description: product.description,
+    stock: product.stockStatus?.toUpperCase(),
+    stockQty: product.stock,
+    category: product.category,
+    image: product.imageUrl,
+    unit: product.unit,
+    grade: product.grade,
+    shelfLife: product.shelfLife,
+    origin: product.origin,
+    pricingTiers: (product.tierPrices || []).map((tier) => ({
+      minQty: tier.minQuantity,
+      maxQty: null,
+      price: tier.price,
+    })),
+    createdAt: product.createdAt,
+  });
+  const loadProducts = async () => {
+    try {
+      const data = await apiRequest("/products");
+      setProducts(data.products.map(mapProduct));
+    } catch {
+      setProducts([]);
+    }
+  };
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
   // ── Stats ─────────────────────────────────
   const totalProducts = products.length;
@@ -928,20 +961,54 @@ export default function AdminProductsPage() {
     setDrawerOpen(true);
   };
 
-  const handleSave = (data) => {
-    if (editProduct) {
-      updateProduct(editProduct.id, data);
-    } else {
-      addProduct(data);
+  const handleSave = async (data) => {
+    const body = {
+      name: data.name,
+      retailPrice: Number(data.price),
+      category: data.category,
+      unit: data.unit,
+      stock: Number(data.stockQty),
+      imageUrl: data.image || "",
+      description: data.description || "",
+      grade: data.grade || "",
+      shelfLife: data.shelfLife || "",
+      origin: data.origin || "",
+      tierPrices: (data.pricingTiers || [])
+        .filter((tier) => tier.minQty && tier.price !== "")
+        .map((tier) => ({
+          minQuantity: Number(tier.minQty),
+          price: Number(tier.price),
+        })),
+    };
+    try {
+      await apiRequest(
+        editProduct ? `/products/${editProduct.id}` : "/products",
+        {
+          method: editProduct ? "PUT" : "POST",
+          headers: authHeader(token),
+          body: JSON.stringify(body),
+        },
+      );
+      await loadProducts();
+      setDrawerOpen(false);
+      setEditProduct(null);
+    } catch {
+      /* retain drawer so the entered values remain available */
     }
-    setDrawerOpen(false);
-    setEditProduct(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteTarget) {
-      deleteProduct(deleteTarget.id);
-      setDeleteTarget(null);
+      try {
+        await apiRequest(`/products/${deleteTarget.id}`, {
+          method: "DELETE",
+          headers: authHeader(token),
+        });
+        await loadProducts();
+        setDeleteTarget(null);
+      } catch {
+        /* deletion is not applied locally on failure */
+      }
     }
   };
 

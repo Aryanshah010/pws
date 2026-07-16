@@ -6,7 +6,7 @@ export default function About() {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-4xl mx-auto px-md py-xl min-h-screen font-sans">
+    <div className="max-w-6xl mx-auto px-md py-xl min-h-screen font-sans">
       <button
         onClick={() => navigate('/')}
         className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"

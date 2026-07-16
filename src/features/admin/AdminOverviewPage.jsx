@@ -1,4 +1,6 @@
-import { useAdminStore } from "../../store/adminStore";
+import { useEffect, useState } from "react";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import {
   Users,
   Store,
@@ -55,7 +57,61 @@ function ActivityRow({ label, time, badge, badgeColor }) {
 }
 
 export default function AdminOverviewPage() {
-  const { users, wholesaleRequests, payments, products } = useAdminStore();
+  const { token } = useStore();
+  const [users, setUsers] = useState([]);
+  const [wholesaleRequests, setWholesaleRequests] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [products, setProducts] = useState([]);
+  useEffect(() => {
+    if (!token) return;
+    Promise.all([
+      apiRequest("/auth/admin/users", { headers: authHeader(token) }),
+      apiRequest("/auth/wholesale-requests", { headers: authHeader(token) }),
+      apiRequest("/orders/admin/all", { headers: authHeader(token) }),
+      apiRequest("/products"),
+    ])
+      .then(([userData, wholesaleData, orderData, productData]) => {
+        setUsers(
+          userData.users.map((user) => ({
+            role: user.role === "verified_wholesale" ? "wholesale" : "regular",
+          })),
+        );
+        setWholesaleRequests(
+          wholesaleData.users.map((user) => ({
+            id: user.id,
+            name: user.fullName,
+            shopName: user.wholesaleDetails?.shopName || "Shop",
+            submittedDate: new Date().toLocaleDateString(),
+            businessType: user.wholesaleDetails?.businessType || "—",
+            status: user.wholesaleStatus,
+          })),
+        );
+        setPayments(
+          orderData.orders
+            .filter((order) => order.paymentMethod === "Digital QR Transfer")
+            .map((order) => ({
+              id: order._id,
+              orderId: `PWS-${order._id.slice(-4)}`,
+              customerName: order.user?.fullName || "Buyer",
+              amount: `Rs. ${order.totalAmount}`,
+              method: "QR",
+              submittedDate: new Date(order.updatedAt).toLocaleDateString(),
+              status:
+                order.paymentStatus === "Paid"
+                  ? "approved"
+                  : order.paymentStatus === "Rejected"
+                    ? "rejected"
+                    : "pending",
+            })),
+        );
+        setProducts(
+          productData.products.map((product) => ({
+            stock: product.stockStatus?.toUpperCase(),
+          })),
+        );
+      })
+      .catch(() => {});
+  }, [token]);
 
   const totalUsers = users.length;
   const activeWholesale = users.filter((u) => u.role === "wholesale").length;

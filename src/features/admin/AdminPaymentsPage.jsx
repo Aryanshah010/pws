@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useAdminStore } from "../../store/adminStore";
+import { useEffect, useState } from "react";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import {
   CheckCircle2,
   XCircle,
@@ -242,8 +243,57 @@ function PaymentCard({ pay, onApprove, onReject }) {
 }
 
 export default function AdminPaymentsPage() {
-  const { payments, approvePayment, rejectPayment } = useAdminStore();
+  const { token } = useStore();
+  const [payments, setPayments] = useState([]);
   const [filter, setFilter] = useState("pending");
+  const loadPayments = async () => {
+    try {
+      const data = await apiRequest("/orders/admin/all", {
+        headers: authHeader(token),
+      });
+      setPayments(
+        data.orders
+          .filter((order) => order.paymentMethod === "Digital QR Transfer")
+          .map((order) => ({
+            id: order._id,
+            orderId: `PWS-${order._id.slice(-4).toUpperCase()}`,
+            status:
+              order.paymentStatus === "Paid"
+                ? "approved"
+                : order.paymentStatus === "Rejected"
+                  ? "rejected"
+                  : "pending",
+            amount: `Rs. ${order.totalAmount}`,
+            submittedDate: order.paymentProof?.submittedAt
+              ? new Date(order.paymentProof.submittedAt).toLocaleDateString()
+              : "Awaiting proof",
+            customerName: order.user?.fullName || "Buyer",
+            customerEmail: order.user?.phone || "",
+            method: "Digital QR Transfer",
+            proofAvailable: Boolean(
+              order.paymentProof?.imageDataUrl ||
+              order.paymentProof?.transactionId,
+            ),
+            items: order.items.map(
+              (item) => `${item.product?.name || "Product"} x${item.quantity}`,
+            ),
+          })),
+      );
+    } catch {
+      setPayments([]);
+    }
+  };
+  useEffect(() => {
+    if (token) loadPayments();
+  }, [token]);
+  const setPayment = async (id, paymentStatus) => {
+    await apiRequest(`/orders/${id}/payment-status`, {
+      method: "PUT",
+      headers: authHeader(token),
+      body: JSON.stringify({ paymentStatus }),
+    });
+    loadPayments();
+  };
 
   const filtered =
     filter === "all" ? payments : payments.filter((p) => p.status === filter);
@@ -290,8 +340,8 @@ export default function AdminPaymentsPage() {
           <PaymentCard
             key={pay.id}
             pay={pay}
-            onApprove={approvePayment}
-            onReject={rejectPayment}
+            onApprove={(id) => setPayment(id, "Paid")}
+            onReject={(id) => setPayment(id, "Rejected")}
           />
         ))}
         {filtered.length === 0 && (

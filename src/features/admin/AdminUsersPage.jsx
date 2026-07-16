@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useAdminStore } from "../../store/adminStore";
+import { useEffect, useState } from "react";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import { Search, ChevronDown, Users } from "lucide-react";
 
 const ROLE_LABELS = {
@@ -41,10 +42,38 @@ function Avatar({ name }) {
 }
 
 export default function AdminUsersPage() {
-  const { users } = useAdminStore();
+  const { token } = useStore();
+  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [sortBy, setSortBy] = useState("joinedDate");
+  useEffect(() => {
+    if (!token) return;
+    apiRequest("/auth/admin/users", { headers: authHeader(token) })
+      .then((data) =>
+        setUsers(
+          data.users.map((user) => ({
+            id: user.id,
+            name: user.fullName,
+            phone: user.phone,
+            location: user.wholesaleDetails?.shopLocation || "—",
+            role:
+              user.role === "verified_wholesale"
+                ? "wholesale"
+                : user.role === "pending_wholesale"
+                  ? "pending_wholesale"
+                  : "regular",
+            status:
+              user.wholesaleStatus === "pending"
+                ? "pending_wholesale"
+                : "active",
+            totalOrders: user.totalOrders,
+            joinedDate: new Date(user.joinedAt).toLocaleDateString(),
+          })),
+        ),
+      )
+      .catch(() => setUsers([]));
+  }, [token]);
 
   const filtered = users
     .filter((u) => {

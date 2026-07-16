@@ -6,8 +6,14 @@ import {
   MessageCircle,
   Truck,
 } from "lucide-react";
+import { useStore } from "../../store/store";
+import { downloadReceipt } from "../../utils/pdfGenerator";
 
 export default function PaymentProofSubmitted() {
+  const { checkoutOrder } = useStore();
+  const orderId = checkoutOrder
+    ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
+    : "PWS-001";
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12 sm:py-20 bg-[var(--color-background)]">
       <div className="flex w-full max-w-[782px] min-h-[522px] flex-col items-center justify-center gap-6 rounded-md border border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] px-8 py-10 text-center shadow-[var(--shadow-level-1)]">
@@ -22,14 +28,14 @@ export default function PaymentProofSubmitted() {
             Payment proof submitted
           </h1>
           <p className="text-base font-medium text-[var(--color-on-surface-variant)]">
-            Order ID: PWS-001
+            Order ID: {orderId}
           </p>
         </div>
 
         {/* Status Badge */}
         <div className="inline-flex items-center  rounded-full border border-outline-border-pill  px-4 py-1">
           <span className="text-center text-[13px] font-semibold tracking-wider text-outline-border-pill">
-            PAYMENT STATUS: PENDING
+            PAYMENT STATUS: {checkoutOrder?.paymentStatus || "PENDING"}
           </span>
         </div>
 
@@ -49,7 +55,7 @@ export default function PaymentProofSubmitted() {
         {/* CTA Button Actions wrapper */}
         <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:gap-4 mt-2">
           <Link
-            to="/track-order"
+            to="/track"
             className="flex h-[60px] w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--color-primary)] px-6 text-lg font-semibold text-(--color-on-primary) shadow-[var(--shadow-level-1)] transition-opacity hover:opacity-90 sm:w-auto sm:min-w-[189px] cursor-pointer"
           >
             <Truck className="h-5 w-5" />
@@ -58,6 +64,7 @@ export default function PaymentProofSubmitted() {
 
           <button
             type="button"
+            onClick={() => checkoutOrder && downloadReceipt(checkoutOrder)}
             style={{ borderColor: "#C1C8C1" }}
             className="flex h-15 w-full max-w-[256px] items-center justify-center  gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-on-surface-variant transition-colors hover:bg-surface-low sm:w-[256px] cursor-pointer"
           >

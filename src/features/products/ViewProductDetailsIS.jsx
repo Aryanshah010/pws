@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ShoppingCart } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Bell, ChevronLeft, ShoppingCart } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
 // Reuse the exact same card component the Homepage uses, instead of a
 // hand-duplicated copy. This is the single source of truth for product
@@ -9,78 +10,101 @@ import { useStore } from "../../store/store";
 // stays in sync here too.
 import { ProductCard } from "../home/HomePage";
 
-const similarProducts = [
-  {
-    name: "Mustard Oil 5L",
-    price: "Rs. 400",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Sunflower Oil 1L",
-    price: "Rs. 195",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Ghee 1L",
-    price: "Rs. 850",
-    oldPrice: "Rs. 920",
-    stock: "LOW STOCK",
-    action: "Add",
-  },
-];
-
 export default function ViewProductDetailIS() {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [similarProducts, setSimilarProducts] = useState([]);
+  const [restockMessage, setRestockMessage] = useState("");
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const id = searchParams.get("id");
 
-  const { user, addToCart } = useStore();
+  const { user, token, addToCart } = useStore();
+  const navigate = useNavigate();
   const isWholesale = user?.role === "verified_wholesale";
 
   useEffect(() => {
-    if (id) {
-      fetch(`http://localhost:5050/api/products/${id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setProduct(data.data);
-          }
-        })
-        .catch((err) => console.error(err))
-        .finally(() => setLoading(false));
-    } else {
+    if (!id) {
       setLoading(false);
+      return;
     }
+    const load = async () => {
+      try {
+        const data = await apiRequest(`/products/${id}`);
+        setProduct(data.product);
+        const related = await apiRequest(
+          `/products?category=${encodeURIComponent(data.product.category)}`,
+        );
+        setSimilarProducts(
+          (related.products || [])
+            .filter((item) => item._id !== id)
+            .slice(0, 3),
+        );
+      } catch {
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [id]);
 
   const incrementQty = () => setQuantity((q) => q + 1);
   const decrementQty = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
 
-  if (loading) return <div className="p-8 text-center">Loading product details...</div>;
-  if (!product) return <div className="p-8 text-center text-red-500">Product not found.</div>;
+  if (loading)
+    return <div className="p-8 text-center">Loading product details...</div>;
+  if (!product)
+    return (
+      <div className="p-8 text-center text-red-500">Product not found.</div>
+    );
 
   let displayPrice = product.retailPrice;
   let oldPrice = null;
 
   if (isWholesale && product.tierPrices && product.tierPrices.length > 0) {
-    oldPrice = product.retailPrice;
-    displayPrice = product.tierPrices[0].price; // Default wholesale base
-    // If quantity hits a tier, adjust price dynamically
-    const sortedTiers = [...product.tierPrices].sort((a, b) => b.minQuantity - a.minQuantity);
+    const sortedTiers = [...product.tierPrices].sort(
+      (a, b) => b.minQuantity - a.minQuantity,
+    );
     const applicableTier = sortedTiers.find((t) => quantity >= t.minQuantity);
     if (applicableTier) {
       displayPrice = applicableTier.price;
+      oldPrice =
+        applicableTier.price < product.retailPrice ? product.retailPrice : null;
     }
   }
 
   const isOutOfStock = product.stock <= 0;
-  const stockText = product.stockStatus || (isOutOfStock ? "Out of Stock" : "In Stock");
+  const stockText =
+    product.stockStatus || (isOutOfStock ? "Out of Stock" : "In Stock");
+  const pricePoints = (
+    product.priceHistory?.length
+      ? product.priceHistory
+      : [{ price: product.retailPrice }]
+  )
+    .slice(-12)
+    .map((point) => point.price);
+  const firstPrice = pricePoints[0] || product.retailPrice;
+  const latestPrice =
+    pricePoints[pricePoints.length - 1] || product.retailPrice;
+  const trendPercent = firstPrice
+    ? ((latestPrice - firstPrice) / firstPrice) * 100
+    : 0;
+  const maxPrice = Math.max(...pricePoints, 1);
+  const handleRestock = async () => {
+    if (!user || !token) return navigate("/login");
+    try {
+      await apiRequest(`/products/${product._id}/restock-subscriptions`, {
+        method: "POST",
+        headers: authHeader(token),
+      });
+      setRestockMessage("Restock notification requested");
+    } catch (error) {
+      setRestockMessage(error.message || "Could not request notification");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-(--color-background) ">
@@ -109,8 +133,8 @@ export default function ViewProductDetailIS() {
                 {/* Product Image */}
                 <div className="flex-shrink-0 w-full md:w-[38%] p-6 flex items-center justify-center">
                   <img
-                    src="https://api.builder.io/api/v1/image/assets/TEMP/9fc7279e09abeb7ff2274131215bf3820cf8349c?width=547"
-                    alt="Mustard Oil 1L"
+                    src={product.imageUrl || "/products/rawfood.jpg"}
+                    alt={product.name}
                     className="w-full max-w-70 aspect-square object-contain"
                   />
                 </div>
@@ -122,7 +146,8 @@ export default function ViewProductDetailIS() {
                       {product.name}
                     </h2>
                     <p className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] leading-relaxed">
-                      High quality {product.category} for your daily needs. Best in class {product.unit} packaging.
+                      {product.description ||
+                        `High quality ${product.category} for your daily needs. Best in class ${product.unit} packaging.`}
                     </p>
                   </div>
 
@@ -142,7 +167,9 @@ export default function ViewProductDetailIS() {
                       )}
                     </div>
                     <div>
-                      <span className={`h-6.25 mt-4 px-[8px] py-[4px] rounded-full inline-flex items-center text-(--text-label-sm) leading-(--text-label-sm--line-height) font-bold ${isOutOfStock ? 'bg-red-100 text-red-800' : 'bg-primary-fixed'}`}>
+                      <span
+                        className={`h-6.25 mt-4 px-[8px] py-[4px] rounded-full inline-flex items-center text-(--text-label-sm) leading-(--text-label-sm--line-height) font-bold ${isOutOfStock ? "bg-red-100 text-red-800" : "bg-primary-fixed"}`}
+                      >
                         {stockText}
                       </span>
                     </div>
@@ -182,19 +209,38 @@ export default function ViewProductDetailIS() {
                     </div>
 
                     <div className="flex mt-4 justify-between flex-col sm:flex-row gap-3 sm:gap-0">
-                      <button 
+                      <button
                         disabled={isOutOfStock}
-                        onClick={() => addToCart(product, quantity, displayPrice)}
-                        className={`w-62 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold ${isOutOfStock ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary text-(--color-on-primary) cursor-pointer hover:opacity-90'}`}>
+                        onClick={() =>
+                          addToCart(product, quantity, displayPrice)
+                        }
+                        className={`w-62 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold ${isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-(--color-on-primary) cursor-pointer hover:opacity-90"}`}
+                      >
                         <ShoppingCart size={16} />
                         {isOutOfStock ? "Out of Stock" : "Add to Cart"}
                       </button>
-                      <button 
-                        disabled={isOutOfStock}
-                        className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100'}`}>
-                        Rs. Buy
+                      <button
+                        type="button"
+                        disabled={
+                          !isOutOfStock ||
+                          restockMessage === "Restock notification requested"
+                        }
+                        onClick={handleRestock}
+                        className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${isOutOfStock ? "bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                      >
+                        {isOutOfStock ? <Bell size={16} /> : null}
+                        {isOutOfStock
+                          ? restockMessage
+                            ? "Requested"
+                            : "Notify"
+                          : "Rs. Buy"}
                       </button>
                     </div>
+                    {restockMessage && (
+                      <p className="text-sm text-[var(--color-primary)]">
+                        {restockMessage}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -227,11 +273,17 @@ export default function ViewProductDetailIS() {
                     None
                   </div>
                 </div>
-                
+
                 {product.tierPrices?.map((tier, index) => {
-                  const saving = ((product.retailPrice - tier.price) / product.retailPrice * 100).toFixed(1);
+                  const saving = (
+                    ((product.retailPrice - tier.price) / product.retailPrice) *
+                    100
+                  ).toFixed(1);
                   return (
-                    <div key={index} className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30">
+                    <div
+                      key={index}
+                      className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30"
+                    >
                       <div className="text-sm font-medium text-[var(--color-on-surface)]">
                         {tier.minQuantity}+
                       </div>
@@ -259,7 +311,7 @@ export default function ViewProductDetailIS() {
                     Grade
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    A
+                    {product.grade || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
@@ -267,7 +319,15 @@ export default function ViewProductDetailIS() {
                     Unit Size
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    1L PET Bottle
+                    {product.unit || "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-3 text-sm">
+                  <span className="font-medium text-[var(--color-on-surface-variant)] uppercase text-xs tracking-wider">
+                    Pack Count
+                  </span>
+                  <span className="font-bold text-[var(--color-on-surface)]">
+                    {product.packCount || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
@@ -275,7 +335,7 @@ export default function ViewProductDetailIS() {
                     Shelf Life
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    12 Months
+                    {product.shelfLife || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
@@ -283,7 +343,7 @@ export default function ViewProductDetailIS() {
                     Origin
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    Terai, Nepal
+                    {product.origin || "—"}
                   </span>
                 </div>
               </div>
@@ -297,26 +357,24 @@ export default function ViewProductDetailIS() {
                 </h3>
                 <div className="inline-block px-2.5 py-1 bg-[var(--color-primary-fixed)] rounded-full">
                   <span className="text-xs font-bold text-[var(--color-on-primary-fixed)]">
-                    -2.4%
+                    {trendPercent > 0 ? "+" : ""}
+                    {trendPercent.toFixed(1)}%
                   </span>
                 </div>
               </div>
 
               {/* Bar Chart */}
               <div className="flex items-end justify-center gap-1 h-24 py-4 px-2">
-                {[
-                  28.8, 26.39, 31.19, 33.59, 24, 21.59, 19.19, 16.8, 14.39,
-                  13.44, 12, 10.55,
-                ].map((h, i) => (
+                {pricePoints.map((price, i) => (
                   <div
                     key={i}
                     className="flex-1 rounded-t-sm"
                     style={{
-                      height: `${(h / 33.59) * 100}%`,
+                      height: `${Math.max((price / maxPrice) * 100, 8)}%`,
                       backgroundColor:
-                        i < 8
+                        i < pricePoints.length - 4
                           ? "rgba(0, 69, 43, 0.2)"
-                          : i < 11
+                          : i < pricePoints.length - 1
                             ? "rgba(0, 69, 43, 0.6)"
                             : "var(--color-primary)",
                     }}
@@ -327,7 +385,7 @@ export default function ViewProductDetailIS() {
               <div className="flex justify-between items-start text-xs text-[var(--color-on-surface-variant)]">
                 <div>30d ago</div>
                 <div className="font-bold text-[var(--color-on-primary-fixed)]">
-                  Today (Rs. 160)
+                  Today (Rs. {latestPrice})
                 </div>
               </div>
             </div>

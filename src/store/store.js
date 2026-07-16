@@ -14,6 +14,10 @@ export const useStore = create((set) => ({
     localStorage.getItem(notificationKey(savedUser)) || "pending",
   recovery: JSON.parse(sessionStorage.getItem("pathivara_recovery") || "null"),
   cart: JSON.parse(localStorage.getItem("pathivara_cart")) || [],
+  catalogSearch: "",
+  checkoutOrder: JSON.parse(
+    sessionStorage.getItem("pathivara_checkout_order") || "null",
+  ),
 
   // Actions
   setLanguage: (lang) => {
@@ -73,6 +77,33 @@ export const useStore = create((set) => ({
       sessionStorage.setItem("pathivara_recovery", JSON.stringify(recovery));
     else sessionStorage.removeItem("pathivara_recovery");
     set({ recovery });
+  },
+
+  setCatalogSearch: (catalogSearch) => set({ catalogSearch }),
+
+  setCheckoutOrder: (checkoutOrder) => {
+    if (checkoutOrder)
+      sessionStorage.setItem(
+        "pathivara_checkout_order",
+        JSON.stringify(checkoutOrder),
+      );
+    else sessionStorage.removeItem("pathivara_checkout_order");
+    set({ checkoutOrder });
+  },
+
+  synchronizeCartPrices: (quotedItems) => {
+    set((state) => {
+      const byProduct = new Map(
+        quotedItems.map((item) => [String(item.productId), item.unitPrice]),
+      );
+      const cart = state.cart.map((item) =>
+        byProduct.has(String(item.product._id))
+          ? { ...item, price: byProduct.get(String(item.product._id)) }
+          : item,
+      );
+      localStorage.setItem("pathivara_cart", JSON.stringify(cart));
+      return { cart };
+    });
   },
 
   addToCart: (product, quantity, price) => {

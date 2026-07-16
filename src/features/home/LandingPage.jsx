@@ -4,6 +4,7 @@ import flour from "../../assets/flour.svg";
 import dal from "../../assets/dal.svg";
 
 import { ShieldCheck, LayoutGrid, RotateCcw, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function LandingPage() {
   return (
@@ -51,7 +52,8 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <button
+            <Link
+              to="/register"
               className="
                             mt-9
                             h-14
@@ -61,10 +63,11 @@ export default function LandingPage() {
                             text-[15px]
                             font-semibold
                             text-on-primary
+                            inline-flex items-center justify-center
                         "
             >
               Register Now
-            </button>
+            </Link>
           </div>
 
           {/* RIGHT */}

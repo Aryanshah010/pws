@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, TrendingUp, ArrowRight } from "lucide-react";
 import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
-function TemplateCard({ title, description }) {
+function TemplateCard({ title, description, onUse }) {
   return (
     <div className="flex flex-col justify-between gap-6 rounded-md border border-outline-border bg-(--color-surface-lowest) p-6 shadow-[var(--shadow-level-1)]">
       <div className="flex flex-col gap-2 pb-4">
@@ -13,6 +15,7 @@ function TemplateCard({ title, description }) {
       </div>
       <button
         type="button"
+        onClick={onUse}
         className="flex h-15 w-full items-center justify-center rounded-[10px] bg-[var(--color-primary)] text-lg font-semibold text-(--color-on-primary) transition-opacity hover:opacity-90 cursor-pointer"
       >
         Use Template
@@ -28,6 +31,8 @@ function OrderRow({
   items,
   total,
   priceAlert,
+  onOrderAgain,
+  onMakeTemplate,
 }) {
   return (
     <div className="flex flex-col gap-4 border-t border-outline-border p-4 first:border-t-0 sm:grid sm:grid-cols-12 sm:items-center sm:gap-4 sm:py-6">
@@ -68,12 +73,14 @@ function OrderRow({
         <div className="flex  gap-3 sm:justify-end">
           <button
             type="button"
+            onClick={onOrderAgain}
             className="rounded-[10px] w-43.5 h-10.5 border border-outline-border bg-(--color-surface-lowest) px-6 py-2 text-base font-semibold text-on-surface-variant transition-colors hover:bg-surface-low cursor-pointer"
           >
             Order Again
           </button>
           <button
             type="button"
+            onClick={onMakeTemplate}
             className="rounded-[var(--radius-default)] w-45 h-10.5 border border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] px-6 py-2 text-base font-semibold text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-low)] cursor-pointer"
           >
             Make Template
@@ -90,28 +97,23 @@ function OrderRow({
   );
 }
 
-const templates = [
-  { title: "My Template", description: "Mustard oil, Rice" },
-  { title: "Monthly Stock-UP", description: "Bulk re-usable list" },
-];
 
 export default function MyOrder() {
-  const { token } = useStore();
+  const { token, addToCart } = useStore();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [baskets, setBaskets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch("http://localhost:5050/api/orders/myorders", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        const data = await res.json();
-        if (data.success) {
-          setOrders(data.orders);
-        }
+        const [orderData, basketData] = await Promise.all([
+          apiRequest("/orders/myorders", { headers: authHeader(token) }),
+          apiRequest("/orders/baskets", { headers: authHeader(token) }),
+        ]);
+        setOrders(orderData.orders);
+        setBaskets(basketData.baskets);
       } catch (err) {
         console.error("Failed to fetch orders:", err);
       } finally {
@@ -141,9 +143,33 @@ export default function MyOrder() {
           Saved Templates
         </h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {templates.map((template) => (
-            <TemplateCard key={template.title} {...template} />
-          ))}
+          {baskets.length ? (
+            baskets.map((basket) => (
+              <TemplateCard
+                key={basket._id}
+                title={basket.name}
+                description={basket.items
+                  .map((item) => item.product?.name || "Product")
+                  .join(", ")}
+                onUse={async () => {
+                  const data = await apiRequest(
+                    `/orders/baskets/${basket._id}/review`,
+                    { headers: authHeader(token) },
+                  );
+                  data.items
+                    .filter((item) => item.product.stock > 0)
+                    .forEach((item) =>
+                      addToCart(item.product, item.quantity, item.unitPrice),
+                    );
+                  navigate("/cart");
+                }}
+              />
+            ))
+          ) : (
+            <p className="text-sm text-[#717973]">
+              No saved baskets yet. Save the current cart as a template.
+            </p>
+          )}
         </div>
       </section>
 
@@ -161,20 +187,53 @@ export default function MyOrder() {
         </div>
         <div className="flex flex-col">
           {loading ? (
-            <div className="p-8 text-center text-on-surface-variant">Loading orders...</div>
+            <div className="p-8 text-center text-on-surface-variant">
+              Loading orders...
+            </div>
           ) : orders.length === 0 ? (
-            <div className="p-8 text-center text-on-surface-variant">No orders found.</div>
+            <div className="p-8 text-center text-on-surface-variant">
+              No orders found.
+            </div>
           ) : (
             orders.map((order) => {
-              const itemString = order.items.map(i => `${i.product.name} ${i.quantity}${i.product.unit}`).join(", ");
+              const itemString = order.items
+                .map(
+                  (i) =>
+                    `${i.product?.name || "Removed product"} ${i.quantity}${i.product?.unit || ""}`,
+                )
+                .join(", ");
               return (
-                <OrderRow 
-                  key={order._id} 
+                <OrderRow
+                  key={order._id}
                   orderId={`PWS-${order._id.substring(order._id.length - 4).toUpperCase()}`}
                   orderStatus={order.orderStatus}
                   paymentStatus={order.paymentStatus}
                   items={itemString}
                   total={order.totalAmount}
+                  onOrderAgain={() => {
+                    order.items
+                      .filter((item) => item.product)
+                      .forEach((item) =>
+                        addToCart(
+                          item.product,
+                          item.quantity,
+                          item.product.retailPrice || item.priceAtPurchase,
+                        ),
+                      );
+                    navigate("/cart");
+                  }}
+                  onMakeTemplate={() => {
+                    order.items
+                      .filter((item) => item.product)
+                      .forEach((item) =>
+                        addToCart(
+                          item.product,
+                          item.quantity,
+                          item.product.retailPrice || item.priceAtPurchase,
+                        ),
+                      );
+                    navigate("/custom-basket");
+                  }}
                 />
               );
             })
