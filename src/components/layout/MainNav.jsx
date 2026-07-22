@@ -19,6 +19,7 @@ export default function Navbar() {
     setCatalogSearch,
     notificationsEnabled,
     openNotificationPrompt,
+    refreshUser,
   } = useStore();
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -60,9 +61,33 @@ export default function Navbar() {
       loadNotifications();
       showPush(payload.push);
     });
+    // Wholesale decisions land here. The bell is updated first so the buyer
+    // always has something to click; refreshUser then reloads the app on its
+    // own if the decision actually changed what they pay.
+    stream.addEventListener("account-updated", (event) => {
+      loadNotifications();
+      showPush(readPayload(event)?.push);
+      refreshUser();
+    });
 
     return () => stream.close();
   }, [user]);
+
+  const openNotification = async (item) => {
+    setNotificationsOpen(false);
+    if (!item.read) {
+      try {
+        await apiRequest(`/orders/notifications/${item._id}/read`, {
+          method: "PUT",
+          headers: authHeader(localStorage.getItem("pathivara_token")),
+        });
+        loadNotifications();
+      } catch {
+        // A failed read receipt should never block the buyer from the page.
+      }
+    }
+    if (item.link) navigate(item.link);
+  };
 
   const toggleLanguage = () => {
     const newLang = language === "en" ? "ne" : "en";
@@ -272,13 +297,23 @@ export default function Navbar() {
               </div>
               {notifications.length ? (
                 notifications.map((item) => (
-                  <div
+                  <button
                     key={item._id}
-                    className={`border-t border-[#E2EAE3] py-3 text-sm ${item.read ? "text-[#717973]" : "text-[#1B1C1A]"}`}
+                    type="button"
+                    onClick={() => openNotification(item)}
+                    disabled={!item.link}
+                    className={`block w-full border-t border-[#E2EAE3] py-3 text-left text-sm transition-colors ${item.read ? "text-[#717973]" : "text-[#1B1C1A]"} ${item.link ? "cursor-pointer hover:bg-[#F4FBF4]" : "cursor-default"}`}
                   >
-                    <p className="font-semibold">{item.title}</p>
-                    <p>{item.message}</p>
-                  </div>
+                    <span className="flex items-start gap-2">
+                      {!item.read && (
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#BA1A1A]" />
+                      )}
+                      <span className="min-w-0">
+                        <span className="block font-semibold">{item.title}</span>
+                        <span className="block">{item.message}</span>
+                      </span>
+                    </span>
+                  </button>
                 ))
               ) : (
                 <p className="p-3 text-sm text-[#717973]">

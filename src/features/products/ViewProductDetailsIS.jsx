@@ -57,18 +57,29 @@ export default function ViewProductDetailIS() {
       <div className="p-8 text-center text-red-500">Product not found.</div>
     );
 
+  // Only tiers that are a genuine bulk discount are usable: quantity above 1
+  // and a price strictly below retail. Anything else is bad catalogue data and
+  // must not drive the price shown to the buyer.
+  const validTiers = (product.tierPrices || [])
+    .filter(
+      (tier) =>
+        Number(tier.minQuantity) > 1 &&
+        Number(tier.price) > 0 &&
+        Number(tier.price) < product.retailPrice,
+    )
+    .sort((a, b) => a.minQuantity - b.minQuantity);
+
   let displayPrice = product.retailPrice;
   let oldPrice = null;
+  let activeTierIndex = -1;
 
-  if (isWholesale && product.tierPrices && product.tierPrices.length > 0) {
-    const sortedTiers = [...product.tierPrices].sort(
-      (a, b) => b.minQuantity - a.minQuantity,
-    );
-    const applicableTier = sortedTiers.find((t) => quantity >= t.minQuantity);
-    if (applicableTier) {
-      displayPrice = applicableTier.price;
-      oldPrice =
-        applicableTier.price < product.retailPrice ? product.retailPrice : null;
+  if (isWholesale && validTiers.length > 0) {
+    for (let i = 0; i < validTiers.length; i += 1) {
+      if (quantity >= validTiers[i].minQuantity) activeTierIndex = i;
+    }
+    if (activeTierIndex >= 0) {
+      displayPrice = validTiers[activeTierIndex].price;
+      oldPrice = product.retailPrice;
     }
   }
 
@@ -89,6 +100,14 @@ export default function ViewProductDetailIS() {
     ? ((latestPrice - firstPrice) / firstPrice) * 100
     : 0;
   const maxPrice = Math.max(...pricePoints, 1);
+  // Buy Now bypasses the cart page: the item is placed in the cart (checkout
+  // reads from there) and we jump straight to /checkout.
+  const handleBuyNow = () => {
+    if (!user || !token) return navigate("/login");
+    addToCart(product, quantity, displayPrice);
+    navigate("/checkout");
+  };
+
   const handleRestock = async () => {
     if (!user || !token) return navigate("/login");
     try {
@@ -224,18 +243,23 @@ export default function ViewProductDetailIS() {
                       <button
                         type="button"
                         disabled={
-                          !isOutOfStock ||
+                          isOutOfStock &&
                           restockMessage === "Restock notification requested"
                         }
-                        onClick={handleRestock}
-                        className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${isOutOfStock ? "bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                        onClick={isOutOfStock ? handleRestock : handleBuyNow}
+                        className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${
+                          isOutOfStock &&
+                          restockMessage === "Restock notification requested"
+                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : "bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100"
+                        }`}
                       >
                         {isOutOfStock ? <Bell size={16} /> : null}
                         {isOutOfStock
                           ? restockMessage
                             ? "Requested"
                             : "Notify"
-                          : "Rs. Buy"}
+                          : "Buy Now"}
                       </button>
                     </div>
                     {restockMessage && (
@@ -276,15 +300,16 @@ export default function ViewProductDetailIS() {
                   </div>
                 </div>
 
-                {product.tierPrices?.map((tier, index) => {
+                {validTiers.map((tier, index) => {
                   const saving = (
                     ((product.retailPrice - tier.price) / product.retailPrice) *
                     100
                   ).toFixed(1);
+                  const isActive = index === activeTierIndex;
                   return (
                     <div
                       key={index}
-                      className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30"
+                      className={`grid grid-cols-3 gap-2 px-3 py-3 rounded-default border ${isActive ? "bg-[var(--color-secondary-fixed)]/40 border-[var(--color-secondary)]" : "bg-[var(--color-secondary-fixed)]/20 border-[var(--color-secondary-fixed-dim)]/30"}`}
                     >
                       <div className="text-sm font-medium text-[var(--color-on-surface)]">
                         {tier.minQuantity}+
@@ -298,7 +323,19 @@ export default function ViewProductDetailIS() {
                     </div>
                   );
                 })}
+
+                {validTiers.length === 0 && (
+                  <p className="px-3 py-3 text-xs text-[var(--color-on-surface-variant)]">
+                    No bulk discounts are set for this product.
+                  </p>
+                )}
               </div>
+
+              {!isWholesale && validTiers.length > 0 && (
+                <p className="mt-4 text-xs text-[var(--color-on-surface-variant)]">
+                  Bulk prices apply to verified wholesale accounts.
+                </p>
+              )}
             </div>
 
             {/* Product Specifications */}

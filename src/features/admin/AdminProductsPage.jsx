@@ -63,6 +63,7 @@ const EMPTY_PRODUCT = {
   image: null,
   unit: "",
   grade: "A",
+  packCount: "",
   shelfLife: "",
   origin: "",
   pricingTiers: [{ minQty: 1, maxQty: 9, price: "" }],
@@ -332,8 +333,40 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
     handleImageFile(e.dataTransfer.files[0]);
   }, []);
 
+  // A tier is only meaningful if it beats the retail price at a quantity above
+  // one. Without this check a typo (Rs. 0 at 1+) silently becomes a 100% off
+  // row on the product page.
+  const tierErrors = (() => {
+    const retail = Number(form.price);
+    const filled = form.pricingTiers.filter(
+      (tier) => tier.minQty || (tier.price !== "" && tier.price !== null),
+    );
+    const messages = [];
+    let previousMin = 1;
+    filled.forEach((tier, index) => {
+      const min = Number(tier.minQty);
+      const price = Number(tier.price);
+      const label = `Tier ${index + 1}`;
+      if (!min || min < 2) {
+        messages.push(`${label}: min qty must be 2 or more.`);
+      } else if (min <= previousMin) {
+        messages.push(`${label}: min qty must be higher than the tier above.`);
+      }
+      if (!tier.price && tier.price !== 0) {
+        messages.push(`${label}: price is required.`);
+      } else if (price <= 0) {
+        messages.push(`${label}: price must be greater than 0.`);
+      } else if (retail && price >= retail) {
+        messages.push(`${label}: price must be below the retail price.`);
+      }
+      if (min) previousMin = min;
+    });
+    return messages;
+  })();
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (tierErrors.length > 0) return;
     onSave({
       ...form,
       price: Number(form.price),
@@ -575,8 +608,18 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
               </div>
             </div>
 
-            {/* SHELF LIFE + ORIGIN */}
+            {/* PACK COUNT + SHELF LIFE */}
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Pack Count</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 12 bottles per case"
+                  value={form.packCount}
+                  onChange={(e) => field("packCount", e.target.value)}
+                  className={inputCls}
+                />
+              </div>
               <div>
                 <label className={labelCls}>Shelf Life</label>
                 <input
@@ -587,16 +630,18 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
                   className={inputCls}
                 />
               </div>
-              <div>
-                <label className={labelCls}>Origin</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Terai, Nepal"
-                  value={form.origin}
-                  onChange={(e) => field("origin", e.target.value)}
-                  className={inputCls}
-                />
-              </div>
+            </div>
+
+            {/* ORIGIN */}
+            <div>
+              <label className={labelCls}>Origin</label>
+              <input
+                type="text"
+                placeholder="e.g. Terai, Nepal"
+                value={form.origin}
+                onChange={(e) => field("origin", e.target.value)}
+                className={inputCls}
+              />
             </div>
 
             {/* PRICING TIERS */}
@@ -607,6 +652,15 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
                   tiers={form.pricingTiers}
                   onChange={(tiers) => field("pricingTiers", tiers)}
                 />
+                {tierErrors.length > 0 && (
+                  <ul className="mt-3 space-y-1">
+                    {tierErrors.map((message) => (
+                      <li key={message} className="text-xs text-[#ba1a1a]">
+                        {message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
@@ -642,7 +696,11 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
             <ProductCardPreview form={form} />
 
             {/* Mini spec preview */}
-            {(form.unit || form.grade || form.shelfLife || form.origin) && (
+            {(form.unit ||
+              form.grade ||
+              form.packCount ||
+              form.shelfLife ||
+              form.origin) && (
               <div className="mt-2 rounded-xl border border-[#C1C8C1]/40 p-3 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#707972] mb-2">
                   Specifications
@@ -650,6 +708,7 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
                 {[
                   ["Grade", form.grade],
                   ["Unit", form.unit],
+                  ["Pack Count", form.packCount],
                   ["Shelf Life", form.shelfLife],
                   ["Origin", form.origin],
                 ]
@@ -880,6 +939,7 @@ export default function AdminProductsPage() {
     image: product.imageUrl,
     unit: product.unit,
     grade: product.grade,
+    packCount: product.packCount,
     shelfLife: product.shelfLife,
     origin: product.origin,
     pricingTiers: (product.tierPrices || []).map((tier) => ({
@@ -948,14 +1008,21 @@ export default function AdminProductsPage() {
       imageUrl: data.image || "",
       description: data.description || "",
       grade: data.grade || "",
+      packCount: data.packCount || "",
       shelfLife: data.shelfLife || "",
       origin: data.origin || "",
       tierPrices: (data.pricingTiers || [])
-        .filter((tier) => tier.minQty && tier.price !== "")
+        .filter(
+          (tier) =>
+            Number(tier.minQty) > 1 &&
+            Number(tier.price) > 0 &&
+            Number(tier.price) < Number(data.price),
+        )
         .map((tier) => ({
           minQuantity: Number(tier.minQty),
           price: Number(tier.price),
-        })),
+        }))
+        .sort((a, b) => a.minQuantity - b.minQuantity),
     };
     try {
       await apiRequest(

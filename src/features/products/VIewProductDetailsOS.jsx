@@ -72,13 +72,21 @@ export default function ViewProductDetailOOS() {
     );
 
   const isWholesale = user?.role === "verified_wholesale";
-  const startingTier = product.tierPrices?.find(
-    (tier) => tier.minQuantity <= 1,
-  );
+  // Ignore tiers that are not a real bulk discount (qty above 1, price below
+  // retail) so bad catalogue data cannot show up as a 100% saving.
+  const validTiers = (product.tierPrices || [])
+    .filter(
+      (tier) =>
+        Number(tier.minQuantity) > 1 &&
+        Number(tier.price) > 0 &&
+        Number(tier.price) < product.retailPrice,
+    )
+    .sort((a, b) => a.minQuantity - b.minQuantity);
+  const applicableTier = [...validTiers]
+    .reverse()
+    .find((tier) => quantity >= tier.minQuantity);
   const displayPrice =
-    isWholesale && startingTier?.price < product.retailPrice
-      ? startingTier.price
-      : product.retailPrice;
+    isWholesale && applicableTier ? applicableTier.price : product.retailPrice;
   const oldPrice =
     displayPrice !== product.retailPrice ? product.retailPrice : null;
 
@@ -253,8 +261,8 @@ export default function ViewProductDetailOOS() {
                   </div>
                 </div>
 
-                {product.tierPrices?.map((tier, index) => {
-                  const isBest = index === product.tierPrices.length - 1;
+                {validTiers.map((tier, index) => {
+                  const isBest = index === validTiers.length - 1;
                   const saving = (
                     ((product.retailPrice - tier.price) / product.retailPrice) *
                     100

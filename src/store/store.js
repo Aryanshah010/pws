@@ -1,10 +1,11 @@
 import { create } from "zustand";
+import { apiRequest, authHeader } from "../services/api";
 
 const savedUser = JSON.parse(localStorage.getItem("pathivara_user") || "null");
 const notificationKey = (user) =>
   `pathivara_notifications_${user?.id || "guest"}`;
 
-export const useStore = create((set) => ({
+export const useStore = create((set, get) => ({
   // State
   language: localStorage.getItem("pathivara_lang") || "en",
   onboarded: localStorage.getItem("pathivara_onboarded") === "true",
@@ -63,6 +64,38 @@ export const useStore = create((set) => ({
         notificationsEnabled:
           localStorage.getItem(notificationKey(null)) || "pending",
       });
+    }
+  },
+
+  /**
+   * Re-reads the account behind the saved token. The stored session is what
+   * keeps a returning buyer signed in, so this is also the only place that
+   * notices the storekeeper changed their buyer type: prices, tier discounts
+   * and basket quotes are all derived from the role, so a change means the
+   * whole app has to come back up as the new buyer type.
+   */
+  refreshUser: async () => {
+    const token = get().token;
+    if (!token) return null;
+
+    try {
+      const data = await apiRequest("/auth/me", { headers: authHeader(token) });
+      const wasWholesale = get().user?.role === "verified_wholesale";
+      const isWholesale = data.user.role === "verified_wholesale";
+      get().setUser(data.user, token);
+
+      // Only a move in or out of wholesale changes what anything costs. Going
+      // from bulk/shop to pending_wholesale must not reload, or submitting the
+      // request would throw the buyer off the form. setUser has already
+      // persisted the new role, so the reloaded app sees no change and does
+      // not loop.
+      if (wasWholesale !== isWholesale) {
+        window.location.reload();
+      }
+      return data.user;
+    } catch {
+      get().logout();
+      return null;
     }
   },
 

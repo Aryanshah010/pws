@@ -97,7 +97,7 @@ export default function WholesaleApproved() {
 
         {/* CTA Link */}
         <Link
-          to="/"
+          to="/homepage"
           className="flex w-full max-w-[414px] items-center justify-center rounded-[10px] bg-[var(--color-primary-container)] px-0 py-[17px] text-lg font-semibold leading-[25.2px] text-[var(--color-on-primary)] shadow-[var(--shadow-level-1)] transition-opacity hover:opacity-90"
         >
           Go To Home

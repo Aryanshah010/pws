@@ -74,7 +74,7 @@ export default function WholesalePending() {
               onClick={() => navigate(user ? "/homepage" : "/login")}
               className="w-full sm:w-[278px] h-[60px] bg-[var(--color-primary-container)] rounded-[10px] shadow-[var(--shadow-level-1)] text-[var(--color-on-primary)]  font-semibold text-lg leading-6 hover:bg-[var(--color-primary)] transition-colors"
             >
-              Login
+              {user ? "Continue shopping" : "Login"}
             </button>
             {whatsApp && (
             <a

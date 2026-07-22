@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Nav from "./components/layout/Nav";
@@ -20,6 +25,7 @@ import MainNavbar from "./components/layout/MainNav";
 import WholesaleForm from "./features/wholesale/WholesaleForm";
 import WholesalePending from "./features/wholesale/WholesalePending";
 import WholesaleApproved from "./features/wholesale/WholesaleApprove";
+import WholesaleRejected from "./features/wholesale/WholesaleReject";
 import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 import CartPage from "./features/checkout/CartPage";
 import ProductDetailOS from "./features/products/VIewProductDetailsOS";
@@ -43,29 +49,17 @@ import AdminOrdersPage from "./features/admin/AdminOrdersPage";
 import AdminSettingsPage from "./features/admin/AdminSettingsPage";
 import ProfilePage from "./features/auth/ProfilePage";
 import { useStore } from "./store/store";
-import { apiRequest, authHeader } from "./services/api";
 
 function AuthSession() {
-  const { token, setUser, logout } = useStore();
+  const { token, refreshUser } = useStore();
 
   useEffect(() => {
     if (!token) return undefined;
 
-    const refresh = async () => {
-      try {
-        const data = await apiRequest("/auth/me", {
-          headers: authHeader(token),
-        });
-        setUser(data.user, token);
-      } catch {
-        logout();
-      }
-    };
-
-    refresh();
-    const intervalId = window.setInterval(refresh, 30000);
+    refreshUser();
+    const intervalId = window.setInterval(refreshUser, 30000);
     return () => window.clearInterval(intervalId);
-  }, [token, setUser, logout]);
+  }, [token, refreshUser]);
 
   return null;
 }
@@ -107,6 +101,20 @@ function FirstVisitGate({ children }) {
   return children;
 }
 
+/**
+ * GuestOnly: the saved session token is read back at store init, so a buyer who
+ * signed in earlier lands straight on their homepage instead of the landing or
+ * login screen. If the token turns out to be stale, AuthSession clears it and
+ * the guest screens become reachable again.
+ */
+function GuestOnly({ children }) {
+  const { token, user } = useStore();
+  if (!token) return children;
+  return (
+    <Navigate to={user?.role === "admin" ? "/admin" : "/homepage"} replace />
+  );
+}
+
 function App() {
   return (
     <Router>
@@ -126,25 +134,31 @@ function App() {
         <Route
           path="/"
           element={
-            <Layout>
-              <LandingPage />
-            </Layout>
+            <GuestOnly>
+              <Layout>
+                <LandingPage />
+              </Layout>
+            </GuestOnly>
           }
         />
         <Route
           path="/login"
           element={
-            <FirstVisitGate>
-              <Login />
-            </FirstVisitGate>
+            <GuestOnly>
+              <FirstVisitGate>
+                <Login />
+              </FirstVisitGate>
+            </GuestOnly>
           }
         />
         <Route
           path="/register"
           element={
-            <FirstVisitGate>
-              <Register />
-            </FirstVisitGate>
+            <GuestOnly>
+              <FirstVisitGate>
+                <Register />
+              </FirstVisitGate>
+            </GuestOnly>
           }
         />
         <Route path="/forget-password" element={<ForgetPassword />} />
@@ -211,6 +225,14 @@ function App() {
           element={
             <Layout2>
               <WholesaleApproved />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/wholesale-rejected"
+          element={
+            <Layout2>
+              <WholesaleRejected />
             </Layout2>
           }
         />

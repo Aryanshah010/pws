@@ -57,7 +57,13 @@ function ActionButton({ action, busy, onClick }) {
         fontWeight: 700,
       }}
     >
-      {busy ? <Spinner /> : notify ? <Bell size={16} /> : <ShoppingCart size={16} />}
+      {busy ? (
+        <Spinner />
+      ) : notify ? (
+        <Bell size={16} />
+      ) : (
+        <ShoppingCart size={16} />
+      )}
       {busy ? "Saving..." : action}
     </button>
   );
@@ -123,6 +129,10 @@ export function ProductCard({ product }) {
         boxShadow: "var(--shadow-level-1)",
         display: "flex",
         flexDirection: "column",
+        // Cap the card so a short result list (e.g. 1 product) can't
+        // stretch the grid track to the full row width.
+        width: "100%",
+        maxWidth: 299,
       }}
     >
       <div
@@ -272,8 +282,24 @@ export default function Home() {
   };
 
   return (
-    <main style={{ background: "var(--color-background)", width: "100%" }}>
-      <div style={{ width: "100%", display: "flex", alignItems: "stretch" }}>
+    <main
+      style={{
+        background: "var(--color-background)",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        minHeight: "100%",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "stretch",
+          flex: 1,
+        }}
+      >
         <aside
           style={{
             width: 328,
@@ -364,7 +390,14 @@ export default function Home() {
             </div>
           </div>
         </aside>
-        <section style={{ flex: 1, padding: "52px var(--spacing-2xl)" }}>
+        <section
+          style={{
+            flex: 1,
+            padding: "52px var(--spacing-2xl)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -416,8 +449,10 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(297px,1fr))",
-              gap: 34,
+              // Fixed max (299px, matching the design) instead of 1fr so a
+              // short result list doesn't stretch cards to fill the row.
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 299px))",
+              gap: 32,
             }}
           >
             {loading ? (
