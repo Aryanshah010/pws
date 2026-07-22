@@ -1,15 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Minus,
-  Plus,
-  Trash2,
-  ArrowLeft,
-  TriangleAlert,
-  BookmarkPlus,
-  Check,
-  TrendingDown,
-} from "lucide-react";
+import { Minus, Plus, Trash2, ArrowLeft, TriangleAlert } from "lucide-react";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 
@@ -44,94 +35,8 @@ function PriceChangeAlert({ message, onRemove, onKeep }) {
   );
 }
 
-/**
- * US #50 — Tier progress bar.
- * Shows how many more units the buyer needs to reach the next discount tier.
- */
-function TierProgressBar({ item }) {
-  const tiers = item.product?.tierPrices;
-  if (!tiers || tiers.length === 0) return null;
-
-  const sorted = [...tiers].sort((a, b) => a.minQuantity - b.minQuantity);
-  const currentQty = item.quantity;
-
-  const nextTier = sorted.find((t) => t.minQuantity > currentQty);
-  const activeTier = [...sorted]
-    .reverse()
-    .find((t) => t.minQuantity <= currentQty);
-
-  if (!nextTier) {
-    // Already at best tier
-    return (
-      <div className="mt-2 flex items-center gap-2 rounded-default border border-[#c6e9d2] bg-[#F4FBF4] px-3 py-2 text-[12px] font-semibold text-[#1B5E40]">
-        <TrendingDown className="h-3.5 w-3.5 shrink-0" />
-        Best tier unlocked — Rs.&nbsp;{activeTier?.price ?? item.price} / unit
-      </div>
-    );
-  }
-
-  const needed = nextTier.minQuantity - currentQty;
-  const progress = Math.min((currentQty / nextTier.minQuantity) * 100, 100);
-  const saving = item.product.retailPrice - nextTier.price;
-
-  return (
-    <div className="mt-2 rounded-default border border-[#c6e9d2] bg-[#F4FBF4] px-3 py-2.5 text-[12px]">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="font-semibold text-[#1B5E40]">
-          Add&nbsp;{needed}&nbsp;more {item.product.unit || "units"} → save
-          Rs.&nbsp;{saving}/unit
-        </span>
-        <span className="text-[#717973]">
-          {currentQty}/{nextTier.minQuantity}
-        </span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#C1E4CB]">
-        <div
-          className="h-full rounded-full bg-[#1B5E40] transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-/** US #22 — Save as Basket + standard order summary */
-function OrderSummary({ subtotal, discount, tax, onCheckout, cart, token }) {
+function OrderSummary({ subtotal, discount, tax, onCheckout }) {
   const total = subtotal - discount + tax;
-  const [basketName, setBasketName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [basketError, setBasketError] = useState("");
-  const navigate = useNavigate();
-
-  const handleSaveBasket = async () => {
-    if (!token) return navigate("/login");
-    if (!basketName.trim()) {
-      setBasketError("Enter a name for this basket");
-      return;
-    }
-    setSaving(true);
-    setBasketError("");
-    try {
-      await apiRequest("/orders/baskets", {
-        method: "POST",
-        headers: authHeader(token),
-        body: JSON.stringify({
-          name: basketName.trim(),
-          items: cart.map((item) => ({
-            product: item.product._id,
-            quantity: item.quantity,
-          })),
-        }),
-      });
-      setSaved(true);
-      setBasketName("");
-    } catch (err) {
-      setBasketError(err.message || "Could not save basket");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6 rounded-md border border-[#C1C8C1] bg-white p-6 shadow-[0_1px_3px_1px_rgba(27,28,26,0.06)]">
@@ -167,52 +72,6 @@ function OrderSummary({ subtotal, discount, tax, onCheckout, cart, token }) {
         </span>
       </div>
 
-      {/* US #22 — Save as Basket */}
-      <div className="flex flex-col gap-2 border-t border-[#C1C8C1] pt-4">
-        <div className="flex items-center gap-2 text-[13px] font-semibold text-[#414943]">
-          <BookmarkPlus className="h-4 w-4 text-[#1B5E40]" />
-          Save cart as Basket template
-        </div>
-        {saved ? (
-          <div className="flex items-center gap-2 rounded-default border border-[#c6e9d2] bg-[#F4FBF4] px-3 py-2 text-[13px] font-semibold text-[#1B5E40]">
-            <Check className="h-4 w-4" />
-            Basket saved! View in{" "}
-            <Link
-              to="/myorder"
-              className="underline hover:opacity-80"
-            >
-              My Orders
-            </Link>
-            .
-          </div>
-        ) : (
-          <>
-            <div className="flex gap-2">
-              <input
-                value={basketName}
-                onChange={(e) => {
-                  setBasketName(e.target.value);
-                  setBasketError("");
-                }}
-                placeholder="e.g. Weekly staples"
-                className="flex-1 rounded border border-[#C1C8C1] bg-[#F4FBF4] px-3 py-2 text-[13px] outline-none focus:ring-1 focus:ring-[#1B5E40]"
-              />
-              <button
-                type="button"
-                onClick={handleSaveBasket}
-                disabled={saving || cart.length === 0}
-                className="rounded border border-[#1B5E40] px-3 py-2 text-[13px] font-semibold text-[#1B5E40] transition-colors hover:bg-[#1B5E40]/10 disabled:opacity-50"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
-            {basketError && (
-              <p className="text-[12px] text-red-600">{basketError}</p>
-            )}
-          </>
-        )}
-      </div>
-
       <button
         type="button"
         onClick={onCheckout}
@@ -224,36 +83,91 @@ function OrderSummary({ subtotal, discount, tax, onCheckout, cart, token }) {
   );
 }
 
-function CartItemRow({ item, onIncrement, onDecrement, onRemove }) {
-  const { product, quantity, price } = item;
-  const subtotal = price * quantity;
+function CartItemRow({ item, quotedItem, onIncrement, onDecrement, onRemove }) {
+  const product = item.product || {};
+  const productId = product._id || item.id;
+  const productName = product.name || item.name;
+  const unit = product.unit || item.unit || "unit";
+  const quantity = item.quantity;
+
+  // Admin Tier Discount calculations
+  const tierPrices = product.tierPrices || [];
+  const sortedTiers = [...tierPrices].sort(
+    (a, b) => a.minQuantity - b.minQuantity,
+  );
+
+  const discountThreshold =
+    sortedTiers[0]?.minQuantity ?? item.discountThreshold ?? 10;
+  const unlocked = quantity >= discountThreshold;
+  const remaining = discountThreshold - quantity;
+
+  const activeTier = [...sortedTiers]
+    .reverse()
+    .find((t) => t.minQuantity <= quantity);
+  const nextTier = sortedTiers.find((t) => t.minQuantity > quantity);
+
+  // 3-Segment progress calculation:
+  // 1-9 qty -> 0 segments (No discount)
+  // 10+ qty -> 1 to 3 segments depending on progress towards highest tier threshold
+  let segments = 0;
+  if (unlocked) {
+    if (sortedTiers.length > 1) {
+      const highestThreshold = sortedTiers[sortedTiers.length - 1].minQuantity;
+      if (quantity >= highestThreshold) {
+        segments = 3;
+      } else {
+        const progressRatio =
+          (quantity - discountThreshold) /
+          (highestThreshold - discountThreshold);
+        segments = 1 + Math.floor(progressRatio * 2);
+      }
+    } else {
+      segments = 3;
+    }
+  }
+
+  // Price & Subtotal calculations
+  const pricePerUnit =
+    item.price ?? product.retailPrice ?? item.pricePerUnit ?? 0;
+  const subtotal = pricePerUnit * quantity;
+
+  let discount = 0;
+  if (quotedItem && typeof quotedItem.discount === "number") {
+    discount = quotedItem.discount;
+  } else if (activeTier) {
+    const regularTotal = (product.retailPrice || pricePerUnit) * quantity;
+    const tieredTotal = activeTier.price * quantity;
+    discount = Math.max(0, regularTotal - tieredTotal);
+  } else if (unlocked && item.discountAmount) {
+    discount = item.discountAmount;
+  }
+
+  const final = Math.max(0, subtotal - discount);
 
   return (
     <div className="grid grid-cols-1 gap-4 border-b border-[#C1C8C1] p-6 last:border-b-0 sm:grid-cols-12 sm:items-start">
       <div className="sm:col-span-4">
-        <p className="text-base font-semibold text-[#1B1C1A]">{product.name}</p>
-        {/* US #50 — per-item tier progress bar */}
-        <TierProgressBar item={item} />
+        <p className="text-base font-semibold text-[#1B1C1A]">{productName}</p>
       </div>
 
       <div className="flex flex-col items-center gap-1.75 sm:col-span-4">
         <div className="flex items-center gap-2">
           <button
             type="button"
-            aria-label={`Decrease ${product.name} quantity`}
-            onClick={() => onDecrement(product._id, quantity)}
+            aria-label={`Decrease ${productName} quantity`}
+            onClick={() => onDecrement(productId, quantity)}
             className="flex h-8 w-8 items-center justify-center rounded border border-[#C1C8C1] bg-[#fbf9f5] transition-colors hover:bg-[#efeeea]"
           >
             <Minus className="h-[11px] w-[11px] text-[#1B1C1A]" />
           </button>
           <div className="flex items-center gap-1 rounded border border-[#C1C8C1] bg-white px-3 py-1">
             <span className="text-base text-[#1B1C1A]">{quantity}</span>
-            <span className="text-base text-[#404943]">({product.unit})</span>
+            <span className="text-base text-[#404943]">({unit})</span>
           </div>
           <button
             type="button"
-            aria-label={`Increase ${product.name} quantity`}
-            onClick={() => onIncrement(product._id, quantity)}
+            aria-label={`Increase ${productName} quantity`}
+            onClick={() => onIncrement(productId, quantity)}
             className="flex h-8 w-8 items-center justify-center rounded border border-[#C1C8C1] bg-[#fbf9f5] transition-colors hover:bg-[#efeeea]"
           >
             <Plus className="h-[11px] w-[11px] text-[#1B1C1A]" />
@@ -262,22 +176,47 @@ function CartItemRow({ item, onIncrement, onDecrement, onRemove }) {
 
         <div className="flex w-full max-w-[200px] flex-col items-center gap-1">
           <p className="text-[13px] font-semibold text-[#404943]">
-            Unit Price: Rs. {price}
+            {unlocked ? "Discount unlocked!" : "No discount yet"}
           </p>
+          {/* Progress Milestone Indicators */}
+          <div className="flex h-3 w-full items-start justify-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={
+                  "h-full flex-1 rounded-sm " +
+                  (i < segments ? "bg-[#00452b]" : "bg-[#e4e2df]")
+                }
+              />
+            ))}
+          </div>
+          {!unlocked ? (
+            <p className="text-center text-[13px] leading-[140%] text-[#404943]">
+              Add {remaining} more {unit}
+              {remaining > 1 ? "s" : ""} to unlock discount
+            </p>
+          ) : nextTier ? (
+            <p className="text-center text-[13px] leading-[140%] text-[#404943]">
+              Add {nextTier.minQuantity - quantity} more {unit}
+              {nextTier.minQuantity - quantity > 1 ? "s" : ""} for best rate
+            </p>
+          ) : null}
         </div>
       </div>
 
       <div className="flex flex-col items-start gap-1 pt-2 sm:col-span-3">
+        <p className="text-base text-[#1B1C1A]">Subtotal: Rs. {subtotal}</p>
+        <p className="text-base text-[#1B1C1A]">Discount: Rs. {discount}</p>
         <p className="text-base font-semibold text-[#1B1C1A]">
-          Subtotal: Rs. {subtotal}
+          Final: Rs. {final}
         </p>
       </div>
 
       <div className="flex justify-end sm:col-span-1 sm:justify-center sm:pt-2">
         <button
           type="button"
-          aria-label={`Remove ${product.name} from cart`}
-          onClick={() => onRemove(product._id)}
+          aria-label={`Remove ${productName} from cart`}
+          onClick={() => onRemove(productId)}
           className="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-70"
         >
           <Trash2 className="h-6 w-6 text-[#ba1a1a]" />
@@ -289,10 +228,15 @@ function CartItemRow({ item, onIncrement, onDecrement, onRemove }) {
 
 // --- MAIN CONTAINER ---
 export default function CartPage() {
-  const { cart, token, updateQuantity, removeFromCart, synchronizeCartPrices } =
-    useStore();
-  const [quote, setQuote] = useState(null);
   const navigate = useNavigate();
+  const {
+    cart = [],
+    token,
+    updateQuantity,
+    removeFromCart,
+    synchronizeCartPrices,
+  } = useStore();
+  const [quote, setQuote] = useState(null);
 
   const increment = (id, currentQty) => updateQuantity(id, currentQty + 1);
   const decrement = (id, currentQty) => {
@@ -303,14 +247,18 @@ export default function CartPage() {
 
   const removeItem = (id) => removeFromCart(id);
 
+  // Realtime quote sync with backend
   useEffect(() => {
-    if (!token || !cart.length) return setQuote(null);
+    if (!token || !cart.length) {
+      setQuote(null);
+      return;
+    }
     apiRequest("/orders/quote", {
       method: "POST",
       headers: authHeader(token),
       body: JSON.stringify({
         items: cart.map((item) => ({
-          product: item.product._id,
+          product: item.product?._id || item.id,
           quantity: item.quantity,
         })),
       }),
@@ -319,26 +267,40 @@ export default function CartPage() {
       .catch(() => setQuote(null));
   }, [cart, token]);
 
-  const totals = useMemo(() => {
+  const localTotals = useMemo(() => {
     return cart.reduce(
       (acc, item) => {
-        const subtotal = item.price * item.quantity;
+        const price =
+          item.price ?? item.product?.retailPrice ?? item.pricePerUnit ?? 0;
+        const subtotal = price * item.quantity;
+
+        const tiers = item.product?.tierPrices || [];
+        const sortedTiers = [...tiers].sort(
+          (a, b) => a.minQuantity - b.minQuantity,
+        );
+        const activeTier = [...sortedTiers]
+          .reverse()
+          .find((t) => t.minQuantity <= item.quantity);
+
+        let discount = 0;
+        if (activeTier) {
+          const regularTotal =
+            (item.product?.retailPrice || price) * item.quantity;
+          const tieredTotal = activeTier.price * item.quantity;
+          discount = Math.max(0, regularTotal - tieredTotal);
+        } else if (item.quantity >= (item.discountThreshold || 10)) {
+          discount = item.discountAmount || 0;
+        }
+
         return {
           subtotal: acc.subtotal + subtotal,
-          discount: 0,
+          discount: acc.discount + discount,
         };
       },
       { subtotal: 0, discount: 0 },
     );
   }, [cart]);
 
-  const priceChanges =
-    quote?.items?.filter((quoted) => {
-      const cartItem = cart.find(
-        (item) => String(item.product._id) === String(quoted.productId),
-      );
-      return cartItem && cartItem.price !== quoted.unitPrice;
-    }) || [];
   const displayTotals = quote
     ? {
         subtotal: quote.subtotalAmount,
@@ -346,13 +308,24 @@ export default function CartPage() {
         total: quote.totalAmount,
       }
     : {
-        subtotal: totals.subtotal,
-        discount: totals.discount,
-        total: totals.subtotal - totals.discount,
+        subtotal: localTotals.subtotal,
+        discount: localTotals.discount,
+        total: localTotals.subtotal - localTotals.discount,
       };
+
+  // Detecting price increases in real-time
+  const priceChanges =
+    quote?.items?.filter((quoted) => {
+      const cartItem = cart.find(
+        (item) =>
+          String(item.product?._id || item.id) === String(quoted.productId),
+      );
+      return cartItem && cartItem.price !== quoted.unitPrice;
+    }) || [];
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {/* Back Arrow links directly to Homepage */}
       <Link
         to="/"
         aria-label="Go back"
@@ -377,17 +350,21 @@ export default function CartPage() {
             {priceChanges.map((change) => {
               const item = cart.find(
                 (cartItem) =>
-                  String(cartItem.product._id) === String(change.productId),
+                  String(cartItem.product?._id || cartItem.id) ===
+                  String(change.productId),
               );
+              const name = item?.product?.name || item?.name || "Product";
+              const oldPrice = item?.price ?? item?.pricePerUnit ?? 0;
               return (
                 <PriceChangeAlert
                   key={change.productId}
-                  message={`${item.product.name} changed from Rs. ${item.price} to Rs. ${change.unitPrice}.`}
-                  onRemove={() => removeItem(item.product._id)}
+                  message={`Price changed: ${name} was Rs.${oldPrice}, now Rs.${change.unitPrice}.`}
+                  onRemove={() => removeItem(item?.product?._id || item?.id)}
                   onKeep={() => synchronizeCartPrices(quote.items)}
                 />
               );
             })}
+
             <div className="hidden grid-cols-12 border-b border-[#C1C8C1] bg-[#fbf9f5] p-4 sm:grid">
               <span className="col-span-4 text-base font-semibold text-[#1B1C1A]">
                 Item
@@ -403,15 +380,22 @@ export default function CartPage() {
               </span>
             </div>
 
-            {cart.map((item) => (
-              <CartItemRow
-                key={item.product._id}
-                item={item}
-                onIncrement={increment}
-                onDecrement={decrement}
-                onRemove={removeItem}
-              />
-            ))}
+            {cart.map((item) => {
+              const pId = item.product?._id || item.id;
+              const quotedItem = quote?.items?.find(
+                (q) => String(q.productId) === String(pId),
+              );
+              return (
+                <CartItemRow
+                  key={pId}
+                  item={item}
+                  quotedItem={quotedItem}
+                  onIncrement={increment}
+                  onDecrement={decrement}
+                  onRemove={removeItem}
+                />
+              );
+            })}
 
             <div className="flex items-center justify-between border-t border-[#C1C8C1] p-4 mb-0">
               <span className="text-base font-semibold text-[#1B1C1A]">
@@ -429,8 +413,6 @@ export default function CartPage() {
               subtotal={displayTotals.subtotal}
               discount={displayTotals.discount}
               tax={0}
-              cart={cart}
-              token={token}
               onCheckout={() => navigate("/checkout")}
             />
           </div>

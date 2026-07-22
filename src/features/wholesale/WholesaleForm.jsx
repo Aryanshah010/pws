@@ -55,16 +55,16 @@ export default function WholesaleForm() {
 
     try {
       const data = await apiRequest("/auth/wholesale-request", {
-          method: "PUT",
-          headers: {
-            ...authHeader(token),
-          },
-          body: JSON.stringify({
-            shopName,
-            shopLocation,
-            businessType,
-            panNumber,
-          }),
+        method: "PUT",
+        headers: {
+          ...authHeader(token),
+        },
+        body: JSON.stringify({
+          shopName,
+          shopLocation,
+          businessType,
+          panNumber,
+        }),
       });
 
       setUser(data.user, token);

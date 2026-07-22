@@ -297,8 +297,7 @@ const MOCK_PRODUCTS = [
     name: "Sugar 5kg",
     price: 475,
     oldPrice: null,
-    description:
-      "Refined white sugar, ideal for household and commercial use.",
+    description: "Refined white sugar, ideal for household and commercial use.",
     stock: "IN STOCK",
     stockQty: 120,
     category: "Essentials",

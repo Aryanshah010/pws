@@ -33,7 +33,7 @@ export default function LandingPage() {
 
               <div className="mt-2.5 flex items-center gap-2.5">
                 <span className="text-[18px] font-semibold">
-                 💬 WhatsApp/SMS confirmation
+                  💬 WhatsApp/SMS confirmation
                 </span>
               </div>
 
@@ -177,10 +177,12 @@ export default function LandingPage() {
   );
 }
 
-function FeatureCard({ icon, iconBg, title, text }) {
+function FeatureCard({ icon, iconBg, title, text, link }) {
   return (
-    <div
+    <Link
+      to={link || "#"}
       className="
+            block
             rounded-[10px]
             border
             border-outline-variant
@@ -209,7 +211,7 @@ function FeatureCard({ icon, iconBg, title, text }) {
       <h3 className="text-[18px] font-bold">{title}</h3>
 
       <p className="mt-2.5 text-body-md text-on-surface-variant">{text}</p>
-    </div>
+    </Link>
   );
 }
 

@@ -88,11 +88,25 @@ function Layout2({ children }) {
   );
 }
 
+/**
+ * FirstVisitGate: For first-time visitors hitting /login or /register,
+ * show the language selection screen first. Once they proceed, show the real page.
+ */
+function FirstVisitGate({ children }) {
+  const { onboarded } = useStore();
+  if (!onboarded)
+    return (
+      <Layout>
+        <LanguageModal />
+      </Layout>
+    );
+  return children;
+}
+
 function App() {
   return (
     <Router>
       <AuthSession />
-      <LanguageModal />
       <Routes>
         <Route
           path="/"
@@ -102,8 +116,22 @@ function App() {
             </Layout>
           }
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/login"
+          element={
+            <FirstVisitGate>
+              <Login />
+            </FirstVisitGate>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <FirstVisitGate>
+              <Register />
+            </FirstVisitGate>
+          }
+        />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />

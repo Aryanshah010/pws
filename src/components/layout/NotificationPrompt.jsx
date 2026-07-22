@@ -1,6 +1,5 @@
 import React from "react";
 import { useStore } from "../../store/store";
-import { Bell, X } from "lucide-react";
 
 export default function NotificationPrompt() {
   const { user, notificationsEnabled, setNotificationsEnabled } = useStore();
@@ -10,8 +9,11 @@ export default function NotificationPrompt() {
 
   const handleAccept = () => {
     setNotificationsEnabled("granted");
-    // In a real app, this would call Notification.requestPermission()
-    if (window.Notification && Notification.permission !== "granted") {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission !== "granted"
+    ) {
       Notification.requestPermission();
     }
   };
@@ -21,43 +23,36 @@ export default function NotificationPrompt() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)] shadow-[var(--shadow-level-3)] rounded-[12px] p-5 overflow-hidden animate-in slide-in-from-bottom-5">
-      <div className="flex gap-4 items-start">
-        <div className="w-10 h-10 rounded-full bg-[#F4FBF4] flex items-center justify-center shrink-0">
-          <Bell className="text-[var(--color-primary-container)]" size={20} />
+    /* Modal Backdrop */
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center p-4 z-50">
+      {/* Notification Card Container */}
+      <div
+        className="w-full max-w-[460px] bg-[var(--color-surface)] rounded-[var(--radius-xl)] p-8 md:p-10 flex flex-col items-center text-center"
+        style={{ boxShadow: "var(--shadow-level-2)" }}
+      >
+        {/* Modal Title */}
+        <h2 className="text-[var(--text-headline-sm)] md:text-[22px] font-bold text-[var(--color-on-surface)] tracking-tight leading-snug mb-8">
+          Allow pathivara for send you notifcaton!
+        </h2>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-center gap-4 w-full">
+          {/* Allow Button */}
+          <button
+            onClick={handleAccept}
+            className="flex-1 py-3 px-6 bg-primary text-(--color-on-primary) rounded-[10px] font-semibold hover:bg-[var(--color-primary-container)] active:scale-[0.98] transition-all duration-150 cursor-pointer shadow-sm"
+          >
+            Allow
+          </button>
+
+          {/* Deny Button */}
+          <button
+            onClick={handleDecline}
+            className="flex-1 py-3 px-6 bg-(--color-surface-lowest) text-(--color-on-surface) border border-[var(--color-outline-variant)] rounded-[10px] font-semibold hover:bg-[var(--color-surface-low)] active:scale-[0.98] transition-all duration-150 cursor-pointer"
+          >
+            Deny
+          </button>
         </div>
-
-        <div className="flex-1">
-          <h4 className="text-base font-bold text-[var(--color-on-surface)]">
-            Enable Notifications
-          </h4>
-          <p className="text-sm text-[var(--color-on-surface-variant)] mt-1 mb-4 leading-relaxed">
-            Get instant SMS and push alerts for your order status and wholesale
-            verification updates.
-          </p>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleAccept}
-              className="flex-1 py-2 px-4 bg-[var(--color-primary-container)] hover:bg-[#164f35] text-white text-sm font-semibold rounded-[8px] transition-colors"
-            >
-              Allow
-            </button>
-            <button
-              onClick={handleDecline}
-              className="flex-1 py-2 px-4 bg-transparent border border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-low)] text-[var(--color-on-surface-variant)] text-sm font-semibold rounded-[8px] transition-colors"
-            >
-              Maybe Later
-            </button>
-          </div>
-        </div>
-
-        <button
-          onClick={handleDecline}
-          className="text-[var(--color-outline)] hover:text-[var(--color-on-surface)] transition-colors absolute top-4 right-4"
-        >
-          <X size={16} />
-        </button>
       </div>
     </div>
   );

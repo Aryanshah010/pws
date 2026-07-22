@@ -68,12 +68,6 @@ export default function Navbar() {
           </button>
           {user ? (
             <>
-              <Link
-                to="/profile"
-                className="text-white font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
-              >
-                Profile
-              </Link>
               <button
                 onClick={handleLogout}
                 className="text-[#BA1A1A] font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
@@ -135,9 +129,21 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="hidden text-[#414943] font-[Montserrat] text-base font-medium whitespace-nowrap lg:flex items-center gap-6 mx-0 flex-shrink-0">
-            <Link to="/cart" className="hover:text-[#1B5E40] transition-colors">Cart</Link>
-            <Link to="/myorder" className="hover:text-[#1B5E40] transition-colors">My Orders</Link>
-            <Link to="/track" className="hover:text-[#1B5E40] transition-colors">Track Order</Link>
+            <Link to="/cart" className="hover:text-[#1B5E40] transition-colors">
+              Cart
+            </Link>
+            <Link
+              to="/myorder"
+              className="hover:text-[#1B5E40] transition-colors"
+            >
+              My Orders
+            </Link>
+            <Link
+              to="/track"
+              className="hover:text-[#1B5E40] transition-colors"
+            >
+              Track Order
+            </Link>
             <button
               onClick={() => {
                 setNotificationsOpen((open) => !open);
@@ -163,7 +169,7 @@ export default function Navbar() {
               )}
             </button>
             <div className="relative">
-              <button 
+              <button
                 onClick={() => {
                   setProfileOpen(!profileOpen);
                   setNotificationsOpen(false);
@@ -186,7 +192,9 @@ export default function Navbar() {
               {profileOpen && (
                 <div className="absolute right-0 mt-4 z-50 w-56 rounded-xl border border-[#C1C8C1] bg-white p-4 shadow-lg">
                   <div className="mb-3 border-b border-[#E2EAE3] pb-3 flex flex-col gap-1">
-                    <p className="text-sm font-bold text-[#1B1C1A]">{user?.name || "User Profile"}</p>
+                    <p className="text-sm font-bold text-[#1B1C1A]">
+                      {user?.name || "User Profile"}
+                    </p>
                     {user?.role === "verified_wholesale" && (
                       <span className="inline-block rounded-full bg-[#c6e9d2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1B5E40] w-max">
                         Verified Bulk Buyer

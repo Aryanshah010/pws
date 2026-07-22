@@ -21,10 +21,6 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
-// ─────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────
-
 const CATEGORIES = [
   "Oil",
   "Rice",
@@ -72,18 +68,10 @@ const EMPTY_PRODUCT = {
   pricingTiers: [{ minQty: 1, maxQty: 9, price: "" }],
 };
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
-
 function formatPrice(p) {
   if (!p && p !== 0) return "—";
   return `Rs. ${Number(p).toLocaleString()}`;
 }
-
-// ─────────────────────────────────────────────
-// Confirm Delete Modal
-// ─────────────────────────────────────────────
 
 function DeleteModal({ product, onConfirm, onCancel }) {
   if (!product) return null;
@@ -195,9 +183,6 @@ function ProductCardPreview({ form }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Pricing Tier Editor
-// ─────────────────────────────────────────────
 
 function PricingTierEditor({ tiers, onChange }) {
   const addTier = () => {
@@ -274,9 +259,6 @@ function PricingTierEditor({ tiers, onChange }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Product Drawer (Add / Edit)
-// ─────────────────────────────────────────────
 
 function ProductDrawer({ open, editProduct, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_PRODUCT);
@@ -811,9 +793,7 @@ function ProductRow({ product, onEdit, onDelete }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Mobile Product Card
-// ─────────────────────────────────────────────
+
 
 function ProductMobileCard({ product, onEdit, onDelete }) {
   const stockStyle = STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
@@ -875,9 +855,6 @@ function ProductMobileCard({ product, onEdit, onDelete }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────
 
 export default function AdminProductsPage() {
   const { token } = useStore();
