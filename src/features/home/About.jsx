@@ -8,7 +8,7 @@ export default function About() {
   return (
     <div className="max-w-6xl mx-auto px-md py-xl min-h-screen font-sans">
       <button
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/homepage")}
         className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
       >
         <ArrowLeft size={16} />

@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Nav from "./components/layout/Nav";
 import Footer from "./components/layout/Footer";
 import NotificationPrompt from "./components/layout/NotificationPrompt";
@@ -37,6 +39,8 @@ import AdminUsersPage from "./features/admin/AdminUsersPage";
 import AdminWholesalePage from "./features/admin/AdminWholesalePage";
 import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
 import AdminProductsPage from "./features/admin/AdminProductsPage";
+import AdminOrdersPage from "./features/admin/AdminOrdersPage";
+import AdminSettingsPage from "./features/admin/AdminSettingsPage";
 import ProfilePage from "./features/auth/ProfilePage";
 import { useStore } from "./store/store";
 import { apiRequest, authHeader } from "./services/api";
@@ -107,6 +111,17 @@ function App() {
   return (
     <Router>
       <AuthSession />
+      {/* Single toast host for the whole app. Without this, every toast()
+          call in the codebase renders nothing at all. */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3500}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss={false}
+        pauseOnHover
+        theme="light"
+      />
       <Routes>
         <Route
           path="/"
@@ -138,25 +153,25 @@ function App() {
         <Route
           path="/account-active"
           element={
-            <Layout>
+            <Layout2>
               <AccountActive />
-            </Layout>
+            </Layout2>
           }
         />
         <Route
           path="/wholesale-pending"
           element={
-            <Layout>
+            <Layout2>
               <WholesalePending />
-            </Layout>
+            </Layout2>
           }
         />
         <Route
           path="/wholesale-form"
           element={
-            <Layout>
+            <Layout2>
               <WholesaleForm />
-            </Layout>
+            </Layout2>
           }
         />
         <Route
@@ -314,6 +329,14 @@ function App() {
           }
         />
         <Route
+          path="/admin/orders"
+          element={
+            <AdminLayout>
+              <AdminOrdersPage />
+            </AdminLayout>
+          }
+        />
+        <Route
           path="/admin/users"
           element={
             <AdminLayout>
@@ -334,6 +357,14 @@ function App() {
           element={
             <AdminLayout>
               <AdminPaymentsPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <AdminLayout>
+              <AdminSettingsPage />
             </AdminLayout>
           }
         />

@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Lock, Phone } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
 import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 export default function LoginPage() {
-  const [phone, setPhone] = useState("");
+  const location = useLocation();
+  // Carried over from the register screen so the buyer does not retype it.
+  const [phone, setPhone] = useState(location.state?.phone || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,9 +30,28 @@ export default function LoginPage() {
         body: JSON.stringify({ phone, password }),
       });
       setUser(data.user, data.token);
+      const firstName = data.user.fullName?.split(" ")[0] || "there";
+
+      if (data.user.role === "admin") {
+        toast.success(`Welcome back, ${firstName}`);
+        return navigate("/admin");
+      }
+
+      // The welcome screen belongs to the first real sign-in, not to signup.
+      if (data.firstLogin) {
+        toast.success(`Welcome to Pathivara, ${firstName}`);
+        const needsWholesaleForm =
+          data.user.role === "bulk/shop" &&
+          data.user.wholesaleStatus === "not_requested";
+        return navigate(needsWholesaleForm ? "/wholesale-form" : "/account-active");
+      }
+
+      toast.success(`Welcome back, ${firstName}`);
       navigate("/homepage");
     } catch (err) {
-      setError(err.message || "Failed to connect to server");
+      const message = err.message || "Failed to connect to server";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -291,7 +314,14 @@ export default function LoginPage() {
                   disabled:opacity-70
                 "
                 >
-                  {loading ? "Logging in..." : "Login"}
+                  {loading ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Spinner />
+                      Logging in...
+                    </span>
+                  ) : (
+                    "Login"
+                  )}
                 </button>
               </form>
 

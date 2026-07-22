@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, CloudUpload, Info } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
 
 const SubmitComplaint = () => {
@@ -10,12 +12,19 @@ const SubmitComplaint = () => {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { checkoutOrder, token } = useStore();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const orderId =
+    new URLSearchParams(location.search).get("orderId") || checkoutOrder?._id;
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!checkoutOrder || !token) return navigate("/myorder");
+    if (!orderId || !token) return navigate("/myorder");
     setError("");
+    setSubmitting(true);
     try {
       const imageDataUrl = file
         ? await new Promise((resolve, reject) => {
@@ -25,7 +34,7 @@ const SubmitComplaint = () => {
             reader.readAsDataURL(file);
           })
         : "";
-      await apiRequest(`/orders/${checkoutOrder._id}/complaints`, {
+      await apiRequest(`/orders/${orderId}/complaints`, {
         method: "POST",
         headers: authHeader(token),
         body: JSON.stringify({
@@ -36,8 +45,13 @@ const SubmitComplaint = () => {
         }),
       });
       setSubmitted(true);
+      toast.success("Complaint submitted — we'll respond within 24 hours");
+      navigate("/myorder");
     } catch (requestError) {
       setError(requestError.message);
+      toast.error(requestError.message || "Could not submit the complaint");
+    } finally {
+      setSubmitting(false);
     }
   };
   return (
@@ -46,9 +60,7 @@ const SubmitComplaint = () => {
       <div className="w-full max-w-[600px] mt-4 md:mt-8 bg-[var(--color-surface-lowest)] rounded-md p-6 md:p-10 border border-outline-border shadow-(--shadow-level-1)">
         <h1 className="text-(length:--text-headline-sm) font-(--text-headline-sm--font-weight) text-(--color-primary-container) mb-6">
           Something wrong with order{" "}
-          {checkoutOrder
-            ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
-            : "PWS-0012"}
+          {orderId ? `PWS-${orderId.slice(-4).toUpperCase()}` : "—"}
           ?
         </h1>
 
@@ -140,13 +152,24 @@ const SubmitComplaint = () => {
           <div className="flex flex-col gap-4 mt-4">
             <button
               type="submit"
+              disabled={submitting || submitted}
               className="w-full bg-[var(--color-primary)] text-[var(--color-on-primary)] py-4 rounded-[var(--radius-default)] text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] hover:bg-[var(--color-primary-container)] transition-colors shadow-[var(--shadow-level-1)]"
             >
-              {submitted ? "Complaint Submitted" : "Submit Complaint"}
+              {submitting ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Spinner size={18} />
+                  Submitting...
+                </span>
+              ) : submitted ? (
+                "Complaint Submitted"
+              ) : (
+                "Submit Complaint"
+              )}
             </button>
             {error && <p className="text-sm text-red-700">{error}</p>}
             <button
               type="button"
+              onClick={() => navigate("/myorder")}
               className="w-full text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors py-2"
             >
               Cancel

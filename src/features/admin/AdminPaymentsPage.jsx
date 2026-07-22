@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import {
@@ -287,12 +288,21 @@ export default function AdminPaymentsPage() {
     if (token) loadPayments();
   }, [token]);
   const setPayment = async (id, paymentStatus) => {
-    await apiRequest(`/orders/${id}/payment-status`, {
-      method: "PUT",
-      headers: authHeader(token),
-      body: JSON.stringify({ paymentStatus }),
-    });
-    loadPayments();
+    try {
+      await apiRequest(`/orders/${id}/payment-status`, {
+        method: "PUT",
+        headers: authHeader(token),
+        body: JSON.stringify({ paymentStatus }),
+      });
+      await loadPayments();
+      toast.success(
+        paymentStatus === "Paid"
+          ? "Payment confirmed — the buyer was notified"
+          : "Payment rejected — the buyer was asked to resubmit",
+      );
+    } catch (requestError) {
+      toast.error(requestError.message || "Could not update the payment");
+    }
   };
 
   const filtered =

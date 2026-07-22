@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import {
@@ -243,12 +244,21 @@ export default function AdminWholesalePage() {
     if (token) loadRequests();
   }, [token]);
   const decide = async (id, decision) => {
-    await apiRequest(`/auth/wholesale-requests/${id}`, {
-      method: "PUT",
-      headers: authHeader(token),
-      body: JSON.stringify({ decision }),
-    });
-    loadRequests();
+    try {
+      await apiRequest(`/auth/wholesale-requests/${id}`, {
+        method: "PUT",
+        headers: authHeader(token),
+        body: JSON.stringify({ decision }),
+      });
+      await loadRequests();
+      toast.success(
+        decision === "approved"
+          ? "Wholesale access approved — tier pricing is now active for them"
+          : "Wholesale request rejected",
+      );
+    } catch (requestError) {
+      toast.error(requestError.message || "Could not update the request");
+    }
   };
 
   const filtered =

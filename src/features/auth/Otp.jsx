@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
 import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -44,9 +46,12 @@ const OtpVerification = () => {
         body: JSON.stringify({ phone: recovery.phone, otp: otp.join("") }),
       });
       setRecovery({ ...recovery, resetToken: data.resetToken });
+      toast.success("Code verified — choose a new password");
       navigate("/change-password");
     } catch (err) {
-      setError(err.message || "Could not verify OTP");
+      const message = err.message || "Could not verify OTP";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -61,8 +66,11 @@ const OtpVerification = () => {
         body: JSON.stringify({ phone: recovery.phone }),
       });
       setRecovery({ phone: recovery.phone, demoOtp: data.demoOtp || null });
+      toast.success("A new code is on its way");
     } catch (err) {
-      setError(err.message || "Could not resend OTP");
+      const message = err.message || "Could not resend OTP";
+      setError(message);
+      toast.error(message);
     }
   };
 
@@ -203,7 +211,14 @@ const OtpVerification = () => {
                   text-on-primary
                 "
               >
-                {loading ? "Verifying..." : "Continue"}
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    Verifying...
+                  </span>
+                ) : (
+                  "Continue"
+                )}
               </button>
 
               {/* BACK TO LOGIN */}

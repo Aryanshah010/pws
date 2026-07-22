@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, ArrowLeft, TriangleAlert } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 
@@ -245,7 +246,10 @@ export default function CartPage() {
     }
   };
 
-  const removeItem = (id) => removeFromCart(id);
+  const removeItem = (id, name) => {
+    removeFromCart(id);
+    toast.info(`${name || "Item"} removed from cart`);
+  };
 
   // Realtime quote sync with backend
   useEffect(() => {
@@ -359,8 +363,13 @@ export default function CartPage() {
                 <PriceChangeAlert
                   key={change.productId}
                   message={`Price changed: ${name} was Rs.${oldPrice}, now Rs.${change.unitPrice}.`}
-                  onRemove={() => removeItem(item?.product?._id || item?.id)}
-                  onKeep={() => synchronizeCartPrices(quote.items)}
+                  onRemove={() => {
+                    removeItem(item?.product?._id || item?.id, name);
+                  }}
+                  onKeep={() => {
+                    synchronizeCartPrices(quote.items);
+                    toast.success("Cart updated to today's prices");
+                  }}
                 />
               );
             })}
@@ -392,7 +401,9 @@ export default function CartPage() {
                   quotedItem={quotedItem}
                   onIncrement={increment}
                   onDecrement={decrement}
-                  onRemove={removeItem}
+                  onRemove={(id) =>
+                    removeItem(id, item.product?.name || item.name)
+                  }
                 />
               );
             })}

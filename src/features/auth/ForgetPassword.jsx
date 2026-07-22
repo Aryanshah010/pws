@@ -4,7 +4,9 @@ import { Phone, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
 import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 const ForgetPassword = () => {
   const [phone, setPhone] = useState("");
@@ -23,9 +25,12 @@ const ForgetPassword = () => {
         body: JSON.stringify({ phone }),
       });
       setRecovery({ phone, demoOtp: data.demoOtp || null });
+      toast.success("OTP sent — check your messages");
       navigate("/otp");
     } catch (err) {
-      setError(err.message || "Could not send OTP");
+      const message = err.message || "Could not send OTP";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -187,7 +192,14 @@ const ForgetPassword = () => {
                   text-on-primary
                 "
               >
-                {loading ? "Sending..." : "Send OTP"}
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    Sending...
+                  </span>
+                ) : (
+                  "Send OTP"
+                )}
               </button>
 
               {/* BACK TO LOGIN */}

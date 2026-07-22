@@ -1,13 +1,9 @@
 import { useState, useEffect } from "react";
 import { Bell, ChevronLeft, ShoppingCart } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
-
-// Reuse the exact same card component the Homepage uses, instead of a
-// hand-duplicated copy. This is the single source of truth for product
-// cards — any future style change to HomePage's ProductCard automatically
-// stays in sync here too.
 import { ProductCard } from "../home/HomePage";
 
 export default function ViewProductDetailIS() {
@@ -101,8 +97,11 @@ export default function ViewProductDetailIS() {
         headers: authHeader(token),
       });
       setRestockMessage("Restock notification requested");
+      toast.success(`We'll alert you when ${product.name} is back`);
     } catch (error) {
-      setRestockMessage(error.message || "Could not request notification");
+      const message = error.message || "Could not request notification";
+      setRestockMessage(message);
+      toast.error(message);
     }
   };
 
@@ -133,7 +132,7 @@ export default function ViewProductDetailIS() {
                 {/* Product Image */}
                 <div className="flex-shrink-0 w-full md:w-[38%] p-6 flex items-center justify-center">
                   <img
-                    src={product.imageUrl || "/products/rawfood.jpg"}
+                    src={product.imageUrl || undefined}
                     alt={product.name}
                     className="w-full max-w-70 aspect-square object-contain"
                   />
@@ -211,9 +210,12 @@ export default function ViewProductDetailIS() {
                     <div className="flex mt-4 justify-between flex-col sm:flex-row gap-3 sm:gap-0">
                       <button
                         disabled={isOutOfStock}
-                        onClick={() =>
-                          addToCart(product, quantity, displayPrice)
-                        }
+                        onClick={() => {
+                          addToCart(product, quantity, displayPrice);
+                          toast.success(
+                            `${quantity} x ${product.name} added to cart`,
+                          );
+                        }}
                         className={`w-62 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold ${isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-(--color-on-primary) cursor-pointer hover:opacity-90"}`}
                       >
                         <ShoppingCart size={16} />
@@ -392,9 +394,7 @@ export default function ViewProductDetailIS() {
           </div>
         </div>
 
-        {/* Similar Products — heading style copied exactly from HomePage's
-            "All Products" h1 (raw 30px/700, no token forced since none in
-            index.css matches 30px exactly), grid copied exactly too. */}
+  
         <div style={{ marginTop: "var(--spacing-3xl)" }}>
           <h2
             style={{
@@ -416,7 +416,7 @@ export default function ViewProductDetailIS() {
             }}
           >
             {similarProducts.map((p) => (
-              <ProductCard key={p.name} product={p} />
+              <ProductCard key={p._id} product={p} />
             ))}
           </div>
         </div>

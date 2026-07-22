@@ -1,14 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Info, UploadCloud } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
-
-const ORDER_ID = "PWS-001";
-const AMOUNT = "Rs. 32900";
-const QR_IMAGE_SRC =
-  "https://api.builder.io/api/v1/image/assets/TEMP/f47daeeffa3a53ae63bfb12020d91e5867c40412?width=440";
 
 export default function PaymentProofPage() {
   const [transactionId, setTransactionId] = useState("");
@@ -16,6 +11,14 @@ export default function PaymentProofPage() {
   const [file, setFile] = useState(null);
   const { checkoutOrder, token, setCheckoutOrder } = useStore();
   const navigate = useNavigate();
+
+  const [qrImage, setQrImage] = useState("");
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => setQrImage(data.settings?.paymentQrImage || ""))
+      .catch(() => setQrImage(""));
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -75,7 +78,7 @@ export default function PaymentProofPage() {
               Order{" "}
               {checkoutOrder
                 ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
-                : ORDER_ID}
+                : "—"}
             </h1>
 
             <div className="mt-6 flex items-center justify-between border-b border-[var(--color-outline-border)] pb-4">
@@ -83,13 +86,14 @@ export default function PaymentProofPage() {
                 Total due
               </span>
               <span className="text-xl font-bold text-[#00452B]  sm:text-[22px]">
-                Rs. {checkoutOrder?.totalAmount ?? AMOUNT.replace("Rs. ", "")}
+                Rs. {checkoutOrder?.totalAmount ?? 0}
               </span>
             </div>
 
             <div className="mt-4 inline-flex items-center self-start rounded-full border border-outline-border-pill  px-4 py-1">
               <span className="text-center text-[13px] font-semibold tracking-wider text-outline-border-pill">
-                PAYMENT STATUS: PENDING
+                PAYMENT STATUS:{" "}
+                {(checkoutOrder?.paymentStatus || "Pending").toUpperCase()}
               </span>
             </div>
           </div>
@@ -97,11 +101,17 @@ export default function PaymentProofPage() {
           {/* QR Code Container */}
           <div className="flex flex-col items-center rounded-md border border-outline-border bg-[var(--color-surface-lowest)] p-8 shadow-[var(--shadow-level-1)]">
             <div className="flex h-64 w-64 items-center justify-center overflow-hidden rounded-[var(--radius-default)] border-2 border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] p-4">
-              <img
-                src={QR_IMAGE_SRC}
-                alt="QR Code for Payment"
-                className="h-full w-full object-contain"
-              />
+              {qrImage ? (
+                <img
+                  src={qrImage}
+                  alt="QR Code for Payment"
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <p className="text-center text-[13px] text-[var(--color-on-surface-variant)]">
+                  The store has not published a payment QR yet.
+                </p>
+              )}
             </div>
             <h2 className="mt-6 text-xl font-bold text-[#00452B] sm:text-[22px]">
               QR
@@ -115,8 +125,10 @@ export default function PaymentProofPage() {
           <div className="flex items-start gap-3 rounded-default border border-outline-border bg-surface-categories p-4">
             <Info className="mt-0.5 h-[22px] w-5 shrink-0 text-[var(--color-on-primary-fixed-variant)]" />
             <p className="text-base leading-6 text-[var(--color-on-primary-fixed-variant)]">
-              <span className="font-semibold">Send exactly {AMOUNT}</span>, then
-              submit proof.
+              <span className="font-semibold">
+                Send exactly Rs. {checkoutOrder?.totalAmount ?? 0}
+              </span>
+              , then submit proof.
             </p>
           </div>
         </div>

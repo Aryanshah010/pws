@@ -30,10 +30,17 @@ export const useStore = create((set) => ({
     set({ onboarded: val });
   },
 
+  // The permission modal is opened on demand — the first time the buyer
+  // actually clicks the notification bell — never automatically on login.
+  notificationPromptOpen: false,
+
+  openNotificationPrompt: () => set({ notificationPromptOpen: true }),
+  closeNotificationPrompt: () => set({ notificationPromptOpen: false }),
+
   setNotificationsEnabled: (val) => {
     set((state) => {
       localStorage.setItem(notificationKey(state.user), val);
-      return { notificationsEnabled: val };
+      return { notificationsEnabled: val, notificationPromptOpen: false };
     });
   },
 

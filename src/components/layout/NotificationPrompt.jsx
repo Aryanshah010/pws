@@ -1,25 +1,40 @@
-import React from "react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 
 export default function NotificationPrompt() {
-  const { user, notificationsEnabled, setNotificationsEnabled } = useStore();
+  const {
+    user,
+    notificationsEnabled,
+    setNotificationsEnabled,
+    notificationPromptOpen,
+    closeNotificationPrompt,
+  } = useStore();
 
-  // Only show if user is logged in and hasn't made a choice yet
-  if (!user || notificationsEnabled !== "pending") return null;
+  if (!user || notificationsEnabled !== "pending" || !notificationPromptOpen)
+    return null;
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
     setNotificationsEnabled("granted");
     if (
       typeof window !== "undefined" &&
       "Notification" in window &&
       Notification.permission !== "granted"
     ) {
-      Notification.requestPermission();
+      const outcome = await Notification.requestPermission();
+      if (outcome === "granted") {
+        toast.success("Notifications on — we'll alert you about your orders");
+        return;
+      }
+      toast.info("You can still track orders from the bell icon");
+      return;
     }
+    toast.success("Notifications on — we'll alert you about your orders");
   };
 
   const handleDecline = () => {
     setNotificationsEnabled("denied");
+    closeNotificationPrompt();
+    toast.info("No problem — order updates stay in the bell icon");
   };
 
   return (

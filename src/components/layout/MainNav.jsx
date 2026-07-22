@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Bell, ShoppingCart, Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { API_URL, apiRequest, authHeader } from "../../services/api";
+import { showPush } from "../../utils/push";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,6 +17,8 @@ export default function Navbar() {
     user,
     catalogSearch,
     setCatalogSearch,
+    notificationsEnabled,
+    openNotificationPrompt,
   } = useStore();
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -33,8 +37,30 @@ export default function Navbar() {
   };
   useEffect(() => {
     loadNotifications();
-    const stream = new EventSource(`${API_URL}/events`);
-    stream.addEventListener("order-updated", loadNotifications);
+    const token = localStorage.getItem("pathivara_token");
+    const stream = new EventSource(
+      `${API_URL}/events${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    );
+
+    const readPayload = (event) => {
+      try {
+        return JSON.parse(event.data);
+      } catch {
+        return null;
+      }
+    };
+
+    stream.addEventListener("order-updated", (event) => {
+      loadNotifications();
+      showPush(readPayload(event)?.push);
+    });
+    stream.addEventListener("catalog-updated", (event) => {
+      const payload = readPayload(event);
+      if (payload?.action !== "restocked") return;
+      loadNotifications();
+      showPush(payload.push);
+    });
+
     return () => stream.close();
   }, [user]);
 
@@ -46,6 +72,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
+    toast.info("Signed out");
     navigate("/login");
   };
 
@@ -90,7 +117,10 @@ export default function Navbar() {
       <nav className="w-full bg-[#FBF9F5] border-b border-[#C1C8C1]">
         <div className="max-w-[1512px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-4 lg:gap-6">
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
+          <Link
+            to="/homepage"
+            className="flex items-center gap-3 flex-shrink-0"
+          >
             <div className="w-10 h-10 rounded-full bg-[#1B5E40] flex items-center justify-center flex-shrink-0">
               <svg
                 width="22"
@@ -146,8 +176,14 @@ export default function Navbar() {
             </Link>
             <button
               onClick={() => {
-                setNotificationsOpen((open) => !open);
                 setProfileOpen(false);
+                // First time the bell is used is the right moment to ask for
+                // the OS permission — the buyer has just shown they care.
+                if (user && notificationsEnabled === "pending") {
+                  openNotificationPrompt();
+                  return;
+                }
+                setNotificationsOpen((open) => !open);
                 loadNotifications();
               }}
               className="relative p-1 hover:opacity-80 transition-opacity"
@@ -193,7 +229,7 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-4 z-50 w-56 rounded-xl border border-[#C1C8C1] bg-white p-4 shadow-lg">
                   <div className="mb-3 border-b border-[#E2EAE3] pb-3 flex flex-col gap-1">
                     <p className="text-sm font-bold text-[#1B1C1A]">
-                      {user?.name || "User Profile"}
+                      {user?.fullName || "User Profile"}
                     </p>
                     {user?.role === "verified_wholesale" && (
                       <span className="inline-block rounded-full bg-[#c6e9d2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1B5E40] w-max">

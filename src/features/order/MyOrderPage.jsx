@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, TrendingUp, ArrowRight } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 
@@ -33,6 +34,7 @@ function OrderRow({
   priceAlert,
   onOrderAgain,
   onMakeTemplate,
+  onRaiseIssue,
 }) {
   return (
     <div className="flex flex-col gap-4 border-t border-outline-border p-4 first:border-t-0 sm:grid sm:grid-cols-12 sm:items-center sm:gap-4 sm:py-6">
@@ -88,6 +90,7 @@ function OrderRow({
         </div>
         <button
           type="button"
+          onClick={onRaiseIssue}
           className="flex items-center gap-1 text-sm text-[#3F81EA] hover:underline cursor-pointer"
         >
           Raise issue <ArrowRight className="h-3.5 w-3.5" />
@@ -103,6 +106,8 @@ export default function MyOrder() {
   const [orders, setOrders] = useState([]);
   const [baskets, setBaskets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -122,19 +127,70 @@ export default function MyOrder() {
     if (token) fetchOrders();
   }, [token]);
 
+  const visibleOrders =
+    statusFilter === "All"
+      ? orders
+      : orders.filter((order) => order.orderStatus === statusFilter);
+
+
+  const priceAlertFor = (order) => {
+    const moved = order.items.filter(
+      (item) =>
+        item.product?.retailPrice != null &&
+        item.product.retailPrice !== item.priceAtPurchase,
+    );
+    if (!moved.length) return null;
+    const delta = moved.reduce(
+      (total, item) =>
+        total +
+        (item.product.retailPrice - item.priceAtPurchase) * item.quantity,
+      0,
+    );
+    if (delta === 0) return null;
+    return `${moved.length} item${moved.length > 1 ? "s" : ""} ${
+      delta > 0 ? "up" : "down"
+    } Rs. ${Math.abs(delta)} since this order`;
+  };
+
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-6 py-8 sm:px-10 font-sans bg-[var(--color-background)] text-[var(--color-on-background)]">
       <div className="flex items-center justify-between">
         <h1 className="text-[32px] font-(--text-headline-lg--font-weight) leading-(--text-headline-lg--line-height) text-[#00452B]">
           My Orders
         </h1>
-        <button
-          type="button"
-          className="flex items-center gap-1 text-base font-medium text-[var(--color-on-surface-variant)] opacity-80 hover:opacity-100 cursor-pointer"
-        >
-          Filter
-          <ChevronDown className="h-5 w-5" />
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setFilterOpen((open) => !open)}
+            className="flex items-center gap-1 text-base font-medium text-[var(--color-on-surface-variant)] opacity-80 hover:opacity-100 cursor-pointer"
+          >
+            {statusFilter === "All" ? "Filter" : statusFilter}
+            <ChevronDown className="h-5 w-5" />
+          </button>
+          {filterOpen && (
+            <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-[var(--radius-default)] border border-outline-border bg-(--color-surface-lowest) shadow-[var(--shadow-level-2)]">
+              {["All", "Placed", "Acknowledged", "Ready", "Collected"].map(
+                (status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(status);
+                      setFilterOpen(false);
+                    }}
+                    className={`block w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-[var(--color-surface-low)] ${
+                      statusFilter === status
+                        ? "font-semibold text-(--color-primary-container)"
+                        : "text-[var(--color-on-surface-variant)]"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <section className="flex flex-col gap-4">
@@ -150,18 +206,9 @@ export default function MyOrder() {
                 description={basket.items
                   .map((item) => item.product?.name || "Product")
                   .join(", ")}
-                onUse={async () => {
-                  const data = await apiRequest(
-                    `/orders/baskets/${basket._id}/review`,
-                    { headers: authHeader(token) },
-                  );
-                  data.items
-                    .filter((item) => item.product.stock > 0)
-                    .forEach((item) =>
-                      addToCart(item.product, item.quantity, item.unitPrice),
-                    );
-                  navigate("/cart");
-                }}
+                // US #42 — never load a template straight into the cart;
+                // the buyer confirms today's stock and prices first.
+                onUse={() => navigate(`/basket-review?id=${basket._id}`)}
               />
             ))
           ) : (
@@ -189,12 +236,12 @@ export default function MyOrder() {
             <div className="p-8 text-center text-on-surface-variant">
               Loading orders...
             </div>
-          ) : orders.length === 0 ? (
+          ) : visibleOrders.length === 0 ? (
             <div className="p-8 text-center text-on-surface-variant">
               No orders found.
             </div>
           ) : (
-            orders.map((order) => {
+            visibleOrders.map((order) => {
               const itemString = order.items
                 .map(
                   (i) =>
@@ -209,16 +256,22 @@ export default function MyOrder() {
                   paymentStatus={order.paymentStatus}
                   items={itemString}
                   total={order.totalAmount}
+                  priceAlert={priceAlertFor(order)}
+                  onRaiseIssue={() =>
+                    navigate(`/complain?orderId=${order._id}`)
+                  }
                   onOrderAgain={() => {
-                    order.items
-                      .filter((item) => item.product)
-                      .forEach((item) =>
-                        addToCart(
-                          item.product,
-                          item.quantity,
-                          item.product.retailPrice || item.priceAtPurchase,
-                        ),
-                      );
+                    const usable = order.items.filter((item) => item.product);
+                    usable.forEach((item) =>
+                      addToCart(
+                        item.product,
+                        item.quantity,
+                        item.product.retailPrice || item.priceAtPurchase,
+                      ),
+                    );
+                    toast.success(
+                      `${usable.length} item(s) added at today's prices`,
+                    );
                     navigate("/cart");
                   }}
                   onMakeTemplate={() => {
@@ -231,6 +284,7 @@ export default function MyOrder() {
                           item.product.retailPrice || item.priceAtPurchase,
                         ),
                       );
+                    toast.info("Name this basket to save it as a template");
                     navigate("/custom-basket");
                   }}
                 />

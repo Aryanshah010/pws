@@ -1,37 +1,86 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ShoppingCart, Bell, AlertCircle } from "lucide-react";
-import { Link } from "react-router-dom";
-
-// Single source of truth for product cards shared with HomePage
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import { ProductCard } from "../home/HomePage";
 
-const similarProducts = [
-  {
-    name: "Mustard Oil 5L",
-    price: "Rs. 400",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Sunflower Oil 1L",
-    price: "Rs. 195",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Ghee 1L",
-    price: "Rs. 850",
-    oldPrice: "Rs. 920",
-    stock: "LOW STOCK",
-    action: "Add",
-  },
-];
 
 export default function ViewProductDetailOOS() {
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [similarProducts, setSimilarProducts] = useState([]);
+  const [restockMessage, setRestockMessage] = useState("");
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const id = new URLSearchParams(location.search).get("id");
+  const { user, token } = useStore();
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+    const load = async () => {
+      try {
+        const data = await apiRequest(`/products/${id}`);
+        setProduct(data.product);
+        const related = await apiRequest(
+          `/products?category=${encodeURIComponent(data.product.category)}`,
+        );
+        setSimilarProducts(
+          (related.products || [])
+            .filter((item) => item._id !== id)
+            .slice(0, 3),
+        );
+      } catch {
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
 
   const incrementQty = () => setQuantity((q) => q + 1);
   const decrementQty = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
+
+  const handleRestock = async () => {
+    if (!user || !token) return navigate("/login");
+    try {
+      await apiRequest(`/products/${product._id}/restock-subscriptions`, {
+        method: "POST",
+        headers: authHeader(token),
+      });
+      setRestockMessage("Restock notification requested");
+      toast.success(`We'll alert you when ${product.name} is back`);
+    } catch (error) {
+      const message = error.message || "Could not request notification";
+      setRestockMessage(message);
+      toast.error(message);
+    }
+  };
+
+  if (loading)
+    return <div className="p-8 text-center">Loading product details...</div>;
+  if (!product)
+    return (
+      <div className="p-8 text-center text-red-500">Product not found.</div>
+    );
+
+  const isWholesale = user?.role === "verified_wholesale";
+  const startingTier = product.tierPrices?.find(
+    (tier) => tier.minQuantity <= 1,
+  );
+  const displayPrice =
+    isWholesale && startingTier?.price < product.retailPrice
+      ? startingTier.price
+      : product.retailPrice;
+  const oldPrice =
+    displayPrice !== product.retailPrice ? product.retailPrice : null;
 
   return (
     <div className="min-h-screen bg-(--color-background)">
@@ -60,8 +109,8 @@ export default function ViewProductDetailOOS() {
                 {/* Product Image Wrapper */}
                 <div className="flex-shrink-0 w-full md:w-[38%] p-6 flex items-center justify-center">
                   <img
-                    src="https://api.builder.io/api/v1/image/assets/TEMP/3cc614eace11f3682d2acda7a11648e0ea441fce?width=558"
-                    alt="Flour/Aata 2kg"
+                    src={product.imageUrl || undefined}
+                    alt={product.name}
                     className="w-full max-w-70 aspect-square object-contain"
                   />
                 </div>
@@ -70,12 +119,11 @@ export default function ViewProductDetailOOS() {
                 <div className="flex-1 p-6 md:p-8 md:pl-0 ml-6 flex flex-col justify-center">
                   <div className="mb-4">
                     <h2 className="text-headline-md md:text-headline-lg font-[900] md:font-bold text-on-primary-fixed mb-3">
-                      Flour/Aata 2kg
+                      {product.name}
                     </h2>
                     <p className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] leading-relaxed">
-                      Premium quality whole wheat flour, perfect for making soft
-                      rotis and nutritious breads. Ground carefully to retain
-                      natural dietary fibers and vital nutrients.
+                      {product.description ||
+                        `High quality ${product.category} for your daily needs. Best in class ${product.unit} packaging.`}
                     </p>
                   </div>
 
@@ -86,11 +134,13 @@ export default function ViewProductDetailOOS() {
                     </p>
                     <div className="flex items-baseline gap-3 mb-3">
                       <span className="text-3xl md:text-4xl font-bold text-[var(--color-on-primary-fixed)]">
-                        Rs. 500
+                        Rs. {displayPrice}
                       </span>
-                      <span className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] line-through opacity-60">
-                        Rs. 550
-                      </span>
+                      {oldPrice && (
+                        <span className="text-body-md md:text-body-lg text-[var(--color-on-surface-variant)] line-through opacity-60">
+                          Rs. {oldPrice}
+                        </span>
+                      )}
                     </div>
                     <div>
                       {/* Out of Stock Status Flag */}
@@ -145,11 +195,22 @@ export default function ViewProductDetailOOS() {
                         Add to Cart
                       </button>
                       {/* Active Restock Notification Action */}
-                      <button className="w-30.25 h-[48px] border-0 cursor-pointer rounded-default bg-outline-border-pill text-white flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) hover:opacity-90 transition">
+                      <button
+                        onClick={handleRestock}
+                        disabled={
+                          restockMessage === "Restock notification requested"
+                        }
+                        className="w-30.25 h-[48px] border-0 cursor-pointer rounded-default bg-outline-border-pill text-white flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) hover:opacity-90 transition disabled:opacity-60"
+                      >
                         <Bell size={16} />
-                        Notify
+                        {restockMessage ? "Requested" : "Notify"}
                       </button>
                     </div>
+                    {restockMessage && (
+                      <p className="text-sm text-[var(--color-primary)]">
+                        {restockMessage}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -182,33 +243,61 @@ export default function ViewProductDetailOOS() {
 
                 <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-(--color-surface-lowest) rounded-default border border-outline-variant/20">
                   <div className="text-sm font-medium text-(--color-on-surface)">
-                    1 - 9
+                    Retail
                   </div>
                   <div className="text-sm font-bold text-[var(--color-on-primary-fixed)]">
-                    Rs. 160
+                    Rs. {product.retailPrice}
                   </div>
                   <div className="text-right text-xs text-[var(--color-on-surface-variant)] italic opacity-60">
                     None
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30">
-                  <div className="text-sm font-medium text-[var(--color-on-surface)]">
-                    10 - 49
-                  </div>
-                  <div className="text-sm font-bold text-[var(--color-secondary)]">
-                    Rs. 150
-                  </div>
-                  <div className="text-right text-xs font-bold text-[var(--color-secondary)]">
-                    6% Off
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-primary)] rounded-default text-[var(--color-on-primary)]">
-                  <div className="text-sm font-medium">50+</div>
-                  <div className="text-sm font-bold">Rs. 145</div>
-                  <div className="text-right text-xs font-bold">Best Rate</div>
-                </div>
+                {product.tierPrices?.map((tier, index) => {
+                  const isBest = index === product.tierPrices.length - 1;
+                  const saving = (
+                    ((product.retailPrice - tier.price) / product.retailPrice) *
+                    100
+                  ).toFixed(1);
+                  return (
+                    <div
+                      key={index}
+                      className={
+                        isBest
+                          ? "grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-primary)] rounded-default text-[var(--color-on-primary)]"
+                          : "grid grid-cols-3 gap-2 px-3 py-3 bg-[var(--color-secondary-fixed)]/20 rounded-default border border-[var(--color-secondary-fixed-dim)]/30"
+                      }
+                    >
+                      <div
+                        className={
+                          isBest
+                            ? "text-sm font-medium"
+                            : "text-sm font-medium text-[var(--color-on-surface)]"
+                        }
+                      >
+                        {tier.minQuantity}+
+                      </div>
+                      <div
+                        className={
+                          isBest
+                            ? "text-sm font-bold"
+                            : "text-sm font-bold text-[var(--color-secondary)]"
+                        }
+                      >
+                        Rs. {tier.price}
+                      </div>
+                      <div
+                        className={
+                          isBest
+                            ? "text-right text-xs font-bold"
+                            : "text-right text-xs font-bold text-[var(--color-secondary)]"
+                        }
+                      >
+                        {isBest ? "Best Rate" : `${saving}% Off`}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -224,7 +313,7 @@ export default function ViewProductDetailOOS() {
                     Grade
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    A
+                    {product.grade || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
@@ -232,7 +321,7 @@ export default function ViewProductDetailOOS() {
                     Unit Size
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    1L PET Bottle
+                    {product.unit || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
@@ -240,7 +329,7 @@ export default function ViewProductDetailOOS() {
                     Shelf Life
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    12 Months
+                    {product.shelfLife || "—"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
@@ -248,7 +337,7 @@ export default function ViewProductDetailOOS() {
                     Origin
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
-                    Terai, Nepal
+                    {product.origin || "—"}
                   </span>
                 </div>
               </div>
@@ -278,7 +367,7 @@ export default function ViewProductDetailOOS() {
             }}
           >
             {similarProducts.map((p) => (
-              <ProductCard key={p.name} product={p} />
+              <ProductCard key={p._id} product={p} />
             ))}
           </div>
         </div>

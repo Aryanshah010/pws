@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CheckCircle2,
@@ -8,12 +9,20 @@ import {
 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { downloadReceipt } from "../../utils/pdfGenerator";
+import { apiRequest } from "../../services/api";
 
 export default function PaymentProofSubmitted() {
   const { checkoutOrder } = useStore();
   const orderId = checkoutOrder
     ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
-    : "PWS-001";
+    : "—";
+  const [whatsApp, setWhatsApp] = useState("");
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => setWhatsApp(data.settings?.contactWhatsApp || ""))
+      .catch(() => setWhatsApp(""));
+  }, []);
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12 sm:py-20 bg-[var(--color-background)]">
       <div className="flex w-full max-w-[782px] min-h-[522px] flex-col items-center justify-center gap-6 rounded-md border border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] px-8 py-10 text-center shadow-[var(--shadow-level-1)]">
@@ -72,16 +81,18 @@ export default function PaymentProofSubmitted() {
             Download PDF Receipt
           </button>
 
-          <a
-            href="https://wa.me/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ borderColor: "#C1C8C1" }}
-            className="flex h-15 w-full max-w-[256px] items-center justify-center gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-low)] sm:w-[256px] cursor-pointer"
-          >
-            <MessageCircle className="h-5 w-5" />
-            Contact on WhatsApp
-          </a>
+          {whatsApp && (
+            <a
+              href={`https://wa.me/${whatsApp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ borderColor: "#C1C8C1" }}
+              className="flex h-15 w-full max-w-[256px] items-center justify-center gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-low)] sm:w-[256px] cursor-pointer"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Contact on WhatsApp
+            </a>
+          )}
         </div>
       </div>
     </div>

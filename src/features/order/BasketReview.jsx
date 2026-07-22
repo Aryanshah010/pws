@@ -1,4 +1,5 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -6,13 +7,102 @@ import {
   Pencil,
   AlertTriangle,
 } from "lucide-react";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 
 const BasketReview = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const basketId = new URLSearchParams(location.search).get("id");
+  const { token, addToCart } = useStore();
+
+  const [basket, setBasket] = useState(null);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notified, setNotified] = useState({});
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    if (!basketId) {
+      setError("No basket selected.");
+      setLoading(false);
+      return;
+    }
+    apiRequest(`/orders/baskets/${basketId}/review`, {
+      headers: authHeader(token),
+    })
+      .then((data) => {
+        setBasket(data.basket);
+        setItems(data.items);
+      })
+      .catch((requestError) =>
+        setError(requestError.message || "Could not load this basket"),
+      )
+      .finally(() => setLoading(false));
+  }, [basketId, token, navigate]);
+
+  const dropItem = (productId, name) => {
+    setItems((current) =>
+      current.filter((item) => String(item.productId) !== String(productId)),
+    );
+    if (name) toast.info(`${name} removed from this basket`);
+  };
+
+  const keepItem = (item) => {
+    addToCart(item.product, item.quantity, item.unitPrice);
+    dropItem(item.productId);
+    toast.success(`${item.name} added to cart`);
+  };
+
+  const notifyMe = async (item) => {
+    try {
+      await apiRequest(`/products/${item.productId}/restock-subscriptions`, {
+        method: "POST",
+        headers: authHeader(token),
+      });
+      setNotified((current) => ({ ...current, [item.productId]: true }));
+      toast.success(`We'll alert you when ${item.name} is back`);
+    } catch (requestError) {
+      const message = requestError.message || "Could not request notification";
+      setError(message);
+      toast.error(message);
+    }
+  };
+
+  const checkout = () => {
+    items
+      .filter((item) => item.available)
+      .forEach((item) =>
+        addToCart(item.product, item.quantity, item.unitPrice),
+      );
+    toast.success(`${availableItems.length} item(s) moved to your cart`);
+    navigate("/cart");
+  };
+
+  const availableItems = items.filter((item) => item.available);
+  const summary = {
+    availableCount: availableItems.length,
+    priceChangedCount: items.filter((item) => item.priceDelta !== 0).length,
+    outOfStockCount: items.length - availableItems.length,
+    estimatedTotal: availableItems.reduce(
+      (total, item) => total + item.unitPrice * item.quantity,
+      0,
+    ),
+  };
+
   return (
     <main className="min-h-screen bg-(--color-background) text-(--color-on-background) p-4 md:p-8 lg:px-16">
       {/* Top Navigation Row (Back Button) */}
       <div className="mx-8 mb-6">
-        <button className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface)">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface)"
+        >
           <ArrowLeft size={24} />
         </button>
       </div>
@@ -22,7 +112,7 @@ const BasketReview = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <h1 className="text-(length:--text-headline-lg) leading-(--text-headline-lg--line-height) font-(--text-headline-lg--font-weight)">
-            My Basket Review
+            {basket?.name || "My Basket Review"}
           </h1>
 
           <div className="flex items-center gap-2 bg-[var(--color-surface-categories)] px-4 py-2 rounded-default border border-[var(--color-outline-variant)]">
@@ -52,108 +142,147 @@ const BasketReview = () => {
                 </div>
               </div>
 
-              {/* Item 1 */}
-              <div className="grid grid-cols-[2fr_1.5fr_1fr] gap-4 px-6 py-5 border-b border-[var(--color-outline-variant)] items-center">
-                <div>
-                  <div className="text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
-                    Rice 25kg{" "}
-                    <span className="text-[#717973] font-semibold text-(length:--text-body-md)">
-                      x1
-                    </span>
-                  </div>
-                  <div className="text-[length:var(--text-label-md)] text-[var(--color-on-surface-variant)] mt-1">
-                    <span className="line-through text-outline mr-2 border-r border-w-[2px] border-[#C1C8C1] ">
-                      Last Rs.2100
-                    </span>
-                    <span className="text-[14px] font-semibold">
-                      Today Rs.2100
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="bg-primary-fixed text-on-primary-fixed-variant px-2 py-1 rounded-full text-[11px] font-bold">
-                    IN STOCK
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <button className="bg-[var(--color-primary)] text-(--color-on-primary) px-4 py-1 rounded-full text-[13px] font-semibold hover:bg-(--color-primary-container) transition-colors">
-                    Keep
-                  </button>
-                  <button className="text-error hover:bg-error-container p-1.5 rounded-[var(--radius-sm)] transition-colors">
-                    <Trash2 size={20} />
-                  </button>
-                  <button className="text-outline hover:bg-surface-dim p-1.5 rounded-sm transition-colors">
-                    <Pencil size={20} />
-                  </button>
-                </div>
-              </div>
+              {loading && (
+                <p className="p-6 text-center text-[#717973]">
+                  Checking today&apos;s stock and prices...
+                </p>
+              )}
 
-              {/* Item 2 */}
-              <div className="grid grid-cols-[2fr_1.5fr_1fr] gap-4 px-6 py-5 border-b border-[var(--color-outline-variant)] items-center">
-                <div>
-                  <div className="text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
-                    Mustard Oil 1L{" "}
-                    <span className="text-[#717973] font-semibold text-(length:--text-body-md)">
-                      x10
-                    </span>
-                  </div>
-                  <div className="text-[length:var(--text-label-md)] text-[var(--color-on-surface-variant)] mt-1">
-                    <span className="line-through text-outline mr-2">
-                      Last Rs.150
-                    </span>
-                    <span className="text-[14px] font-semibold text-secondary">
-                      Today Rs.160
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="bg-secondary-fixed text-[#D4820A] px-2 py-1 rounded-sm text-(length:--text-label-sm) font-bold">
-                    PRICE CHANGED +RS.10
-                  </span>
-                  <span className="bg-primary-fixed text-on-primary-fixed-variant flex  px-2 py-1 rounded-full text-[11px] font-bold">
-                    IN STOCK
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <button className="bg-primary text-(--color-on-primary) px-4 py-1 rounded-full text-[13px] font-semibold hover:bg-(--color-primary-container) transition-colors">
-                    Keep
-                  </button>
-                  <button className="text-error hover:bg-error-container p-1.5 rounded-[var(--radius-sm)] transition-colors">
-                    <Trash2 size={20} />
-                  </button>
-                  <button className="text-outline hover:bg-surface-dim p-1.5 rounded-sm transition-colors">
-                    <Pencil size={20} />
-                  </button>
-                </div>
-              </div>
+              {!loading && error && (
+                <p className="p-6 text-center text-[var(--color-error)]">
+                  {error}
+                </p>
+              )}
 
-              {/* Item 3 */}
-              <div className="grid grid-cols-[2fr_1.5fr_1fr] px-6 py-5 items-center bg-[#FBF9F5]">
-                <div>
-                  <div className="text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-outline)]">
-                    Sugar 5kg{" "}
-                    <span className="text-[#717973] font-semibold text-(length:--text-body-md)">
-                      x1
-                    </span>
+              {!loading && !error && items.length === 0 && (
+                <p className="p-6 text-center text-[#717973]">
+                  Nothing left to review in this basket.
+                </p>
+              )}
+
+              {items.map((item, index) => {
+                const isLast = index === items.length - 1;
+
+                /* Out-of-stock row: dimmed, tinted, no edit affordance. */
+                if (!item.available) {
+                  return (
+                    <div
+                      key={item.productId}
+                      className="grid grid-cols-[2fr_1.5fr_1fr] px-6 py-5 items-center bg-[#FBF9F5]"
+                    >
+                      <div>
+                        <div className="text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-outline)]">
+                          {item.name}{" "}
+                          <span className="text-[#717973] font-semibold text-(length:--text-body-md)">
+                            x{item.quantity}
+                          </span>
+                        </div>
+                        <div className="text-[length:var(--text-label-md)] text-[var(--color-outline)] mt-1">
+                          <span>
+                            Last Rs.{item.priceAtSave ?? item.unitPrice}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="bg-error-container text-on-error-container px-2 py-1 rounded-full text-(length:--text-label-sm) font-bold">
+                          OUT OF STOCK
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => notifyMe(item)}
+                          disabled={notified[item.productId]}
+                          className="border border-outline-border text-(--color-on-surface) px-4 py-1 rounded-full text-[13px] font-semibold hover:bg-surface-dim transition-colors disabled:opacity-60"
+                        >
+                          {notified[item.productId] ? "Requested" : "Notify"}
+                        </button>
+                        <button
+                          onClick={() => dropItem(item.productId, item.name)}
+                          className="text-[var(--color-error)] hover:bg-[var(--color-error-container)] p-1.5 rounded-[var(--radius-sm)] transition-colors"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                /* In-stock row, with the price-change chip when it moved. */
+                return (
+                  <div
+                    key={item.productId}
+                    className={`grid grid-cols-[2fr_1.5fr_1fr] gap-4 px-6 py-5 items-center ${
+                      isLast
+                        ? ""
+                        : "border-b border-[var(--color-outline-variant)]"
+                    }`}
+                  >
+                    <div>
+                      <div className="text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
+                        {item.name}{" "}
+                        <span className="text-[#717973] font-semibold text-(length:--text-body-md)">
+                          x{item.quantity}
+                        </span>
+                      </div>
+                      <div className="text-[length:var(--text-label-md)] text-[var(--color-on-surface-variant)] mt-1">
+                        {item.priceAtSave != null && (
+                          <span
+                            className={`line-through text-outline mr-2 ${
+                              item.priceDelta === 0
+                                ? "border-r border-w-[2px] border-[#C1C8C1]"
+                                : ""
+                            }`}
+                          >
+                            Last Rs.{item.priceAtSave}
+                          </span>
+                        )}
+                        <span
+                          className={`text-[14px] font-semibold ${
+                            item.priceDelta !== 0 ? "text-secondary" : ""
+                          }`}
+                        >
+                          Today Rs.{item.unitPrice}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.priceDelta !== 0 && (
+                        <span className="bg-secondary-fixed text-[#D4820A] px-2 py-1 rounded-sm text-(length:--text-label-sm) font-bold">
+                          PRICE CHANGED {item.priceDelta > 0 ? "+" : "-"}RS.
+                          {Math.abs(item.priceDelta)}
+                        </span>
+                      )}
+                      <span className="bg-primary-fixed text-on-primary-fixed-variant flex px-2 py-1 rounded-full text-[11px] font-bold">
+                        {item.stockStatus === "Low Stock"
+                          ? "LOW STOCK"
+                          : "IN STOCK"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => keepItem(item)}
+                        className="bg-[var(--color-primary)] text-(--color-on-primary) px-4 py-1 rounded-full text-[13px] font-semibold hover:bg-(--color-primary-container) transition-colors"
+                      >
+                        Keep
+                      </button>
+                      <button
+                        onClick={() => dropItem(item.productId, item.name)}
+                        className="text-error hover:bg-error-container p-1.5 rounded-[var(--radius-sm)] transition-colors"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          navigate(`/view-product?id=${item.productId}`)
+                        }
+                        className="text-outline hover:bg-surface-dim p-1.5 rounded-sm transition-colors"
+                      >
+                        <Pencil size={20} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-[length:var(--text-label-md)] text-[var(--color-outline)] mt-1">
-                    <span>Last Rs.475</span>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="bg-error-container text-on-error-container px-2 py-1 rounded-full text-(length:--text-label-sm) font-bold">
-                    OUT OF STOCK
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <button className="border border-outline-border text-(--color-on-surface) px-4 py-1 rounded-full text-[13px] font-semibold hover:bg-surface-dim transition-colors">
-                    Notify
-                  </button>
-                  <button className="text-[var(--color-error)] hover:bg-[var(--color-error-container)] p-1.5 rounded-[var(--radius-sm)] transition-colors">
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             {/* Warning Alert */}
@@ -181,21 +310,21 @@ const BasketReview = () => {
                 <div className="flex justify-between items-center text-(length:--text-body-lg) text-on-surface-variant">
                   <span>Available Items</span>
                   <span className="font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
-                    2
+                    {summary.availableCount}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center text-[length:var(--text-body-lg)] text-[var(--color-on-surface-variant)]">
                   <span>Price Changes</span>
                   <span className="font-[var(--text-headline-sm--font-weight)] text-[var(--color-secondary)]">
-                    1
+                    {summary.priceChangedCount}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center text-[length:var(--text-body-lg)] text-[var(--color-on-surface-variant)]">
                   <span>Out of Stock</span>
                   <span className="font-[var(--text-headline-sm--font-weight)] text-[var(--color-error)]">
-                    1
+                    {summary.outOfStockCount}
                   </span>
                 </div>
               </div>
@@ -212,16 +341,23 @@ const BasketReview = () => {
                   </span>
                 </div>
                 <div className="text-[length:var(--text-headline-lg)] font-[var(--text-headline-lg--font-weight)] text-[var(--color-primary-container)]">
-                  Rs. 3700
+                  Rs. {summary.estimatedTotal}
                 </div>
               </div>
 
-              <button className="w-full bg-[var(--color-primary)] text-[var(--color-on-primary)] py-4 rounded-[var(--radius-default)] text-[length:var(--text-headline-sm)] font-[var(--text-headline-sm--font-weight)] hover:bg-[var(--color-primary-container)] transition-colors shadow-[var(--shadow-level-1)] mb-4">
-                Review Cart & Checkout
+              <button
+                onClick={checkout}
+                disabled={summary.availableCount === 0}
+                className="w-full bg-[var(--color-primary)] text-[var(--color-on-primary)] py-4 rounded-[var(--radius-default)] text-[length:var(--text-headline-sm)] font-[var(--text-headline-sm--font-weight)] hover:bg-[var(--color-primary-container)] transition-colors shadow-[var(--shadow-level-1)] mb-4 disabled:opacity-50"
+              >
+                Review Cart &amp; Checkout
               </button>
 
               <div className="text-center">
-                <button className=" text-[14px] text-[#6B7280] font-bold hover:text-(--color-on-surface) transition-colors">
+                <button
+                  onClick={() => navigate("/myorder")}
+                  className=" text-[14px] text-[#6B7280] font-bold hover:text-(--color-on-surface) transition-colors"
+                >
                   &larr; Back to Order
                 </button>
               </div>

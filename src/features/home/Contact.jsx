@@ -1,9 +1,17 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, MapPin, Mail, MessageSquare } from "lucide-react";
+import { apiRequest } from "../../services/api";
 
 export default function Contact() {
   const navigate = useNavigate();
+  const [whatsApp, setWhatsApp] = useState("");
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => setWhatsApp(data.settings?.contactWhatsApp || ""))
+      .catch(() => setWhatsApp(""));
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto px-md py-xl min-h-screen font-sans">
@@ -80,15 +88,21 @@ export default function Contact() {
             Click below to open chat directly with our store administrator:
           </p>
           <div className="flex flex-col gap-sm mt-xs">
-            <a
-              href="https://wa.me/9779800000000"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-xs py-sm bg-white border border-[#C1C8C1] rounded-default text-primary hover:bg-primary hover:text-white transition-all font-semibold"
-            >
-              <MessageSquare size={16} />
-              Open WhatsApp Chat
-            </a>
+            {whatsApp ? (
+              <a
+                href={`https://wa.me/${whatsApp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-xs py-sm bg-white border border-[#C1C8C1] rounded-default text-primary hover:bg-primary hover:text-white transition-all font-semibold"
+              >
+                <MessageSquare size={16} />
+                Open WhatsApp Chat
+              </a>
+            ) : (
+              <p className="text-body-md text-on-surface-variant">
+                No WhatsApp number published yet.
+              </p>
+            )}
           </div>
         </div>
       </div>

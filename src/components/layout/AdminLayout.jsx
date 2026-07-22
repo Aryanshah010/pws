@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Bell,
   Package,
+  ClipboardList,
+  Settings,
 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
@@ -18,9 +20,11 @@ import { apiRequest, authHeader } from "../../services/api";
 const NAV_ITEMS = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/users", label: "All Users", icon: Users },
   { to: "/admin/wholesale", label: "Wholesale Requests", icon: Store },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
+  { to: "/admin/settings", label: "Store Settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }) {
@@ -55,7 +59,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen flex bg-[#F0F4F0]">
-      {/* ── Sidebar ─────────────────────────── */}
+      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-primary transition-transform duration-300 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:z-auto`}
@@ -136,7 +140,7 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* ── Overlay (mobile) ─────────────────── */}
+      {/* Overlay (mobile) */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
@@ -144,7 +148,7 @@ export default function AdminLayout({ children }) {
         />
       )}
 
-      {/* ── Main Content ─────────────────────── */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#C1C8C1]/60 px-4 sm:px-8 h-16 flex items-center gap-4 shadow-sm">

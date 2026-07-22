@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Info } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
 
 export default function CustomBasketTemplate() {
@@ -26,9 +28,11 @@ export default function CustomBasketTemplate() {
           })),
         }),
       });
+      toast.success(`Saved "${name.trim()}" as a reusable basket`);
       navigate("/myorder");
     } catch (requestError) {
       setError(requestError.message);
+      toast.error(requestError.message || "Could not save this basket");
     } finally {
       setSaving(false);
     }
@@ -89,7 +93,14 @@ export default function CustomBasketTemplate() {
             disabled={saving || !cart.length || !name.trim()}
             className="w-full max-w-[320px] bg-[var(--color-primary)] text-white py-4 rounded-[var(--radius-default)] text-lg font-semibold disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save Template"}
+            {saving ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner size={18} />
+                Saving...
+              </span>
+            ) : (
+              "Save Template"
+            )}
           </button>
           {error && <p className="text-sm text-red-700">{error}</p>}
           <button

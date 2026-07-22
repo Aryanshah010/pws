@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,14 +9,10 @@ import {
   CreditCard,
   BadgeCheck,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
-
-const timeSlots = [
-  { id: "9-11", label: "9-11 AM", disabled: true },
-  { id: "11-1", label: "11-1 PM" },
-  { id: "2-4", label: "2-4 PM" },
-];
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -29,18 +25,54 @@ export default function Checkout() {
     synchronizeCartPrices,
   } = useStore();
   const [day, setDay] = useState("today");
-  const [timeSlot, setTimeSlot] = useState("11-1");
+  const [timeSlot, setTimeSlot] = useState("");
   const [payment, setPayment] = useState("digital");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Compute totals
-  const subtotal = cart.reduce(
+  // Pickup slots are store data, set by the storekeeper in /admin/settings.
+  const [timeSlots, setTimeSlots] = useState([]);
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => {
+        const slots = data.settings?.pickupSlots || [];
+        setTimeSlots(slots);
+        setTimeSlot((current) => current || slots[0]?.label || "");
+      })
+      .catch(() => setTimeSlots([]));
+  }, []);
+
+  const [quote, setQuote] = useState(null);
+
+  useEffect(() => {
+    if (!token || !cart.length) {
+      setQuote(null);
+      return;
+    }
+    apiRequest("/orders/quote", {
+      method: "POST",
+      headers: authHeader(token),
+      body: JSON.stringify({
+        items: cart.map((item) => ({
+          product: item.product._id,
+          quantity: item.quantity,
+        })),
+      }),
+    })
+      .then(setQuote)
+      .catch(() => setQuote(null));
+  }, [cart, token]);
+
+  const localSubtotal = cart.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0,
   );
-  const grandTotal = subtotal; // no tax/discount applied for simplicity in this view
+  const subtotal = quote?.subtotalAmount ?? localSubtotal;
+  const discount = quote?.discountAmount ?? 0;
+  const tax = quote?.taxAmount ?? 0;
+  const grandTotal = quote?.totalAmount ?? localSubtotal;
 
   const handleConfirm = async () => {
     if (!cart || cart.length === 0) return;
@@ -67,10 +99,12 @@ export default function Checkout() {
       });
       setCheckoutOrder(data.order);
       clearCart();
+      toast.success("Order placed — we've sent you a confirmation");
       navigate(payment === "digital" ? "/payment" : "/order-success");
     } catch (err) {
       if (err.data?.items) synchronizeCartPrices(err.data.items);
       setError(err.message);
+      toast.error(err.message || "Could not place the order");
     } finally {
       setIsSubmitting(false);
     }
@@ -157,20 +191,22 @@ export default function Checkout() {
               <div className="flex flex-wrap items-start gap-3">
                 {timeSlots.map((slot) => (
                   <button
-                    key={slot.id}
-                    disabled={slot.disabled}
-                    onClick={() => setTimeSlot(slot.id)}
+                    key={slot.label}
+                    onClick={() => setTimeSlot(slot.label)}
                     className={`rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
-                      slot.disabled
-                        ? "cursor-not-allowed border-outline-border bg-surface-lowest text-on-surface-variant opacity-50"
-                        : timeSlot === slot.id
-                          ? "border-primary bg-primary text-white"
-                          : "border-outline-border bg-surface-lowest text-on-surface-variant"
+                      timeSlot === slot.label
+                        ? "border-primary bg-primary text-white"
+                        : "border-outline-border bg-surface-lowest text-on-surface-variant"
                     }`}
                   >
                     {slot.label}
                   </button>
                 ))}
+                {timeSlots.length === 0 && (
+                  <p className="text-base text-on-surface-variant">
+                    No pickup slots are open right now.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -220,12 +256,22 @@ export default function Checkout() {
                     Rs.{subtotal}
                   </span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex w-full items-start justify-between">
+                    <span className="text-base text-on-surface-variant">
+                      Bulk discount
+                    </span>
+                    <span className="text-base text-on-surface-variant">
+                      -Rs.{discount}
+                    </span>
+                  </div>
+                )}
                 <div className="flex w-full items-start justify-between">
                   <span className="text-base text-on-surface-variant">
                     Tax/Fee
                   </span>
                   <span className="text-base text-on-surface-variant">
-                    Rs.0
+                    Rs.{tax}
                   </span>
                 </div>
               </div>
@@ -315,10 +361,17 @@ export default function Checkout() {
 
               <button
                 onClick={handleConfirm}
-                disabled={isSubmitting || cart.length === 0}
+                disabled={isSubmitting || cart.length === 0 || !timeSlot}
                 className="flex w-full items-center justify-center rounded-[10px] bg-primary py-4.25 text-lg font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {isSubmitting ? "Processing..." : "Confirm Order"}
+                {isSubmitting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    Placing order...
+                  </span>
+                ) : (
+                  "Confirm Order"
+                )}
               </button>
             </div>
           </div>

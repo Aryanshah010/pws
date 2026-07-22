@@ -4,7 +4,9 @@ import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
 import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
 import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 const ChangePassword = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -18,8 +20,10 @@ const ChangePassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword)
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
       return setError("Passwords do not match");
+    }
     if (!recovery?.resetToken) return navigate("/forget-password");
     setError("");
     setLoading(true);
@@ -32,9 +36,12 @@ const ChangePassword = () => {
         }),
       });
       setRecovery(null);
+      toast.success("Password changed — please log in");
       navigate("/login");
     } catch (err) {
-      setError(err.message || "Could not change password");
+      const message = err.message || "Could not change password";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -283,7 +290,14 @@ const ChangePassword = () => {
                   text-on-primary
                 "
               >
-                {loading ? "Resetting..." : "Reset Password"}
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    Resetting...
+                  </span>
+                ) : (
+                  "Reset Password"
+                )}
               </button>
 
               {/* BACK TO LOGIN */}

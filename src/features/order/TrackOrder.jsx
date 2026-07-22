@@ -28,7 +28,9 @@ export default function TrackOrder() {
       }
     };
     load();
-    const stream = new EventSource(`${API_URL}/events`);
+    const stream = new EventSource(
+      `${API_URL}/events?token=${encodeURIComponent(token)}`,
+    );
     stream.addEventListener("order-updated", load);
     return () => stream.close();
   }, [token]);

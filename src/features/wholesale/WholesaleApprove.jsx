@@ -1,11 +1,36 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
-
-const priceRows = [
-  { product: "Mustard Oil", regular: "Rs.160", wholesale: "Rs.150" },
-];
+import { useStore } from "../../store/store";
+import { apiRequest } from "../../services/api";
 
 export default function WholesaleApproved() {
+  const { user } = useStore();
+  const details = user?.wholesaleDetails || {};
+  const [priceRows, setPriceRows] = useState([]);
+
+  useEffect(() => {
+    apiRequest("/products")
+      .then((data) =>
+        setPriceRows(
+          (data.products || [])
+            .filter((product) => product.tierPrices?.length)
+            .slice(0, 5)
+            .map((product) => {
+              const best = product.tierPrices.reduce((cheapest, tier) =>
+                tier.price < cheapest.price ? tier : cheapest,
+              );
+              return {
+                product: product.name,
+                regular: `Rs.${product.retailPrice}`,
+                wholesale: `Rs.${best.price}`,
+              };
+            }),
+        ),
+      )
+      .catch(() => setPriceRows([]));
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] px-4 py-10 sm:py-16">
       <div className="flex w-full max-w-[672px] flex-col items-center rounded-2xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-lowest)] p-6 shadow-[var(--shadow-level-3)] sm:p-10">
@@ -21,11 +46,11 @@ export default function WholesaleApproved() {
 
         {/* Info */}
         <p className="text-center text-body-md leading-6 text-[var(--color-on-surface-variant)] mb-3">
-          Shop Name: XXXXXXXXXX
+          Shop Name: {details.shopName || "—"}
           <br />
-          Location: Kathmandu
+          Location: {details.shopLocation || "—"}
           <br />
-          Phone Number: 98XXXXXXXX
+          Phone Number: {user?.phone || "—"}
         </p>
 
         {/* Status Badge */}

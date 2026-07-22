@@ -2,6 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { useStore } from "../../store/store";
 
+const ROLE_LABELS = {
+  "household/individual": "HOUSEHOLD / REGULAR BUYER",
+  "bulk/shop": "SHOP / BULK BUYER",
+  pending_wholesale: "WHOLESALE REQUEST PENDING",
+  verified_wholesale: "VERIFIED WHOLESALE BUYER",
+  admin: "STOREKEEPER",
+};
+
 export default function AccountActive() {
   const { user } = useStore();
   const navigate = useNavigate();
@@ -61,8 +69,8 @@ export default function AccountActive() {
             marginTop: "var(--spacing-sm)",
           }}
         >
-          <p>Name: {user?.fullName || "XXXXXXXXXX"}</p>
-          <p>Phone Number: {user?.phone || "98XXXXXXXX"}</p>
+          <p>Name: {user?.fullName || "—"}</p>
+          <p>Phone Number: {user?.phone || "—"}</p>
         </div>
 
         {/* Account Classification Pill */}
@@ -78,7 +86,7 @@ export default function AccountActive() {
             marginTop: "var(--spacing-sm)",
           }}
         >
-          HOUSEHOLD / REGULAR BUYER
+          {ROLE_LABELS[user?.role] || ROLE_LABELS["household/individual"]}
         </div>
 
         {/* Informational Description */}

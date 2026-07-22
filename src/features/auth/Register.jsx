@@ -3,8 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { Lock, Phone, User, ChevronDown } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
-import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
 import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -14,7 +15,6 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUser } = useStore();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -22,17 +22,19 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      // Registering does not sign you in — the buyer confirms the account
+      // by logging in, and the welcome screen follows that first sign-in.
       const data = await apiRequest("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, phone, password, role }),
       });
-      setUser(data.user, data.token);
-      navigate(
-        data.user.role === "bulk/shop" ? "/wholesale-form" : "/account-active",
-      );
+      toast.success(data.message || "Account created. Please log in.");
+      navigate("/login", { state: { phone } });
     } catch (err) {
-      setError(err.message || "Failed to connect to server");
+      const message = err.message || "Failed to connect to server";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -354,7 +356,14 @@ export default function RegisterPage() {
                   disabled:opacity-70
                 "
                 >
-                  {loading ? "Registering..." : "Continue"}
+                  {loading ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Spinner />
+                      Creating account...
+                    </span>
+                  ) : (
+                    "Continue"
+                  )}
                 </button>
               </form>
 

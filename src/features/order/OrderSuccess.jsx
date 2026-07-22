@@ -8,7 +8,7 @@ export default function OrderSuccess() {
   const navigate = useNavigate();
   const orderId = checkoutOrder
     ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
-    : "PWS-001";
+    : "—";
   const isDigital = checkoutOrder?.paymentMethod === "Digital QR Transfer";
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12 sm:py-20 bg-[var(--color-background)]">
@@ -33,7 +33,7 @@ export default function OrderSuccess() {
           <p className="text-base font-semibold text-(--color-on-surface)">
             {checkoutOrder
               ? `${checkoutOrder.items.length} items | Total due Rs. ${checkoutOrder.totalAmount} | Pickup ${checkoutOrder.pickupSlot}`
-              : "2 items | Total due Rs. 1100 | Pickup tomorrow 11AM-1PM"}
+              : "Order details are no longer in this session."}
           </p>
         </div>
 

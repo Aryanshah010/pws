@@ -1,17 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronDown, Upload, Store, Info } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
-
-const BUSINESS_TYPES = [
-  "Retail Store",
-  "Grocery Shop",
-  "Supermarket",
-  "Restaurant / Hotel",
-  "Distributor",
-  "Other",
-];
 
 export default function WholesaleForm() {
   const [shopName, setShopName] = useState("");
@@ -28,6 +21,14 @@ export default function WholesaleForm() {
   const navigate = useNavigate();
   const { token, setUser } = useStore();
 
+  const [businessTypes, setBusinessTypes] = useState([]);
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => setBusinessTypes(data.settings?.businessTypes || []))
+      .catch(() => setBusinessTypes([]));
+  }, []);
+
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
   };
@@ -42,6 +43,7 @@ export default function WholesaleForm() {
     e.preventDefault();
     if (!shopName || !shopLocation || !businessType) {
       setError("Please fill out all required fields.");
+      toast.error("Please fill out all required fields.");
       return;
     }
 
@@ -68,9 +70,12 @@ export default function WholesaleForm() {
       });
 
       setUser(data.user, token);
+      toast.success("Wholesale request submitted for review");
       navigate("/wholesale-pending");
     } catch (err) {
-      setError(err.message || "Server error. Please try again later.");
+      const message = err.message || "Server error. Please try again later.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -161,7 +166,7 @@ export default function WholesaleForm() {
 
                     {dropdownOpen && (
                       <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)] rounded-[10px] shadow-[var(--shadow-level-3)] overflow-hidden">
-                        {BUSINESS_TYPES.map((type) => (
+                        {businessTypes.map((type) => (
                           <button
                             key={type}
                             type="button"
@@ -309,7 +314,14 @@ export default function WholesaleForm() {
                 disabled={loading}
                 className="w-full py-4.25 rounded-[10px] bg-primary-container text-(--color-on-primary) text-lg font-semibold leading-[25.2px] shadow-(--shadow-level-1) hover:bg-[#164f35] active:bg-[#0f3a27] transition-colors mb-4 disabled:opacity-70"
               >
-                {loading ? "Submitting..." : "Request Wholesale Access"}
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    Submitting...
+                  </span>
+                ) : (
+                  "Request Wholesale Access"
+                )}
               </button>
 
               {/* Cancel link */}

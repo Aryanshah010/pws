@@ -1,6 +1,21 @@
+import { useEffect, useState } from "react";
 import { Hourglass, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useStore } from "../../store/store";
+import { apiRequest } from "../../services/api";
 
 export default function WholesalePending() {
+  const { user } = useStore();
+  const navigate = useNavigate();
+  const details = user?.wholesaleDetails || {};
+  const [whatsApp, setWhatsApp] = useState("");
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => setWhatsApp(data.settings?.contactWhatsApp || ""))
+      .catch(() => setWhatsApp(""));
+  }, []);
+
   return (
     <div className="min-h-screen bg-color-surface flex items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-168 bg-(--color-surface-lowest) rounded-md border border-outline-border shadow-(--shadow-level-2) overflow-hidden">
@@ -22,9 +37,9 @@ export default function WholesalePending() {
 
           {/* Shop Info */}
           <div className="text-[var(--color-on-surface-variant)]  text-body-md leading-6 text-center mb-4">
-            <p>Shop Name: XXXXXXXXXX</p>
-            <p>Location: Kathmandu</p>
-            <p>Phone Number: 98XXXXX</p>
+            <p>Shop Name: {details.shopName || "—"}</p>
+            <p>Location: {details.shopLocation || "—"}</p>
+            <p>Phone Number: {user?.phone || "—"}</p>
           </div>
 
           {/* Status Badge */}
@@ -55,12 +70,22 @@ export default function WholesalePending() {
 
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full">
-            <button className="w-full sm:w-[278px] h-[60px] bg-[var(--color-primary-container)] rounded-[10px] shadow-[var(--shadow-level-1)] text-[var(--color-on-primary)]  font-semibold text-lg leading-6 hover:bg-[var(--color-primary)] transition-colors">
+            <button
+              onClick={() => navigate(user ? "/homepage" : "/login")}
+              className="w-full sm:w-[278px] h-[60px] bg-[var(--color-primary-container)] rounded-[10px] shadow-[var(--shadow-level-1)] text-[var(--color-on-primary)]  font-semibold text-lg leading-6 hover:bg-[var(--color-primary)] transition-colors"
+            >
               Login
             </button>
-            <button className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)]  font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors">
+            {whatsApp && (
+            <a
+              href={`https://wa.me/${whatsApp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)]  font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors flex items-center justify-center"
+            >
               Contact on WhatsApp
-            </button>
+            </a>
+            )}
           </div>
         </div>
       </div>

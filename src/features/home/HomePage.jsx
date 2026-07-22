@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, ChevronRight, ShoppingCart } from "lucide-react";
+import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
 import { API_URL, apiRequest, authHeader } from "../../services/api";
 
 export const STOCK_COLORS = {
@@ -30,12 +32,13 @@ export function StockBadge({ stock }) {
   );
 }
 
-function ActionButton({ action, onClick }) {
+function ActionButton({ action, busy, onClick }) {
   const notify = action !== "Add";
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={busy}
       style={{
         width: 121,
         height: 48,
@@ -54,8 +57,8 @@ function ActionButton({ action, onClick }) {
         fontWeight: 700,
       }}
     >
-      {notify ? <Bell size={16} /> : <ShoppingCart size={16} />}
-      {action}
+      {busy ? <Spinner /> : notify ? <Bell size={16} /> : <ShoppingCart size={16} />}
+      {busy ? "Saving..." : action}
     </button>
   );
 }
@@ -83,18 +86,28 @@ export function ProductCard({ product }) {
         : "Notify"
       : "Add";
 
+  const [busy, setBusy] = useState(false);
+
   const handleActionClick = async (event) => {
     event.preventDefault();
-    if (action === "Add") return addToCart(product, 1, displayPrice);
+    if (action === "Add") {
+      addToCart(product, 1, displayPrice);
+      toast.success(`${product.name} added to cart`);
+      return;
+    }
     if (!user || !token) return navigate("/login");
+    setBusy(true);
     try {
       await apiRequest(`/products/${product._id}/restock-subscriptions`, {
         method: "POST",
         headers: authHeader(token),
       });
       setNotificationRequested(true);
-    } catch {
-      // The detail page provides the full error message; keep this compact card unchanged.
+      toast.success(`We'll alert you when ${product.name} is back`);
+    } catch (error) {
+      toast.error(error.message || "Could not request that notification");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -196,7 +209,11 @@ export function ProductCard({ product }) {
           }}
         >
           <StockBadge stock={stockText} />
-          <ActionButton action={action} onClick={handleActionClick} />
+          <ActionButton
+            action={action}
+            busy={busy}
+            onClick={handleActionClick}
+          />
         </div>
       </div>
     </Link>
@@ -207,13 +224,7 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [categories, setCategories] = useState([
-    "Rice",
-    "Oil",
-    "Soap",
-    "Flour",
-    "Dal",
-  ]);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [unit, setUnit] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -245,7 +256,12 @@ export default function Home() {
     apiRequest("/products/categories")
       .then((data) => setCategories(data.categories || []))
       .catch(() => {});
-    const stream = new EventSource(`${API_URL}/events`);
+    // Catalogue events are public, but sending the token also lets this page
+    // pick up the restock events addressed to the signed-in buyer.
+    const token = localStorage.getItem("pathivara_token");
+    const stream = new EventSource(
+      `${API_URL}/events${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    );
     stream.addEventListener("catalog-updated", loadProducts);
     return () => stream.close();
   }, [loadProducts]);
