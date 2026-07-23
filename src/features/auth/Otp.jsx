@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
@@ -8,6 +9,7 @@ import { apiRequest } from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 
 const OtpVerification = () => {
+  const { t } = useTranslation();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
   const [error, setError] = useState("");
@@ -46,7 +48,7 @@ const OtpVerification = () => {
         body: JSON.stringify({ phone: recovery.phone, otp: otp.join("") }),
       });
       setRecovery({ ...recovery, resetToken: data.resetToken });
-      toast.success("Code verified — choose a new password");
+      toast.success(t("auth.otpVerified"));
       navigate("/change-password");
     } catch (err) {
       const message = err.message || "Could not verify OTP";
@@ -66,7 +68,7 @@ const OtpVerification = () => {
         body: JSON.stringify({ phone: recovery.phone }),
       });
       setRecovery({ phone: recovery.phone, demoOtp: data.demoOtp || null });
-      toast.success("A new code is on its way");
+      toast.success(t("auth.otpResent"));
     } catch (err) {
       const message = err.message || "Could not resend OTP";
       setError(message);
@@ -138,7 +140,7 @@ const OtpVerification = () => {
                   text-primary
                 "
                 >
-                  Enter 6-digit OTP
+                  {t("auth.otpTitle")}
                 </h1>
 
                 <p
@@ -149,8 +151,7 @@ const OtpVerification = () => {
                   max-w-70
                 "
                 >
-                  We have sent a verification code to your registered mobile
-                  number.
+                  {t("auth.otpSubtitle")}
                 </p>
                 {error && (
                   <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
@@ -214,7 +215,7 @@ const OtpVerification = () => {
                 {loading ? (
                   <span className="inline-flex items-center justify-center gap-2">
                     <Spinner size={18} />
-                    Verifying...
+                    {t("auth.verifying")}
                   </span>
                 ) : (
                   "Continue"
@@ -236,7 +237,7 @@ const OtpVerification = () => {
                   text-primary
                 "
               >
-                Resend OTP
+                {t("auth.resendOtp")}
               </button>
             </div>
           </div>

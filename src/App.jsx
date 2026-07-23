@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -28,7 +29,6 @@ import WholesaleApproved from "./features/wholesale/WholesaleApprove";
 import WholesaleRejected from "./features/wholesale/WholesaleReject";
 import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 import CartPage from "./features/checkout/CartPage";
-import ProductDetailOS from "./features/products/VIewProductDetailsOS";
 import Checkout from "./features/checkout/CheckoutPage";
 import PaymentQr from "./features/checkout/PaymentQrPage";
 import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
@@ -46,6 +46,7 @@ import AdminWholesalePage from "./features/admin/AdminWholesalePage";
 import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
 import AdminProductsPage from "./features/admin/AdminProductsPage";
 import AdminOrdersPage from "./features/admin/AdminOrdersPage";
+import AdminComplaintsPage from "./features/admin/AdminComplaintsPage";
 import AdminSettingsPage from "./features/admin/AdminSettingsPage";
 import ProfilePage from "./features/auth/ProfilePage";
 import { useStore } from "./store/store";
@@ -95,6 +96,13 @@ function FirstVisitGate({ children }) {
       </Layout>
     );
   return children;
+}
+
+// The product page handles both stock states, so the old out-of-stock URL just
+// forwards to it, carrying the ?id= through.
+function LegacyProductRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/view-product${search}`} replace />;
 }
 
 function GuestOnly({ children }) {
@@ -200,14 +208,9 @@ function App() {
             </Layout2>
           }
         />
-        <Route
-          path="/view-product-os"
-          element={
-            <Layout2>
-              <ProductDetailOS />
-            </Layout2>
-          }
-        />
+        {/* Out-of-stock products render on /view-product too, which switches to
+            the Notify flow on its own. Kept so old links still resolve. */}
+        <Route path="/view-product-os" element={<LegacyProductRedirect />} />
         <Route
           path="/wholesale-approved"
           element={
@@ -351,6 +354,14 @@ function App() {
           element={
             <AdminLayout>
               <AdminWholesalePage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/complaints"
+          element={
+            <AdminLayout>
+              <AdminComplaintsPage />
             </AdminLayout>
           }
         />

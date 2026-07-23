@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import i18n from "../config/i18n";
 import { apiRequest, authHeader } from "../services/api";
 import { unitPriceFor } from "../utils/pricing";
 
@@ -34,8 +35,11 @@ export const useStore = create((set, get) => ({
   ),
 
   // Actions
+  // Single place the language changes: i18next and the store never drift, so
+  // any toggle anywhere in the app switches the whole UI.
   setLanguage: (lang) => {
     localStorage.setItem("pathivara_lang", lang);
+    i18n.changeLanguage(lang);
     set({ language: lang });
   },
 
@@ -167,13 +171,37 @@ export const useStore = create((set, get) => ({
   },
 
   loadCart: (entries) => {
-    set((state) =>
+    set(() =>
       persistCart(
         entries
           .filter((entry) => entry.product?._id)
           .map((entry) => cartLine(entry.product, entry.quantity, entry.price)),
       ),
     );
+  },
+
+  // Folds entries into whatever is already in the cart instead of replacing it,
+  // so reordering a past order never discards an in-progress basket. Prices are
+  // always re-read from the product, never carried over from the old order.
+  mergeIntoCart: (entries) => {
+    set((state) => {
+      const next = [...state.cart];
+      entries
+        .filter((entry) => entry.product?._id)
+        .forEach((entry) => {
+          const index = next.findIndex(
+            (item) => item.product?._id === entry.product._id,
+          );
+          const quantity =
+            index === -1
+              ? entry.quantity
+              : next[index].quantity + entry.quantity;
+          const line = cartLine(entry.product, quantity);
+          if (index === -1) next.push(line);
+          else next[index] = line;
+        });
+      return persistCart(next);
+    });
   },
 
   updateQuantity: (productId, quantity) => {

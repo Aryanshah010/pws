@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Info, UploadCloud } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function PaymentProofPage() {
+  const { t } = useTranslation();
   const [transactionId, setTransactionId] = useState("");
   const [note, setNote] = useState("");
   const [file, setFile] = useState(null);
@@ -25,9 +27,8 @@ export default function PaymentProofPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!checkoutOrder || !token) return navigate("/login");
-    if (!file) return toast.error("Attach a screenshot of the payment");
-    if (file.size > 5 * 1024 * 1024)
-      return toast.error("Screenshot must be 5MB or smaller");
+    if (!file) return toast.error(t("payment.attachScreenshot"));
+    if (file.size > 5 * 1024 * 1024) return toast.error(t("payment.tooLarge"));
     const imageDataUrl = file
       ? await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -51,8 +52,8 @@ export default function PaymentProofPage() {
         },
       );
       setCheckoutOrder(data.order);
-      toast.success("Payment proof submitted", {
-        description: "We'll verify your payment and update the order status.",
+      toast.success(t("payment.submitted"), {
+        description: t("payment.verifyNote"),
       });
       setTransactionId("");
       setNote("");
@@ -68,7 +69,7 @@ export default function PaymentProofPage() {
       <button
         type="button"
         onClick={goBack}
-        aria-label="Go back"
+        aria-label={t("common.goBack")}
         className="mb-6 flex h-9 w-9 items-center justify-center  text-[var(--color-on-surface)] transition-opacity hover:opacity-80 cursor-pointer"
       >
         <ArrowLeft className="h-5 w-5" />
@@ -79,15 +80,16 @@ export default function PaymentProofPage() {
         <div className="flex flex-col gap-6">
           <div className="rounded-md border border-outline-border bg-(--color-surface-lowest) p-6 shadow-(--shadow-level-1)">
             <h1 className="text-xl font-bold text-[#00452B] sm:text-[22px]">
-              Order{" "}
-              {checkoutOrder
-                ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
-                : "—"}
+              {t("payment.orderRef", {
+                ref: checkoutOrder
+                  ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
+                  : "—",
+              })}
             </h1>
 
             <div className="mt-6 flex items-center justify-between border-b border-[var(--color-outline-border)] pb-4">
               <span className="text-base text-[var(--color-on-surface-variant)]">
-                Total due
+                {t("payment.totalDue")}
               </span>
               <span className="text-xl font-bold text-[#00452B]  sm:text-[22px]">
                 Rs. {checkoutOrder?.totalAmount ?? 0}
@@ -96,8 +98,11 @@ export default function PaymentProofPage() {
 
             <div className="mt-4 inline-flex items-center self-start rounded-full border border-outline-border-pill  px-4 py-1">
               <span className="text-center text-[13px] font-semibold tracking-wider text-outline-border-pill">
-                PAYMENT STATUS:{" "}
-                {(checkoutOrder?.paymentStatus || "Pending").toUpperCase()}
+                {t("payment.paymentStatus", {
+                  status: (
+                    checkoutOrder?.paymentStatus || "Pending"
+                  ).toUpperCase(),
+                })}
               </span>
             </div>
           </div>
@@ -108,12 +113,12 @@ export default function PaymentProofPage() {
               {qrImage ? (
                 <img
                   src={qrImage}
-                  alt="QR Code for Payment"
+                  alt={t("payment.qrAlt")}
                   className="h-full w-full object-contain"
                 />
               ) : (
                 <p className="text-center text-[13px] text-[var(--color-on-surface-variant)]">
-                  The store has not published a payment QR yet.
+                  {t("payment.noQr")}
                 </p>
               )}
             </div>
@@ -121,7 +126,7 @@ export default function PaymentProofPage() {
               QR
             </h2>
             <p className="mt-2 text-center text-base text-on-surface-variant">
-              Scan with any supported digital wallet or banking app.
+              {t("payment.scanHint")}
             </p>
           </div>
 
@@ -130,9 +135,11 @@ export default function PaymentProofPage() {
             <Info className="mt-0.5 h-[22px] w-5 shrink-0 text-[var(--color-on-primary-fixed-variant)]" />
             <p className="text-base leading-6 text-[var(--color-on-primary-fixed-variant)]">
               <span className="font-semibold">
-                Send exactly Rs. {checkoutOrder?.totalAmount ?? 0}
+                {t("payment.sendExactly", {
+                  amount: checkoutOrder?.totalAmount ?? 0,
+                })}
               </span>
-              , then submit proof.
+              {t("payment.thenSubmit")}
             </p>
           </div>
         </div>
@@ -140,7 +147,7 @@ export default function PaymentProofPage() {
         {/* Right Form Column */}
         <div className="rounded-md border border-outline-border bg-[var(--color-surface-lowest)] p-6 shadow-[var(--shadow-level-1)]">
           <h2 className="border-b border-[var(--color-outline-border)] pb-4 text-xl font-bold text-[#00452B] sm:text-[22px]">
-            Submit Payment Proof
+            {t("payment.submitProof")}
           </h2>
 
           <form
@@ -154,10 +161,10 @@ export default function PaymentProofPage() {
             >
               <UploadCloud className="mb-4 h-9 w-9 text-[var(--color-on-surface-variant)]" />
               <span className="text-base font-medium text-[var(--color-on-surface)]">
-                {file ? file.name : "Upload payment screenshot"}
+                {file ? file.name : t("payment.uploadScreenshot")}
               </span>
               <span className="mt-2 text-[13px] text-[var(--color-on-surface-variant)]">
-                JPG, PNG up to 5MB
+                {t("payment.uploadHint")}
               </span>
               <input
                 id="payment-screenshot"
@@ -174,14 +181,14 @@ export default function PaymentProofPage() {
                 htmlFor="transaction-id"
                 className="mb-2 block text-[13px] font-semibold text-[var(--color-on-surface-variant)]"
               >
-                Transaction ID optional
+                {t("payment.transactionId")}
               </label>
               <input
                 id="transaction-id"
                 type="text"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="e.g., AB123456789"
+                placeholder={t("payment.transactionPlaceholder")}
                 className="w-full rounded-[var(--radius-default)] border border-[var(--color-outline-border)] bg-[#F4FBF4] px-[17px] py-[17px] text-base text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
             </div>
@@ -192,13 +199,13 @@ export default function PaymentProofPage() {
                 htmlFor="payment-note"
                 className="mb-2 block text-[13px] font-semibold text-[var(--color-on-surface-variant)]"
               >
-                Payment note optional
+                {t("payment.note")}
               </label>
               <textarea
                 id="payment-note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Any details..."
+                placeholder={t("payment.notePlaceholder")}
                 rows={4}
                 className="w-full resize-none rounded-[var(--radius-default)] border border-[var(--color-outline-border)] bg-[#F4FBF4] px-[17px] py-[15px] text-base text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
@@ -209,7 +216,7 @@ export default function PaymentProofPage() {
               type="submit"
               className="w-full max-w-[414px] rounded-[10px] bg-[var(--color-primary)] py-[17px] text-center text-lg font-semibold text-[var(--color-on-primary)] shadow-[var(--shadow-level-1)] transition-opacity hover:opacity-90 cursor-pointer"
             >
-              Submit Payment Proof
+              {t("payment.submitProof")}
             </button>
           </form>
         </div>

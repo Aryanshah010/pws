@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function ShareIcon() {
   return (
@@ -52,20 +53,20 @@ function PhoneIcon() {
 }
 
 const FOOTER_LINKS = [
-  { label: "Contact", href: "/contact" },
-  { label: "Terms", href: "#terms" },
-  { label: "Privacy", href: "#privacy" },
+  { key: "footerLinks.contact", href: "/contact" },
+  { key: "footerLinks.terms", href: "#terms" },
+  { key: "footerLinks.privacy", href: "#privacy" },
 ];
 
 const SOCIAL_ICONS = [
   {
-    label: "Share",
+    key: "footerLinks.share",
     href: "#share",
     icon: <ShareIcon />,
     style: "outline", // outlined circle, blue icon
   },
   {
-    label: "Contact by phone",
+    key: "footerLinks.phone",
     href: "#phone",
     icon: <PhoneIcon />,
     style: "filled", // green filled circle, white icon
@@ -73,6 +74,7 @@ const SOCIAL_ICONS = [
 ];
 
 export default function Footer() {
+  const { t } = useTranslation();
   return (
     <>
       <style>{`
@@ -237,7 +239,7 @@ export default function Footer() {
             <Link
               to="/"
               className="footer__brand-name"
-              aria-label="Pathivara home"
+              aria-label={t("nav.pathivaraHome")}
             >
               Pathivara
             </Link>
@@ -248,23 +250,27 @@ export default function Footer() {
 
           {/* CENTER — Nav links */}
           <ul className="footer__nav" role="list">
-            {FOOTER_LINKS.map(({ label, href }) => (
-              <li key={label}>
+            {FOOTER_LINKS.map(({ key, href }) => (
+              <li key={key}>
                 <Link to={href} className="footer__nav-link">
-                  {label}
+                  {t(key)}
                 </Link>
               </li>
             ))}
           </ul>
 
           {/* RIGHT — Social / contact icons */}
-          <div className="footer__social" role="list" aria-label="Social links">
-            {SOCIAL_ICONS.map(({ label, href, icon, style }) => (
+          <div
+            className="footer__social"
+            role="list"
+            aria-label={t("nav.socialLinks")}
+          >
+            {SOCIAL_ICONS.map(({ key, href, icon, style }) => (
               <a
-                key={label}
+                key={key}
                 href={href}
                 className={`footer__icon-btn footer__icon-btn--${style}`}
-                aria-label={label}
+                aria-label={t(key)}
                 role="listitem"
               >
                 {icon}

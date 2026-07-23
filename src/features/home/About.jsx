@@ -1,9 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function About() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const homePath = useHomePath();
 
@@ -14,11 +16,11 @@ export default function About() {
         className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
       >
         <ArrowLeft size={16} />
-        Back to Home
+        {t("common.backToHome")}
       </button>
 
       <h1 className="text-headline-md md:text-headline-lg font-bold text-primary mb-md">
-        About Pathivara Staples
+        {t("about.title")}
       </h1>
 
       <div className="flex flex-col gap-md text-body-lg text-on-surface-variant leading-relaxed">
@@ -30,24 +32,20 @@ export default function About() {
         </p>
 
         <h2 className="text-headline-sm font-bold text-on-surface mt-sm">
-          Our Key Differences:
+          {t("about.keyDifferences")}
         </h2>
         <ul className="list-disc pl-lg flex flex-col gap-xs">
           <li>
-            <strong>Direct Sourcing:</strong> We cut out multi-vendor friction
-            and deal directly, passing down volume discount savings.
+            <strong>{t("about.sourcing")}</strong> {t("about.sourcingDesc")}
           </li>
           <li>
-            <strong>Role-Based Tiered Pricing:</strong> Kirana pasal shop owners
-            get wholesale discounts, while households get honest retail pricing.
+            <strong>{t("about.pricing")}</strong> {t("about.pricingDesc")}
           </li>
           <li>
-            <strong>Zero-Delivery Pickup Model:</strong> No delivery delays,
-            fees, or address errors. Choose a pickup slot at your convenience.
+            <strong>{t("about.pickup")}</strong> {t("about.pickupDesc")}
           </li>
           <li>
-            <strong>Live Stock Badge:</strong> What you see is exactly what is
-            in stock in our physical warehouse.
+            <strong>{t("about.stock")}</strong> {t("about.stockDesc")}
           </li>
         </ul>
       </div>

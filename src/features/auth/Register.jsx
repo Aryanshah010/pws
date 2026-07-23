@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { Lock, Phone, User, ChevronDown } from "lucide-react";
 import Nav from "../../components/layout/Nav";
@@ -8,6 +9,7 @@ import { apiRequest } from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -102,7 +104,7 @@ export default function RegisterPage() {
                   text-primary
                 "
               >
-                Create Account
+                {t("auth.createAccount")}
               </h1>
 
               {error && (
@@ -123,7 +125,7 @@ export default function RegisterPage() {
                     text-on-surface-variant
                   "
                   >
-                    Full Name
+                    {t("auth.fullName")}
                   </label>
 
                   <div className="relative">
@@ -147,7 +149,7 @@ export default function RegisterPage() {
 
                     <input
                       type="text"
-                      placeholder="Enter your full name"
+                      placeholder={t("auth.fullNamePlaceholder")}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
@@ -179,7 +181,7 @@ export default function RegisterPage() {
                     text-on-surface-variant
                   "
                   >
-                    Phone Number
+                    {t("auth.phone")}
                   </label>
 
                   <div className="relative">
@@ -203,7 +205,7 @@ export default function RegisterPage() {
 
                     <input
                       type="text"
-                      placeholder="Enter your number"
+                      placeholder={t("auth.phonePlaceholder")}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       required
@@ -235,7 +237,7 @@ export default function RegisterPage() {
                     text-on-surface-variant
                   "
                   >
-                    Password
+                    {t("auth.password")}
                   </label>
 
                   <div className="relative">
@@ -291,7 +293,7 @@ export default function RegisterPage() {
                     text-on-surface-variant
                   "
                   >
-                    Buyer Type
+                    {t("auth.buyerType")}
                   </label>
 
                   <div className="relative">
@@ -316,12 +318,12 @@ export default function RegisterPage() {
                     "
                     >
                       <option value="" disabled>
-                        Choose buyer type
+                        {t("auth.chooseBuyerType")}
                       </option>
                       <option value="household/individual">
-                        Household/Regular Buyer
+                        {t("auth.household")}
                       </option>
-                      <option value="bulk/shop">Shop/Bulk Buyer</option>
+                      <option value="bulk/shop">{t("auth.shopBulk")}</option>
                     </select>
 
                     <div
@@ -357,7 +359,7 @@ export default function RegisterPage() {
                   {loading ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Spinner />
-                      Creating account...
+                      {t("auth.creatingAccount")}
                     </span>
                   ) : (
                     "Continue"
@@ -381,7 +383,7 @@ export default function RegisterPage() {
                     text-on-surface
                   "
                 >
-                  Already have an account?
+                  {t("auth.haveAccount")}
                 </span>
 
                 <Link
@@ -393,7 +395,7 @@ export default function RegisterPage() {
                     underline-offset-[2px]
                   "
                 >
-                  Login
+                  {t("auth.loginButton")}
                 </Link>
               </div>
 
@@ -423,7 +425,7 @@ export default function RegisterPage() {
                     font-bold
                   "
               >
-                Browse as a guest →
+                {t("auth.browseAsGuest")}
               </button>
             </div>
           </div>

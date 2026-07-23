@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 function LeafIcon({ size = 22 }) {
   return (
@@ -76,11 +77,12 @@ function CloseIcon() {
 import { Link } from "react-router-dom";
 
 const NAV_LINKS = [
-  { label: "About", href: "/about" },
-  { label: "Login", href: "/login" },
+  { key: "nav.about", href: "/about" },
+  { key: "nav.login", href: "/login" },
 ];
 
 export default function Nav() {
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState(null);
 
@@ -291,10 +293,18 @@ export default function Nav() {
         }
       `}</style>
 
-      <nav className="nav" role="navigation" aria-label="Main navigation">
+      <nav
+        className="nav"
+        role="navigation"
+        aria-label={t("nav.mainNavigation")}
+      >
         <div className="nav__inner">
           {/* Brand */}
-          <Link className="nav__brand" to="/" aria-label="Pathivara home">
+          <Link
+            className="nav__brand"
+            to="/"
+            aria-label={t("nav.pathivaraHome")}
+          >
             <div className="nav__logo-circle">
               <LeafIcon size={22} />
             </div>
@@ -304,22 +314,22 @@ export default function Nav() {
           {/* Desktop right cluster */}
           <div className="nav__right">
             <ul className="nav__links" role="list">
-              {NAV_LINKS.map(({ label, href }) => (
-                <li key={label}>
+              {NAV_LINKS.map(({ key, href }) => (
+                <li key={key}>
                   <Link
                     to={href}
-                    className={`nav__link${active === label ? " nav__link--active" : ""}`}
-                    onClick={() => setActive(label)}
-                    aria-current={active === label ? "page" : undefined}
+                    className={`nav__link${active === key ? " nav__link--active" : ""}`}
+                    onClick={() => setActive(key)}
+                    aria-current={active === key ? "page" : undefined}
                   >
-                    {label}
+                    {t(key)}
                   </Link>
                 </li>
               ))}
             </ul>
 
             <Link to="/register" className="nav__cta">
-              Register Now
+              {t("nav.registerNow")}
             </Link>
 
             {/* Mobile hamburger */}
@@ -328,7 +338,7 @@ export default function Nav() {
               onClick={() => setMobileOpen((o) => !o)}
               aria-expanded={mobileOpen}
               aria-controls="nav-drawer"
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-label={mobileOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             >
               {mobileOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
@@ -340,18 +350,18 @@ export default function Nav() {
           className={`nav__drawer${mobileOpen ? " nav__drawer--open" : ""}`}
           role="menu"
         >
-          {NAV_LINKS.map(({ label, href }) => (
+          {NAV_LINKS.map(({ key, href }) => (
             <Link
-              key={label}
+              key={key}
               to={href}
               className="nav__drawer-link"
               role="menuitem"
               onClick={() => {
-                setActive(label);
+                setActive(key);
                 setMobileOpen(false);
               }}
             >
-              {label}
+              {t(key)}
             </Link>
           ))}
           <Link
@@ -360,7 +370,7 @@ export default function Nav() {
             role="menuitem"
             onClick={() => setMobileOpen(false)}
           >
-            Register Now
+            {t("nav.registerNow")}
           </Link>
         </div>
       </nav>

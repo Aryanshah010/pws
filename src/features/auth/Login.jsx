@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Lock, Phone } from "lucide-react";
 import Nav from "../../components/layout/Nav";
@@ -9,6 +10,7 @@ import { apiRequest } from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const location = useLocation();
   const [phone, setPhone] = useState(location.state?.phone || "");
   const [password, setPassword] = useState("");
@@ -32,12 +34,12 @@ export default function LoginPage() {
       const firstName = data.user.fullName?.split(" ")[0] || "there";
 
       if (data.user.role === "admin") {
-        toast.success(`Welcome back, ${firstName}`);
+        toast.success(t("auth.welcomeBack", { name: firstName }));
         return navigate("/admin");
       }
 
       if (data.firstLogin) {
-        toast.success(`Welcome to Pathivara, ${firstName}`);
+        toast.success(t("auth.welcomeNew", { name: firstName }));
         const needsWholesaleForm =
           data.user.role === "bulk/shop" &&
           data.user.wholesaleStatus === "not_requested";
@@ -46,7 +48,7 @@ export default function LoginPage() {
         );
       }
 
-      toast.success(`Welcome back, ${firstName}`);
+      toast.success(t("auth.welcomeBack", { name: firstName }));
       navigate("/homepage");
     } catch (err) {
       const message = err.message || "Failed to connect to server";
@@ -121,7 +123,7 @@ export default function LoginPage() {
                   text-primary
                 "
               >
-                Login to Pathivara
+                {t("auth.loginTitle")}
               </h1>
 
               <p
@@ -132,7 +134,7 @@ export default function LoginPage() {
                   max-w-[280px]
                 "
               >
-                Welcome back. Please enter your credentials to continue.
+                {t("auth.loginSubtitle")}
               </p>
 
               {error && (
@@ -153,7 +155,7 @@ export default function LoginPage() {
                     text-on-surface-variant
                   "
                   >
-                    Phone Number
+                    {t("auth.phone")}
                   </label>
 
                   <div className="relative">
@@ -177,7 +179,7 @@ export default function LoginPage() {
 
                     <input
                       type="text"
-                      placeholder="Enter your number"
+                      placeholder={t("auth.phonePlaceholder")}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       required
@@ -209,7 +211,7 @@ export default function LoginPage() {
                     text-on-surface-variant
                   "
                   >
-                    Password
+                    {t("auth.password")}
                   </label>
 
                   <div className="relative">
@@ -271,7 +273,7 @@ export default function LoginPage() {
                     text-[#3F81EA]
                   "
                   >
-                    Forgot password?
+                    {t("auth.forgotPassword")}
                   </Link>
 
                   <div className="flex items-center gap-0.5">
@@ -282,7 +284,7 @@ export default function LoginPage() {
                       text-black
                     "
                     >
-                      New Buyer?
+                      {t("auth.newBuyer")}
                     </span>
 
                     <Link
@@ -293,7 +295,7 @@ export default function LoginPage() {
                       text-[#D4820A]
                     "
                     >
-                      Register
+                      {t("auth.register")}
                     </Link>
                   </div>
                 </div>
@@ -317,7 +319,7 @@ export default function LoginPage() {
                   {loading ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <Spinner />
-                      Logging in...
+                      {t("auth.loggingIn")}
                     </span>
                   ) : (
                     "Login"
@@ -355,7 +357,7 @@ export default function LoginPage() {
                   text-on-surface
                 "
               >
-                Continue browsing as guest
+                {t("auth.browseGuest")}
               </button>
             </div>
           </div>

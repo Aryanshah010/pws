@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Info } from "lucide-react";
 import { toast } from "react-toastify";
@@ -8,6 +9,7 @@ import { apiRequest, authHeader } from "../../services/api";
 import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function CustomBasketTemplate() {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -30,7 +32,7 @@ export default function CustomBasketTemplate() {
           })),
         }),
       });
-      toast.success(`Saved "${name.trim()}" as a reusable basket`);
+      toast.success(t("customBasket.saved", { name: name.trim() }));
       navigate("/myorder");
     } catch (requestError) {
       setError(requestError.message);
@@ -44,25 +46,29 @@ export default function CustomBasketTemplate() {
       <div className="w-full max-w-260.75 flex flex-col gap-6 mt-4">
         <div className="bg-(--color-surface-lowest) rounded-md p-6 md:p-8 border border-outline-border shadow-[var(--shadow-level-1)]">
           <h2 className="text-[24px] font-bold text-(--color-primary-container) mb-6">
-            Custom Template
+            {t("customBasket.title")}
           </h2>
-          <label className="text-sm font-semibold">Name this Basket:</label>
+          <label className="text-sm font-semibold">
+            {t("customBasket.nameBasket")}
+          </label>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Example my weekly basket"
+            placeholder={t("customBasket.namePlaceholder")}
             className="mt-2 w-full px-4 py-4 bg-[#F4FBF4] border border-[#C1C8C1] rounded-sm outline-none"
           />
         </div>
         <div className="bg-[var(--color-surface-lowest)] rounded-[var(--radius-md)] p-6 md:p-8 border border-[var(--color-outline-variant)] shadow-[var(--shadow-level-1)]">
           <h2 className="text-[22px] font-bold text-[var(--color-primary-container)] mb-6">
-            Order Table
+            {t("customBasket.orderTable")}
           </h2>
           <div className="border border-[var(--color-outline-variant)] rounded overflow-hidden">
             <div className="grid grid-cols-[2fr_1fr_1.5fr] bg-surface-low px-6 py-4 text-xs font-bold uppercase">
-              <span>Item</span>
-              <span className="text-center">Qty</span>
-              <span className="text-right">Current price per unit</span>
+              <span>{t("common.item")}</span>
+              <span className="text-center">{t("common.qty")}</span>
+              <span className="text-right">
+                {t("customBasket.currentPrice")}
+              </span>
             </div>
             {cart.length ? (
               cart.map((item) => (
@@ -77,16 +83,13 @@ export default function CustomBasketTemplate() {
               ))
             ) : (
               <p className="p-6 text-center text-[#717973]">
-                Your cart is empty.
+                {t("customBasket.emptyCart")}
               </p>
             )}
           </div>
           <div className="mt-6 bg-surface-categories border-l-4 border-l-(--color-primary-container) p-4 rounded-r-default flex gap-3">
             <Info size={20} />
-            <p>
-              Saving a basket does not place an order. Stock and prices are
-              checked again when you use it.
-            </p>
+            <p>{t("customBasket.note")}</p>
           </div>
         </div>
         <div className="flex flex-col items-center gap-4">
@@ -98,7 +101,7 @@ export default function CustomBasketTemplate() {
             {saving ? (
               <span className="inline-flex items-center justify-center gap-2">
                 <Spinner size={18} />
-                Saving...
+                {t("customBasket.saving")}
               </span>
             ) : (
               "Save Template"
@@ -109,7 +112,7 @@ export default function CustomBasketTemplate() {
             onClick={goBack}
             className="text-lg font-semibold text-[var(--color-on-surface-variant)]"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
         </div>
       </div>

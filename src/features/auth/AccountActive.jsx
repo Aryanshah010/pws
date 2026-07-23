@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { useStore } from "../../store/store";
 
@@ -11,6 +12,7 @@ const ROLE_LABELS = {
 };
 
 export default function AccountActive() {
+  const { t } = useTranslation();
   const { user } = useStore();
   const navigate = useNavigate();
   return (
@@ -55,7 +57,7 @@ export default function AccountActive() {
             marginTop: "var(--spacing-lg)",
           }}
         >
-          Account active
+          {t("auth.accountActive")}
         </h1>
 
         {/* User Account Details */}
@@ -100,8 +102,7 @@ export default function AccountActive() {
             marginTop: "var(--spacing-xl)",
           }}
         >
-          You can browse products, see regular buyer prices, and place pickup
-          orders.
+          {t("auth.accountActiveNote")}
         </p>
 
         {/* Action Button Group */}
@@ -132,7 +133,7 @@ export default function AccountActive() {
             }
             onClick={() => navigate("/homepage")}
           >
-            Go to home
+            {t("auth.goToHome")}
           </button>
 
           {/* Secondary Action Button */}
@@ -158,7 +159,7 @@ export default function AccountActive() {
             }
             onClick={() => navigate("/profile")}
           >
-            Complete Profile
+            {t("auth.completeProfile")}
           </button>
         </div>
       </div>

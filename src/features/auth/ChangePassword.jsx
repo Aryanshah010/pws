@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
@@ -9,6 +10,7 @@ import { apiRequest } from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 
 const ChangePassword = () => {
+  const { t } = useTranslation();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -21,7 +23,7 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(t("auth.passwordMismatch"));
       return setError("Passwords do not match");
     }
     if (!recovery?.resetToken) return navigate("/forget-password");
@@ -36,7 +38,7 @@ const ChangePassword = () => {
         }),
       });
       setRecovery(null);
-      toast.success("Password changed — please log in");
+      toast.success(t("auth.passwordChanged"));
       navigate("/login");
     } catch (err) {
       const message = err.message || "Could not change password";
@@ -111,7 +113,7 @@ const ChangePassword = () => {
                   text-primary
                 "
               >
-                Change your Password
+                {t("auth.changeTitle")}
               </h1>
 
               <p
@@ -122,7 +124,7 @@ const ChangePassword = () => {
                   max-w-[280px]
                 "
               >
-                Enter a new secure password below to update your account access.
+                {t("auth.changeSubtitle")}
               </p>
 
               {error && (
@@ -142,7 +144,7 @@ const ChangePassword = () => {
                     text-on-surface-variant
                   "
                 >
-                  New Password
+                  {t("auth.newPassword")}
                 </label>
 
                 <div className="relative">
@@ -169,7 +171,7 @@ const ChangePassword = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
-                    placeholder="Enter new password"
+                    placeholder={t("auth.newPasswordPlaceholder")}
                     className="
                       h-[44px]
                       w-full
@@ -212,7 +214,7 @@ const ChangePassword = () => {
                     text-on-surface-variant
                   "
                 >
-                  Confirm Password
+                  {t("auth.confirmPassword")}
                 </label>
 
                 <div className="relative">
@@ -239,7 +241,7 @@ const ChangePassword = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    placeholder="Confirm new password"
+                    placeholder={t("auth.confirmPasswordPlaceholder")}
                     className="
                       h-[44px]
                       w-full
@@ -293,7 +295,7 @@ const ChangePassword = () => {
                 {loading ? (
                   <span className="inline-flex items-center justify-center gap-2">
                     <Spinner size={18} />
-                    Resetting...
+                    {t("auth.resetting")}
                   </span>
                 ) : (
                   "Reset Password"
@@ -314,7 +316,7 @@ const ChangePassword = () => {
                 "
               >
                 <ArrowLeft size={14} />
-                Back to login
+                {t("auth.backToLogin")}
               </Link>
             </div>
           </div>

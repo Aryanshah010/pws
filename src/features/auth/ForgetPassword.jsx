@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Phone, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
@@ -9,6 +10,7 @@ import { apiRequest } from "../../services/api";
 import Spinner from "../../components/common/Spinner";
 
 const ForgetPassword = () => {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ const ForgetPassword = () => {
         body: JSON.stringify({ phone }),
       });
       setRecovery({ phone, demoOtp: data.demoOtp || null });
-      toast.success("OTP sent — check your messages");
+      toast.success(t("auth.otpSent"));
       navigate("/otp");
     } catch (err) {
       const message = err.message || "Could not send OTP";
@@ -100,7 +102,7 @@ const ForgetPassword = () => {
                   text-primary
                 "
               >
-                Forgot Password?
+                {t("auth.forgotTitle")}
               </h1>
 
               <p
@@ -111,8 +113,7 @@ const ForgetPassword = () => {
                   max-w-[280px]
                 "
               >
-                Enter your registered phone number to receive a One- Time
-                Password (OTP) for account recovery.
+                {t("auth.forgotSubtitle")}
               </p>
 
               {error && (
@@ -132,7 +133,7 @@ const ForgetPassword = () => {
                     text-on-surface-variant
                   "
                 >
-                  Phone Number
+                  {t("auth.phone")}
                 </label>
 
                 <div className="relative">
@@ -156,7 +157,7 @@ const ForgetPassword = () => {
 
                   <input
                     type="text"
-                    placeholder="98XXXXXXX"
+                    placeholder={t("auth.phonePlaceholder")}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
@@ -195,7 +196,7 @@ const ForgetPassword = () => {
                 {loading ? (
                   <span className="inline-flex items-center justify-center gap-2">
                     <Spinner size={18} />
-                    Sending...
+                    {t("auth.sending")}
                   </span>
                 ) : (
                   "Send OTP"
@@ -216,7 +217,7 @@ const ForgetPassword = () => {
                 "
               >
                 <ArrowLeft size={14} />
-                Cancel
+                {t("common.cancel")}
               </Link>
             </div>
           </div>

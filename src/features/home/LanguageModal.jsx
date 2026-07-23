@@ -4,13 +4,12 @@ import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 
 export default function LanguageModal() {
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const { setOnboarded, setLanguage } = useStore();
   const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   const handleContinue = () => {
     const langCode = selectedLanguage === "Nepali" ? "ne" : "en";
-    i18n.changeLanguage(langCode);
     setLanguage(langCode);
     setOnboarded(true);
   };
@@ -42,16 +41,16 @@ export default function LanguageModal() {
 
         {/* Headings */}
         <h1 className="text-[#00452B] leading-[var(--text-headline-lg--line-height)] font-semibold text-[24px] mb-4">
-          Welcome to Pathivara Wholesale Supplies
+          {t("onboarding.welcomeFull")}
         </h1>
 
         <p className="text-[#414943] leading-(--text-body-lg--line-height) mb-10 max-w-[400px]">
-          Pickup-only wholesale and household/regular ordering website
+          {t("onboarding.tagline")}
         </p>
 
         {/* Language Selection Section */}
         <p className="text-(--text-label-md) font-medium mb-4">
-          Select preferred language
+          {t("onboarding.selectLanguage")}
         </p>
 
         <div className="flex gap-4 w-full mb-6">
@@ -121,17 +120,17 @@ export default function LanguageModal() {
           onClick={handleContinue}
           className="w-full bg-surface-categories text-primary py-4 rounded-[10px] font-semibold mb-8 hover:bg-[#d5e0d7] transition-colors"
         >
-          Continue
+          {t("onboarding.continue")}
         </button>
 
         {/* Login Link */}
         <p className="text-(--text-label-md) font-medium">
-          Already registered?{" "}
+          {t("onboarding.alreadyRegistered")}{" "}
           <Link
             to="/login"
             className="font-bold text-[#0052D5] hover:underline"
           >
-            Login
+            {t("onboarding.loginLink")}
           </Link>
         </p>
       </div>

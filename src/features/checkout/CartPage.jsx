@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Minus, Plus, Trash2, ArrowLeft, TriangleAlert } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import useCartPricing from "../../hooks/useCartPricing";
 import { useGoBack } from "../../hooks/useBackNavigation";
 
-
 function PriceChangeAlert({ message, onRemove, onKeep }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-start gap-4 rounded-default border border-[#FFB86B] bg-[#FFDCBC] p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
@@ -21,14 +22,14 @@ function PriceChangeAlert({ message, onRemove, onKeep }) {
           onClick={onRemove}
           className="rounded-default border border-[#6B3F00] px-4 py-2 text-[13px] font-semibold text-[#6B3F00] transition-colors hover:bg-[#6B3F00]/10"
         >
-          Remove
+          {t("common.remove")}
         </button>
         <button
           type="button"
           onClick={onKeep}
           className="rounded-default bg-[#6B3F00] px-4 py-2 text-[13px] font-semibold text-[#FFA535] transition-colors hover:bg-[#6B3F00]/90"
         >
-          Keep
+          {t("common.keep")}
         </button>
       </div>
     </div>
@@ -36,35 +37,40 @@ function PriceChangeAlert({ message, onRemove, onKeep }) {
 }
 
 function OrderSummary({ subtotal, discount, tax, total, onCheckout }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-6 rounded-md border border-[#C1C8C1] bg-white p-6 shadow-[0_1px_3px_1px_rgba(27,28,26,0.06)]">
       <h2 className="text-[22px] font-bold leading-[130%] text-[#1B1C1A]">
-        Order Summary
+        {t("cart.orderSummary")}
       </h2>
 
       <div className="flex flex-col gap-4">
         <div className="flex items-start justify-between">
-          <span className="text-base text-[#1B1C1A]">Subtotal:</span>
+          <span className="text-base text-[#1B1C1A]">{t("cart.subtotal")}</span>
           <span className="text-base text-[#1B1C1A]">Rs. {subtotal}</span>
         </div>
         <div className="flex items-start justify-between">
-          <span className="text-base text-[#1B1C1A]">Total Discount:</span>
+          <span className="text-base text-[#1B1C1A]">
+            {t("cart.totalDiscount")}
+          </span>
           <span className="text-base text-[#1B1C1A]">Rs. {discount}</span>
         </div>
         <div className="flex items-start justify-between">
-          <span className="text-base text-[#1B1C1A]">Tax/fee:</span>
+          <span className="text-base text-[#1B1C1A]">{t("cart.taxFee")}</span>
           <span className="text-base text-[#1B1C1A]">Rs. {tax}</span>
         </div>
       </div>
 
       <div className="rounded-default border border-[#C1C8C1] bg-surface-categories p-2">
         <p className="text-center text-[13px] leading-[140%] text-[#1B1C1A]">
-          Pickup only. No delivery address needed!
+          {t("cart.pickupNote")}
         </p>
       </div>
 
       <div className="flex items-start justify-between border-t border-[#C1C8C1] pt-4">
-        <span className="text-base font-semibold text-[#1B1C1A]">Total:</span>
+        <span className="text-base font-semibold text-[#1B1C1A]">
+          {t("cart.totalLabel")}
+        </span>
         <span className="text-base font-semibold text-[#1B1C1A]">
           Rs. {total}
         </span>
@@ -75,13 +81,14 @@ function OrderSummary({ subtotal, discount, tax, total, onCheckout }) {
         onClick={onCheckout}
         className="w-full rounded-[10px] bg-[#1B5E40] py-4.25 text-center text-lg font-semibold text-white transition-colors hover:bg-[#00452b]"
       >
-        Proceed to checkout
+        {t("cart.checkout")}
       </button>
     </div>
   );
 }
 
 function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
+  const { t } = useTranslation();
   const {
     productId,
     name: productName,
@@ -107,7 +114,7 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            aria-label={`Decrease ${productName} quantity`}
+            aria-label={t("cart.decreaseQty", { name: productName })}
             onClick={() => onDecrement(productId, quantity)}
             className="flex h-8 w-8 items-center justify-center rounded border border-[#C1C8C1] bg-[#fbf9f5] transition-colors hover:bg-[#efeeea]"
           >
@@ -119,7 +126,7 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
           </div>
           <button
             type="button"
-            aria-label={`Increase ${productName} quantity`}
+            aria-label={t("cart.increaseQty", { name: productName })}
             onClick={() => onIncrement(productId, quantity)}
             className="flex h-8 w-8 items-center justify-center rounded border border-[#C1C8C1] bg-[#fbf9f5] transition-colors hover:bg-[#efeeea]"
           >
@@ -129,7 +136,7 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
 
         <div className="flex w-full max-w-[200px] flex-col items-center gap-1">
           <p className="text-[13px] font-semibold text-[#404943]">
-            {unlocked ? "Discount unlocked!" : "No discount yet"}
+            {unlocked ? t("cart.discountUnlocked") : t("cart.noDiscount")}
           </p>
           {/* Progress Milestone Indicators */}
           <div className="flex h-3 w-full items-start justify-center gap-1">
@@ -145,30 +152,38 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
           </div>
           {!unlocked && remaining > 0 ? (
             <p className="text-center text-[13px] leading-[140%] text-[#404943]">
-              Add {remaining} more {unit}
-              {remaining > 1 ? "s" : ""} to unlock discount
+              {t("cart.addMoreUnlock", {
+                qty: remaining,
+                unit: remaining > 1 ? `${unit}s` : unit,
+              })}
             </p>
           ) : nextTier ? (
             <p className="text-center text-[13px] leading-[140%] text-[#404943]">
-              Add {nextTier.minQuantity - quantity} more {unit}
-              {nextTier.minQuantity - quantity > 1 ? "s" : ""} for best rate
+              {t("cart.addMoreBest", {
+                qty: nextTier.minQuantity - quantity,
+                unit: nextTier.minQuantity - quantity > 1 ? `${unit}s` : unit,
+              })}
             </p>
           ) : null}
         </div>
       </div>
 
       <div className="flex flex-col items-start gap-1 pt-2 sm:col-span-3">
-        <p className="text-base text-[#1B1C1A]">Subtotal: Rs. {subtotal}</p>
-        <p className="text-base text-[#1B1C1A]">Discount: Rs. {discount}</p>
+        <p className="text-base text-[#1B1C1A]">
+          {t("cart.subtotalLine", { amount: subtotal })}
+        </p>
+        <p className="text-base text-[#1B1C1A]">
+          {t("cart.discountLine", { amount: discount })}
+        </p>
         <p className="text-base font-semibold text-[#1B1C1A]">
-          Final: Rs. {final}
+          {t("cart.finalLine", { amount: final })}
         </p>
       </div>
 
       <div className="flex justify-end sm:col-span-1 sm:justify-center sm:pt-2">
         <button
           type="button"
-          aria-label={`Remove ${productName} from cart`}
+          aria-label={t("cart.removeItemLabel", { name: productName })}
           onClick={() => onRemove(productId)}
           className="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-70"
         >
@@ -180,6 +195,7 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
 }
 
 export default function CartPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const goBack = useGoBack();
   const cart = useStore((state) => state.cart);
@@ -199,7 +215,7 @@ export default function CartPage() {
 
   const removeItem = (id, name) => {
     removeFromCart(id);
-    toast.info(`${name || "Item"} removed from cart`);
+    toast.info(t("cart.removed", { name: name || t("common.item") }));
   };
 
   return (
@@ -207,7 +223,7 @@ export default function CartPage() {
       <button
         type="button"
         onClick={goBack}
-        aria-label="Go back"
+        aria-label={t("common.goBack")}
         className="flex h-6 w-6 items-center justify-center text-[#1B1C1A] transition-opacity hover:opacity-70"
       >
         <ArrowLeft className="h-5 w-5" />
@@ -216,11 +232,9 @@ export default function CartPage() {
       {!cart || cart.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-[#C1C8C1] bg-white py-24 text-center">
           <p className="text-lg font-semibold text-[#1B1C1A]">
-            Your cart is empty
+            {t("cart.empty")}
           </p>
-          <p className="text-on-surface-variant">
-            Add some items to get started.
-          </p>
+          <p className="text-on-surface-variant">{t("cart.emptyHint")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
@@ -229,27 +243,31 @@ export default function CartPage() {
             {priceChanges.map((change) => (
               <PriceChangeAlert
                 key={change.productId}
-                message={`Price changed: ${change.name} was Rs.${change.oldPrice}, now Rs.${change.newPrice}.`}
+                message={t("cart.priceChanged", {
+                  name: change.name,
+                  oldPrice: change.oldPrice,
+                  newPrice: change.newPrice,
+                })}
                 onRemove={() => removeItem(change.productId, change.name)}
                 onKeep={() => {
                   synchronizeCartPrices(quoteItems);
-                  toast.success("Cart updated to today's prices");
+                  toast.success(t("cart.pricesUpdated"));
                 }}
               />
             ))}
 
             <div className="hidden grid-cols-12 border-b border-[#C1C8C1] bg-[#fbf9f5] p-4 sm:grid">
               <span className="col-span-4 text-base font-semibold text-[#1B1C1A]">
-                Item
+                {t("cart.item")}
               </span>
               <span className="col-span-4 text-center text-base font-semibold text-[#1B1C1A]">
-                Quantity
+                {t("cart.quantity")}
               </span>
               <span className="col-span-3 text-base font-semibold text-[#1B1C1A]">
-                Total
+                {t("cart.total")}
               </span>
               <span className="col-span-1 text-center text-base font-semibold text-[#1B1C1A]">
-                Action
+                {t("cart.action")}
               </span>
             </div>
 
@@ -265,7 +283,7 @@ export default function CartPage() {
 
             <div className="flex items-center justify-between border-t border-[#C1C8C1] p-4 mb-0">
               <span className="text-base font-semibold text-[#1B1C1A]">
-                Grand Total
+                {t("cart.grandTotal")}
               </span>
               <span className="text-base font-semibold text-[#1B1C1A]">
                 Rs. {totals.total}

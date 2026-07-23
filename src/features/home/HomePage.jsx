@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, ChevronRight, ShoppingCart } from "lucide-react";
 import { toast } from "react-toastify";
@@ -12,7 +13,16 @@ export const STOCK_COLORS = {
   "Out of Stock": "var(--color-error-container)",
 };
 
+// Stock status arrives from the API in English; the badge is the single place
+// it gets mapped onto a translated label.
+const STOCK_KEYS = {
+  "In Stock": "stock.inStock",
+  "Low Stock": "stock.lowStock",
+  "Out of Stock": "stock.outOfStock",
+};
+
 export function StockBadge({ stock }) {
+  const { t } = useTranslation();
   return (
     <span
       style={{
@@ -27,12 +37,19 @@ export function StockBadge({ stock }) {
         fontWeight: 700,
       }}
     >
-      {stock}
+      {STOCK_KEYS[stock] ? t(STOCK_KEYS[stock]) : stock}
     </span>
   );
 }
 
+const ACTION_KEYS = {
+  Add: "home.add",
+  Notify: "home.notify",
+  Requested: "home.requested",
+};
+
 function ActionButton({ action, busy, onClick }) {
+  const { t } = useTranslation();
   const notify = action !== "Add";
   return (
     <button
@@ -64,12 +81,13 @@ function ActionButton({ action, busy, onClick }) {
       ) : (
         <ShoppingCart size={16} />
       )}
-      {busy ? "Saving..." : action}
+      {busy ? t("home.saving") : t(ACTION_KEYS[action])}
     </button>
   );
 }
 
 export function ProductCard({ product }) {
+  const { t } = useTranslation();
   const { user, token, addToCart } = useStore();
   const [notificationRequested, setNotificationRequested] = useState(false);
   const navigate = useNavigate();
@@ -91,7 +109,7 @@ export function ProductCard({ product }) {
     event.preventDefault();
     if (action === "Add") {
       addToCart(product, 1, displayPrice);
-      toast.success(`${product.name} added to cart`);
+      toast.success(t("home.addedToCart", { name: product.name }));
       return;
     }
     if (!user || !token) return navigate("/login");
@@ -102,9 +120,9 @@ export function ProductCard({ product }) {
         headers: authHeader(token),
       });
       setNotificationRequested(true);
-      toast.success(`We'll alert you when ${product.name} is back`);
+      toast.success(t("home.restockAlert", { name: product.name }));
     } catch (error) {
-      toast.error(error.message || "Could not request that notification");
+      toast.error(error.message || t("home.restockFailed"));
     } finally {
       setBusy(false);
     }
@@ -151,7 +169,7 @@ export function ProductCard({ product }) {
               fontSize: "var(--text-label-sm)",
             }}
           >
-            PRODUCT IMAGE
+            {t("home.productImage")}
           </span>
         )}
       </div>
@@ -222,6 +240,7 @@ export function ProductCard({ product }) {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -270,6 +289,12 @@ export default function Home() {
     setUnit("");
   };
 
+  const heading = catalogSearch.trim()
+    ? t("home.resultsFor", { query: catalogSearch.trim() })
+    : selectedCategory === "All"
+      ? t("home.allProducts")
+      : selectedCategory;
+
   return (
     <main
       style={{
@@ -310,7 +335,7 @@ export default function Home() {
               fontWeight: 700,
             }}
           >
-            Categories
+            {t("home.categories")}
           </h3>
           <div
             style={{
@@ -360,7 +385,7 @@ export default function Home() {
               cursor: "pointer",
             }}
           >
-            See All →
+            {t("home.seeAll")}
           </button>
           <div
             style={{
@@ -372,10 +397,9 @@ export default function Home() {
               color: "var(--color-secondary)",
             }}
           >
-            <strong>ⓘ Note:</strong>
+            <strong>ⓘ {t("home.note")}</strong>
             <div style={{ marginTop: "var(--spacing-sm)" }}>
-              Pickup-only, collect from Pathivara Wholesale center located at
-              the main market hub.
+              {t("home.pickupNote")}
             </div>
           </div>
         </aside>
@@ -396,7 +420,7 @@ export default function Home() {
             }}
           >
             <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700 }}>
-              All Products
+              {heading}
             </h1>
             <button
               type="button"
@@ -413,17 +437,19 @@ export default function Home() {
                 fontWeight: 400,
               }}
             >
-              Filter
+              {t("home.filter")}
               <ChevronDown size={16} />
             </button>
           </div>
           {filterOpen && (
             <div className="mb-8 flex items-center gap-3 rounded-[var(--radius-default)] border border-[var(--color-outline-variant)] bg-[var(--color-surface-lowest)] p-4">
-              <label className="text-sm font-semibold">Unit size</label>
+              <label className="text-sm font-semibold">
+                {t("home.unitSize")}
+              </label>
               <input
                 value={unit}
                 onChange={(event) => setUnit(event.target.value)}
-                placeholder="e.g. 1kg, 5L"
+                placeholder={t("home.unitPlaceholder")}
                 className="rounded border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] px-3 py-2 text-sm outline-none"
               />
               <button
@@ -431,7 +457,7 @@ export default function Home() {
                 onClick={() => setUnit("")}
                 className="text-sm font-semibold text-[var(--color-primary)]"
               >
-                Clear
+                {t("home.clear")}
               </button>
             </div>
           )}
@@ -443,11 +469,11 @@ export default function Home() {
             }}
           >
             {loading ? (
-              <div>Loading products...</div>
+              <div>{t("home.loadingProducts")}</div>
             ) : error ? (
               <div className="text-red-700">{error}</div>
             ) : products.length === 0 ? (
-              <div>No products match your search.</div>
+              <div>{t("home.noProducts")}</div>
             ) : (
               products.map((product) => (
                 <ProductCard key={product._id} product={product} />

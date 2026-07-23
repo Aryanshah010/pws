@@ -9,7 +9,7 @@ import { showPush } from "../../utils/push";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const {
     language,
     setLanguage,
@@ -88,13 +88,12 @@ export default function Navbar() {
 
   const toggleLanguage = () => {
     const newLang = language === "en" ? "ne" : "en";
-    i18n.changeLanguage(newLang);
     setLanguage(newLang);
   };
 
   const handleLogout = () => {
     logout();
-    toast.info("Signed out");
+    toast.info(t("nav.signedOut"));
     navigate("/login");
   };
 
@@ -107,7 +106,7 @@ export default function Navbar() {
             to="/about"
             className="text-white font-[Montserrat] text-sm font-normal hover:text-white/80 transition-colors"
           >
-            About
+            {t("nav.about")}
           </Link>
           <button
             onClick={toggleLanguage}
@@ -121,7 +120,7 @@ export default function Navbar() {
                 onClick={handleLogout}
                 className="text-[#BA1A1A] font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
               >
-                Logout
+                {t("nav.logout")}
               </button>
             </>
           ) : (
@@ -129,7 +128,7 @@ export default function Navbar() {
               to="/login"
               className="text-white font-[Montserrat] text-sm font-normal hover:opacity-80 transition-opacity"
             >
-              Login
+              {t("nav.login")}
             </Link>
           )}
         </div>
@@ -171,7 +170,7 @@ export default function Navbar() {
               />
               <input
                 type="text"
-                placeholder="Search rice, tori tel..."
+                placeholder={t("nav.searchPlaceholder")}
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
                 className="w-full pl-11 pr-4 py-2.5 bg-[#E2EAE3] rounded-full text-sm text-[#1D1B20] placeholder:text-[#6B7280] font-[Montserrat] font-normal focus:outline-none focus:ring-2 focus:ring-[#1B5E40]/30"
@@ -182,19 +181,19 @@ export default function Navbar() {
           {/* Desktop nav links */}
           <div className="hidden text-[#414943] font-[Montserrat] text-base font-medium whitespace-nowrap lg:flex items-center gap-6 mx-0 flex-shrink-0">
             <Link to="/cart" className="hover:text-[#1B5E40] transition-colors">
-              Cart
+              {t("nav.cart")}
             </Link>
             <Link
               to="/myorder"
               className="hover:text-[#1B5E40] transition-colors"
             >
-              My Orders
+              {t("nav.myOrders")}
             </Link>
             <Link
               to="/track"
               className="hover:text-[#1B5E40] transition-colors"
             >
-              Track Order
+              {t("nav.trackOrder")}
             </Link>
             <button
               onClick={() => {
@@ -249,11 +248,11 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-4 z-50 w-56 rounded-xl border border-[#C1C8C1] bg-white p-4 shadow-lg">
                   <div className="mb-3 border-b border-[#E2EAE3] pb-3 flex flex-col gap-1">
                     <p className="text-sm font-bold text-[#1B1C1A]">
-                      {user?.fullName || "User Profile"}
+                      {user?.fullName || t("nav.userProfile")}
                     </p>
                     {user?.role === "verified_wholesale" && (
                       <span className="inline-block rounded-full bg-[#c6e9d2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1B5E40] w-max">
-                        Verified Bulk Buyer
+                        {t("nav.verifiedBulkBuyer")}
                       </span>
                     )}
                   </div>
@@ -263,7 +262,7 @@ export default function Navbar() {
                       onClick={() => setProfileOpen(false)}
                       className="text-sm font-medium text-[#414943] hover:text-[#1B5E40] transition-colors"
                     >
-                      Edit Profile
+                      {t("nav.editProfile")}
                     </Link>
                   </div>
                 </div>
@@ -274,7 +273,7 @@ export default function Navbar() {
           {notificationsOpen && (
             <div className="absolute right-4 top-22 z-50 w-80 rounded-xl border border-[#C1C8C1] bg-white p-3 shadow-lg">
               <div className="mb-2 flex items-center justify-between">
-                <strong className="text-sm">Notifications</strong>
+                <strong className="text-sm">{t("nav.notifications")}</strong>
                 <button
                   onClick={async () => {
                     await apiRequest("/orders/notifications/read", {
@@ -287,10 +286,10 @@ export default function Navbar() {
                   }}
                   className="text-xs text-primary"
                 >
-                  Mark all read
+                  {t("nav.markAllRead")}
                 </button>
               </div>
-          
+
               {notifications.length ? (
                 <div className="max-h-96 overflow-y-auto overscroll-contain">
                   {notifications.map((item) => (
@@ -319,7 +318,7 @@ export default function Navbar() {
                 </div>
               ) : (
                 <p className="p-3 text-sm text-[#717973]">
-                  No notifications yet.
+                  {t("nav.noNotifications")}
                 </p>
               )}
             </div>
@@ -351,7 +350,7 @@ export default function Navbar() {
             />
             <input
               type="text"
-              placeholder="Search rice, tori tel..."
+              placeholder={t("nav.searchPlaceholder")}
               value={catalogSearch}
               onChange={(e) => setCatalogSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-[#E2EAE3] rounded-full text-sm text-[#1D1B20] placeholder:text-[#6B7280] font-[Montserrat] focus:outline-none focus:ring-2 focus:ring-[#1B5E40]/30"
@@ -367,28 +366,28 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="text-[#414943] font-[Montserrat] text-base font-medium py-2 border-b border-[#C1C8C1]/40"
             >
-              Cart
+              {t("nav.cart")}
             </Link>
             <Link
               to="/myorder"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[#414943] font-[Montserrat] text-base font-medium py-2 border-b border-[#C1C8C1]/40"
             >
-              My Orders
+              {t("nav.myOrders")}
             </Link>
             <Link
               to="/track"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[#414943] font-[Montserrat] text-base font-medium py-2 border-b border-[#C1C8C1]/40"
             >
-              Track Order
+              {t("nav.trackOrder")}
             </Link>
             <Link
               to="/about"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[#414943] font-[Montserrat] text-base font-medium py-2"
             >
-              About
+              {t("nav.about")}
             </Link>
           </div>
         )}

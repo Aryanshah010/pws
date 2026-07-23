@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { CheckCircle2, Circle, Info, Mail, Bell } from "lucide-react";
 import { useStore } from "../../store/store";
@@ -7,6 +8,7 @@ import { API_URL, apiRequest, authHeader } from "../../services/api";
 const steps = ["Placed", "Acknowledged", "Ready", "Collected"];
 
 export default function TrackOrder() {
+  const { t } = useTranslation();
   const { token, checkoutOrder } = useStore();
   const [order, setOrder] = useState(checkoutOrder);
   const [loading, setLoading] = useState(!checkoutOrder);
@@ -35,13 +37,14 @@ export default function TrackOrder() {
     return () => stream.close();
   }, [token]);
 
-  if (loading) return <div className="p-8 text-center">Loading order...</div>;
+  if (loading)
+    return <div className="p-8 text-center">{t("track.loading")}</div>;
   if (!order)
     return (
       <div className="p-8 text-center">
         No order found.{" "}
         <Link className="text-primary underline" to="/myorder">
-          View My Orders
+          {t("track.viewMyOrders")}
         </Link>
       </div>
     );
@@ -53,7 +56,7 @@ export default function TrackOrder() {
       <div className="max-w-288.75 mx-auto">
         <div className="mb-8">
           <h1 className="text-[24px] font-semibold text-[#00452B]">
-            Track Order
+            {t("track.title")}
           </h1>
         </div>
         <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -61,7 +64,7 @@ export default function TrackOrder() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-outline-border pb-6 mb-8">
               <div>
                 <span className="text-(--text-label-sm) font-semibold uppercase">
-                  Order ID
+                  {t("track.orderId")}
                 </span>
                 <h2 className="text-[16px] font-semibold text-[#00452B]">
                   {orderId}
@@ -69,7 +72,7 @@ export default function TrackOrder() {
               </div>
               <div className="bg-surface-categories border border-outline-border px-4 py-2 rounded-default">
                 <span className="block text-[13px] font-semibold text-[#414943] uppercase">
-                  Pickup
+                  {t("track.pickup")}
                 </span>
                 <span className="text-base font-semibold text-(--color-primary-container)">
                   {order.pickupSlot}
@@ -141,21 +144,20 @@ export default function TrackOrder() {
             <div className="bg-(--color-surface-lowest) rounded-md border border-outline-border p-6 shadow-(--shadow-level-1)">
               <div className="flex items-center gap-2 mb-4">
                 <Bell size={18} />
-                <h3 className="text-base font-bold">Notifications</h3>
+                <h3 className="text-base font-bold">
+                  {t("track.notifications")}
+                </h3>
               </div>
               <div className="flex items-center gap-3 p-4 rounded-default border border-[#c6e9d2] bg-[#F4FBF4]">
                 <Mail size={18} />
-                <p>
-                  You will receive push + SMS when the shop acknowledges or
-                  prepares your order.
-                </p>
+                <p>{t("track.notificationsNote")}</p>
               </div>
             </div>
             <Link
               to="/myorder"
               className="w-full h-15 flex items-center justify-center rounded-[10px] bg-primary text-(--color-on-primary) text-lg font-bold"
             >
-              Back to Orders
+              {t("track.backToOrders")}
             </Link>
           </aside>
         </div>

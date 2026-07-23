@@ -10,6 +10,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 import Spinner from "../../components/common/Spinner";
 import useCartPricing from "../../hooks/useCartPricing";
@@ -17,6 +18,7 @@ import { useGoBack } from "../../hooks/useBackNavigation";
 import { apiRequest, authHeader } from "../../services/api";
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const goBack = useGoBack("/cart");
   const {
@@ -74,7 +76,7 @@ export default function Checkout() {
       });
       setCheckoutOrder(data.order);
       clearCart();
-      toast.success("Order placed — we've sent you a confirmation");
+      toast.success(t("checkout.orderPlaced"));
       navigate(payment === "digital" ? "/payment" : "/order-success");
     } catch (err) {
       if (err.data?.items) synchronizeCartPrices(err.data.items);
@@ -90,13 +92,13 @@ export default function Checkout() {
       <div className="mb-8 flex items-center gap-3">
         <button
           onClick={goBack}
-          aria-label="Go back"
+          aria-label={t("common.goBack")}
           className="flex h-6 w-6 items-center justify-center text-on-surface transition-opacity hover:opacity-70"
         >
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-[32px] font-bold leading-10 text-on-surface">
-          Checkout
+          {t("checkout.title")}
         </h1>
       </div>
 
@@ -109,11 +111,11 @@ export default function Checkout() {
               <div className="flex items-center gap-4">
                 <User size={16} className="text-on-surface-variant" />
                 <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                  Contact Details
+                  {t("checkout.contactDetails")}
                 </h2>
               </div>
               <button className="text-[13px] font-semibold text-[#3F81EA] transition-opacity hover:opacity-80">
-                Edit
+                {t("checkout.edit")}
               </button>
             </div>
             <div className="flex flex-col items-start gap-1">
@@ -131,18 +133,18 @@ export default function Checkout() {
             <div className="flex items-center gap-3">
               <ShoppingBasket size={20} className="text-on-surface-variant" />
               <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                Pickup Time Slot
+                {t("checkout.pickupSlot")}
               </h2>
             </div>
 
             <div className="flex w-full flex-col items-start gap-3">
               <span className="text-[13px] font-semibold uppercase tracking-[0.65px] text-on-surface-variant">
-                Select Day
+                {t("checkout.selectDay")}
               </span>
               <div className="flex items-start gap-3">
                 {[
-                  { id: "today", label: "Today" },
-                  { id: "tomorrow", label: "Tomorrow" },
+                  { id: "today", label: t("checkout.today") },
+                  { id: "tomorrow", label: t("checkout.tomorrow") },
                 ].map((d) => (
                   <button
                     key={d.id}
@@ -161,7 +163,7 @@ export default function Checkout() {
 
             <div className="flex w-full flex-col items-start gap-3 py-1">
               <span className="text-[13px] font-semibold uppercase tracking-[0.65px] text-on-surface-variant">
-                Select Time
+                {t("checkout.selectTime")}
               </span>
               <div className="flex flex-wrap items-start gap-3">
                 {timeSlots.map((slot) => (
@@ -179,7 +181,7 @@ export default function Checkout() {
                 ))}
                 {timeSlots.length === 0 && (
                   <p className="text-base text-on-surface-variant">
-                    No pickup slots are open right now.
+                    {t("checkout.noSlots")}
                   </p>
                 )}
               </div>
@@ -191,7 +193,7 @@ export default function Checkout() {
                 className="mt-0.5 shrink-0 text-on-surface-variant"
               />
               <p className="text-base text-on-surface-variant">
-                Pickup-only order. NO delivery address.
+                {t("checkout.pickupOnly")}
               </p>
             </div>
           </section>
@@ -201,13 +203,13 @@ export default function Checkout() {
             <div className="flex items-center gap-3.5">
               <NotebookPen size={18} className="text-on-surface-variant" />
               <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                Order Notes
+                {t("checkout.orderNotes")}
               </h2>
             </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Order notes optional"
+              placeholder={t("checkout.notesPlaceholder")}
               rows={4}
               className="w-full resize-none rounded-[10px] border border-outline-border bg-[#F4FBF4] px-4.25 py-3.75 text-base text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -220,12 +222,12 @@ export default function Checkout() {
             {/* Price Breakdown */}
             <div className="flex flex-col items-start gap-6 border-b border-outline-border p-6">
               <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                Price Breakdown
+                {t("checkout.priceBreakdown")}
               </h2>
               <div className="flex w-full flex-col items-start gap-4">
                 <div className="flex w-full items-start justify-between">
                   <span className="text-base text-on-surface-variant">
-                    Subtotal
+                    {t("checkout.subtotal")}
                   </span>
                   <span className="text-base text-on-surface-variant">
                     Rs.{subtotal}
@@ -234,7 +236,7 @@ export default function Checkout() {
                 {discount > 0 && (
                   <div className="flex w-full items-start justify-between">
                     <span className="text-base text-on-surface-variant">
-                      Bulk discount
+                      {t("checkout.bulkDiscount")}
                     </span>
                     <span className="text-base text-on-surface-variant">
                       -Rs.{discount}
@@ -243,7 +245,7 @@ export default function Checkout() {
                 )}
                 <div className="flex w-full items-start justify-between">
                   <span className="text-base text-on-surface-variant">
-                    Tax/Fee
+                    {t("checkout.taxFee")}
                   </span>
                   <span className="text-base text-on-surface-variant">
                     Rs.{tax}
@@ -252,7 +254,7 @@ export default function Checkout() {
               </div>
               <div className="flex w-full items-center justify-between border-t border-outline-border pt-4">
                 <span className="text-[22px] font-bold text-on-surface">
-                  Total Due
+                  {t("checkout.totalDue")}
                 </span>
                 <span className="text-2xl font-semibold text-on-surface">
                   Rs.{grandTotal}
@@ -265,7 +267,7 @@ export default function Checkout() {
               <div className="flex items-center gap-2.5">
                 <CreditCard size={18} className="text-on-surface-variant" />
                 <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                  Payment options
+                  {t("checkout.paymentOptions")}
                 </h2>
               </div>
 
@@ -290,7 +292,7 @@ export default function Checkout() {
                     )}
                   </span>
                   <span className="ml-3 text-base font-semibold text-on-surface">
-                    Pay at Pickup
+                    {t("checkout.payAtPickup")}
                   </span>
                 </button>
 
@@ -314,7 +316,7 @@ export default function Checkout() {
                     )}
                   </span>
                   <span className="ml-3 text-base font-semibold text-on-surface">
-                    Digital Transfer / QR
+                    {t("checkout.digitalTransfer")}
                   </span>
                 </button>
               </div>
@@ -328,7 +330,7 @@ export default function Checkout() {
                   className="mt-0.5 shrink-0 text-primary"
                 />
                 <p className="text-[13px] font-semibold text-on-surface-variant">
-                  First order guarantee: receive exactly what you ordered.
+                  {t("checkout.guarantee")}
                 </p>
               </div>
 
@@ -342,10 +344,10 @@ export default function Checkout() {
                 {isSubmitting ? (
                   <span className="inline-flex items-center justify-center gap-2">
                     <Spinner size={18} />
-                    Placing order...
+                    {t("checkout.placingOrder")}
                   </span>
                 ) : (
-                  "Confirm Order"
+                  t("checkout.placeOrder")
                 )}
               </button>
             </div>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, MapPin, Mail, MessageSquare } from "lucide-react";
 import { apiRequest } from "../../services/api";
 import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function Contact() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const homePath = useHomePath();
   const [whatsApp, setWhatsApp] = useState("");
@@ -22,11 +24,11 @@ export default function Contact() {
         className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
       >
         <ArrowLeft size={16} />
-        Back to Home
+        {t("common.backToHome")}
       </button>
 
       <h1 className="text-headline-md md:text-headline-lg font-bold text-primary mb-md">
-        Contact Pathivara Staples
+        {t("contact.title")}
       </h1>
 
       <p className="text-body-lg text-on-surface-variant leading-relaxed mb-lg">
@@ -44,10 +46,10 @@ export default function Contact() {
             </div>
             <div>
               <p className="text-label-sm font-bold text-on-surface">
-                Jhapa Warehouse Hub
+                {t("contact.warehouse")}
               </p>
               <p className="text-body-md text-on-surface-variant">
-                Birtamode-5, Jhapa, Nepal
+                {t("contact.address")}
               </p>
             </div>
           </div>
@@ -58,7 +60,7 @@ export default function Contact() {
             </div>
             <div>
               <p className="text-label-sm font-bold text-on-surface">
-                Direct Call Line
+                {t("contact.callLine")}
               </p>
               <p className="text-body-md text-on-surface-variant">
                 +977-9800000000
@@ -72,7 +74,7 @@ export default function Contact() {
             </div>
             <div>
               <p className="text-label-sm font-bold text-on-surface">
-                Email Support
+                {t("contact.emailSupport")}
               </p>
               <p className="text-body-md text-on-surface-variant">
                 support@pathivara.com
@@ -84,10 +86,10 @@ export default function Contact() {
         {/* Messaging Box */}
         <div className="bg-surface-low border border-outline-variant p-lg rounded-md flex flex-col gap-sm">
           <h3 className="text-body-lg font-bold text-on-surface">
-            Quick Chats
+            {t("contact.quickChats")}
           </h3>
           <p className="text-body-md text-on-surface-variant">
-            Click below to open chat directly with our store administrator:
+            {t("contact.chatHint")}
           </p>
           <div className="flex flex-col gap-sm mt-xs">
             {whatsApp ? (
@@ -98,11 +100,11 @@ export default function Contact() {
                 className="flex items-center justify-center gap-xs py-sm bg-white border border-[#C1C8C1] rounded-default text-primary hover:bg-primary hover:text-white transition-all font-semibold"
               >
                 <MessageSquare size={16} />
-                Open WhatsApp Chat
+                {t("contact.openWhatsApp")}
               </a>
             ) : (
               <p className="text-body-md text-on-surface-variant">
-                No WhatsApp number published yet.
+                {t("contact.noWhatsApp")}
               </p>
             )}
           </div>

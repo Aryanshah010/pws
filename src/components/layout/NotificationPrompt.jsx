@@ -1,7 +1,9 @@
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 
 export default function NotificationPrompt() {
+  const { t } = useTranslation();
   const {
     user,
     notificationsEnabled,
@@ -22,19 +24,19 @@ export default function NotificationPrompt() {
     ) {
       const outcome = await Notification.requestPermission();
       if (outcome === "granted") {
-        toast.success("Notifications on — we'll alert you about your orders");
+        toast.success(t("notifyPrompt.enabled"));
         return;
       }
-      toast.info("You can still track orders from the bell icon");
+      toast.info(t("notifyPrompt.fallback"));
       return;
     }
-    toast.success("Notifications on — we'll alert you about your orders");
+    toast.success(t("notifyPrompt.enabled"));
   };
 
   const handleDecline = () => {
     setNotificationsEnabled("denied");
     closeNotificationPrompt();
-    toast.info("No problem — order updates stay in the bell icon");
+    toast.info(t("notifyPrompt.declined"));
   };
 
   return (
@@ -47,7 +49,7 @@ export default function NotificationPrompt() {
       >
         {/* Modal Title */}
         <h2 className="text-[var(--text-headline-sm)] md:text-[22px] font-bold text-[var(--color-on-surface)] tracking-tight leading-snug mb-8">
-          Allow pathivara for send you notifcaton!
+          {t("notifyPrompt.title")}
         </h2>
 
         {/* Action Buttons */}
@@ -57,7 +59,7 @@ export default function NotificationPrompt() {
             onClick={handleAccept}
             className="flex-1 py-3 px-6 bg-primary text-(--color-on-primary) rounded-[10px] font-semibold hover:bg-[var(--color-primary-container)] active:scale-[0.98] transition-all duration-150 cursor-pointer shadow-sm"
           >
-            Allow
+            {t("notifyPrompt.allow")}
           </button>
 
           {/* Deny Button */}
@@ -65,7 +67,7 @@ export default function NotificationPrompt() {
             onClick={handleDecline}
             className="flex-1 py-3 px-6 bg-(--color-surface-lowest) text-(--color-on-surface) border border-[var(--color-outline-variant)] rounded-[10px] font-semibold hover:bg-[var(--color-surface-low)] active:scale-[0.98] transition-all duration-150 cursor-pointer"
           >
-            Deny
+            {t("notifyPrompt.deny")}
           </button>
         </div>
       </div>

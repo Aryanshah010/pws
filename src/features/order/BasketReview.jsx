@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ const BasketReview = () => {
   const navigate = useNavigate();
   const goBack = useGoBack("/myorder");
   const basketId = new URLSearchParams(location.search).get("id");
+  const { t } = useTranslation();
   const { token, addToCart, loadCart } = useStore();
 
   const [basket, setBasket] = useState(null);
@@ -52,13 +54,13 @@ const BasketReview = () => {
     setItems((current) =>
       current.filter((item) => String(item.productId) !== String(productId)),
     );
-    if (name) toast.info(`${name} removed from this basket`);
+    if (name) toast.info(t("basketReview.removed", { name }));
   };
 
   const keepItem = (item) => {
     addToCart(item.product, item.quantity, item.unitPrice);
     dropItem(item.productId);
-    toast.success(`${item.name} added to cart`);
+    toast.success(t("basketReview.addedToCart", { name: item.name }));
   };
 
   const notifyMe = async (item) => {
@@ -68,7 +70,7 @@ const BasketReview = () => {
         headers: authHeader(token),
       });
       setNotified((current) => ({ ...current, [item.productId]: true }));
-      toast.success(`We'll alert you when ${item.name} is back`);
+      toast.success(t("home.restockAlert", { name: item.name }));
     } catch (requestError) {
       const message = requestError.message || "Could not request notification";
       setError(message);
@@ -86,7 +88,9 @@ const BasketReview = () => {
           price: item.unitPrice,
         })),
     );
-    toast.success(`${availableItems.length} item(s) moved to your cart`);
+    toast.success(
+      t("basketReview.movedToCart", { qty: availableItems.length }),
+    );
     navigate("/cart");
   };
 
@@ -107,7 +111,7 @@ const BasketReview = () => {
       <div className="mx-8 mb-6">
         <button
           onClick={goBack}
-          aria-label="Go back"
+          aria-label={t("common.goBack")}
           className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface)"
         >
           <ArrowLeft size={24} />
@@ -125,7 +129,7 @@ const BasketReview = () => {
           <div className="flex items-center gap-2 bg-[var(--color-surface-categories)] px-4 py-2 rounded-default border border-[var(--color-outline-variant)]">
             <CheckCircle2 size={16} className="text-[var(--color-primary)]" />
             <span className="text-(length:--text-label-sm) leading-(--text-label-sm--line-height) font-semibold text-on-surface-variant uppercase tracking-wider">
-              Current stock and prices checked today
+              {t("basketReview.checkedToday")}
             </span>
           </div>
         </div>
@@ -139,19 +143,19 @@ const BasketReview = () => {
               {/* Table Header */}
               <div className="grid grid-cols-[2fr_1.5fr_1fr] gap-4 px-6 py-4 border-b border-outline-variant bg-[#F5F3F0]">
                 <div className="text-[length:var(--text-label-sm)] font-semibold text-[#414943] uppercase tracking-wider">
-                  Item
+                  {t("common.item")}
                 </div>
                 <div className="text-[length:var(--text-label-sm)] font-semibold text-[#414943] uppercase tracking-wider">
-                  Status
+                  {t("common.status")}
                 </div>
                 <div className="text-[length:var(--text-label-sm)] font-semibold text-[#414943] uppercase tracking-wider">
-                  Action
+                  {t("common.action")}
                 </div>
               </div>
 
               {loading && (
                 <p className="p-6 text-center text-[#717973]">
-                  Checking today&apos;s stock and prices...
+                  {t("basketReview.checking")}
                 </p>
               )}
 
@@ -163,7 +167,7 @@ const BasketReview = () => {
 
               {!loading && !error && items.length === 0 && (
                 <p className="p-6 text-center text-[#717973]">
-                  Nothing left to review in this basket.
+                  {t("basketReview.nothingLeft")}
                 </p>
               )}
 
@@ -191,7 +195,7 @@ const BasketReview = () => {
                       </div>
                       <div className="flex items-center">
                         <span className="bg-error-container text-on-error-container px-2 py-1 rounded-full text-(length:--text-label-sm) font-bold">
-                          OUT OF STOCK
+                          {t("basketReview.outOfStock")}
                         </span>
                       </div>
                       <div className="flex items-center gap-4">
@@ -269,7 +273,7 @@ const BasketReview = () => {
                         onClick={() => keepItem(item)}
                         className="bg-[var(--color-primary)] text-(--color-on-primary) px-4 py-1 rounded-full text-[13px] font-semibold hover:bg-(--color-primary-container) transition-colors"
                       >
-                        Keep
+                        {t("common.keep")}
                       </button>
                       <button
                         onClick={() => dropItem(item.productId, item.name)}
@@ -309,26 +313,26 @@ const BasketReview = () => {
           <div className="lg:col-span-1">
             <div className="bg-[var(--color-surface-lowest)] rounded-md p-6 border border-outline-border shadow-[var(--shadow-level-2)] sticky top-8">
               <h2 className="text-(length:--text-headline-md) leading-(--text-headline-md--line-height) font-bold mb-4  text-(--color-on-surface)  ">
-                Basket Summary
+                {t("basketReview.summary")}
               </h2>
               <div className="mb-4 mt-0 px-0 border-b border-solid border-outline-border"></div>
               <div className="flex flex-col gap-4 mb-6">
                 <div className="flex justify-between items-center text-(length:--text-body-lg) text-on-surface-variant">
-                  <span>Available Items</span>
+                  <span>{t("basketReview.availableItems")}</span>
                   <span className="font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
                     {summary.availableCount}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center text-[length:var(--text-body-lg)] text-[var(--color-on-surface-variant)]">
-                  <span>Price Changes</span>
+                  <span>{t("basketReview.priceChanges")}</span>
                   <span className="font-[var(--text-headline-sm--font-weight)] text-[var(--color-secondary)]">
                     {summary.priceChangedCount}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-center text-[length:var(--text-body-lg)] text-[var(--color-on-surface-variant)]">
-                  <span>Out of Stock</span>
+                  <span>{t("stock.outOfStock")}</span>
                   <span className="font-[var(--text-headline-sm--font-weight)] text-[var(--color-error)]">
                     {summary.outOfStockCount}
                   </span>
@@ -340,10 +344,10 @@ const BasketReview = () => {
               <div className="flex justify-between items-end mb-8">
                 <div className="flex flex-col">
                   <span className="text-[length:var(--text-label-sm)] font-[var(--text-label-sm--font-weight)] text-[var(--color-outline)] uppercase tracking-wider">
-                    Estimated Total
+                    {t("basketReview.estimatedTotal")}
                   </span>
                   <span className="text-[length:var(--text-label-sm)] text-[var(--color-outline)]">
-                    Excludes out of stock
+                    {t("basketReview.excludesOutOfStock")}
                   </span>
                 </div>
                 <div className="text-[length:var(--text-headline-lg)] font-[var(--text-headline-lg--font-weight)] text-[var(--color-primary-container)]">
@@ -356,7 +360,7 @@ const BasketReview = () => {
                 disabled={summary.availableCount === 0}
                 className="w-full bg-[var(--color-primary)] text-[var(--color-on-primary)] py-4 rounded-[var(--radius-default)] text-[length:var(--text-headline-sm)] font-[var(--text-headline-sm--font-weight)] hover:bg-[var(--color-primary-container)] transition-colors shadow-[var(--shadow-level-1)] mb-4 disabled:opacity-50"
               >
-                Review Cart &amp; Checkout
+                {t("basketReview.reviewCheckout")}
               </button>
 
               <div className="text-center">

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Hourglass, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
 
 export default function WholesalePending() {
+  const { t } = useTranslation();
   const { user } = useStore();
   const navigate = useNavigate();
   const details = user?.wholesaleDetails || {};
@@ -32,7 +34,7 @@ export default function WholesalePending() {
 
           {/* Title */}
           <h1 className="text-[var(--color-primary)] text-center  font-semibold text-headline-md leading-8 mb-4">
-            Wholesale request submitted
+            {t("wholesale.pendingTitle")}
           </h1>
 
           {/* Shop Info */}
@@ -45,13 +47,13 @@ export default function WholesalePending() {
           {/* Status Badge */}
           <div className="inline-flex px-4 py-1 rounded-full border border-outline-border-pill mb-2">
             <span className="text-outline-border-pill font-semibold text-[13px] leading-[15.6px] tracking-[0.65px]">
-              STATUS: PENDING VERIFICATION
+              {t("wholesale.pendingStatus")}
             </span>
           </div>
 
           {/* Description */}
           <p className="text-on-surface-variant text-body-lg leading-6 mt-2 mb-8">
-            Pathivara will verify your buyer account manually.
+            {t("wholesale.pendingNote")}
           </p>
 
           {/* Info Banner */}
@@ -62,8 +64,7 @@ export default function WholesalePending() {
                 className="flex-shrink-0 mt-0.5 text-[var(--color-primary)]"
               />
               <p className="text-[var(--color-on-surface)]  text-body-lg leading-6">
-                You can still browse and place pickup orders at regular buyer
-                price.
+                {t("wholesale.pendingNote2")}
               </p>
             </div>
           </div>
@@ -83,7 +84,7 @@ export default function WholesalePending() {
                 rel="noopener noreferrer"
                 className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)]  font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors flex items-center justify-center"
               >
-                Contact on WhatsApp
+                {t("common.contactWhatsApp")}
               </a>
             )}
           </div>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { XCircle, Info } from "lucide-react";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
 
 export default function WholesaleRejected() {
+  const { t } = useTranslation();
   const { user } = useStore();
   const navigate = useNavigate();
   const details = user?.wholesaleDetails || {};
@@ -29,7 +31,7 @@ export default function WholesaleRejected() {
 
           {/* Title */}
           <h1 className="text-[var(--color-primary)] text-center font-semibold text-headline-md leading-8 mb-4">
-            Wholesale request not approved
+            {t("wholesale.rejectedTitle")}
           </h1>
 
           {/* Shop Info */}
@@ -42,13 +44,13 @@ export default function WholesaleRejected() {
           {/* Status Badge */}
           <div className="inline-flex px-4 py-1 rounded-full border border-[#ba1a1a] mb-2">
             <span className="text-[#ba1a1a] font-semibold text-[13px] leading-[15.6px] tracking-[0.65px]">
-              STATUS: REJECTED
+              {t("wholesale.rejectedStatus")}
             </span>
           </div>
 
           {/* Description */}
           <p className="text-on-surface-variant text-body-lg leading-6 mt-2 mb-8">
-            Pathivara could not verify your buyer account this time.
+            {t("wholesale.rejectedNote")}
           </p>
 
           {/* Info Banner */}
@@ -71,7 +73,7 @@ export default function WholesaleRejected() {
               onClick={() => navigate("/wholesale-form")}
               className="w-full sm:w-[278px] h-[60px] bg-[var(--color-primary-container)] rounded-[10px] shadow-[var(--shadow-level-1)] text-[var(--color-on-primary)] font-semibold text-lg leading-6 hover:bg-[var(--color-primary)] transition-colors"
             >
-              Apply again
+              {t("wholesale.applyAgain")}
             </button>
             {whatsApp ? (
               <a
@@ -80,14 +82,14 @@ export default function WholesaleRejected() {
                 rel="noopener noreferrer"
                 className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)] font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors flex items-center justify-center"
               >
-                Contact on WhatsApp
+                {t("common.contactWhatsApp")}
               </a>
             ) : (
               <button
                 onClick={() => navigate("/homepage")}
                 className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)] font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors"
               >
-                Continue shopping
+                {t("wholesale.continueShopping")}
               </button>
             )}
           </div>

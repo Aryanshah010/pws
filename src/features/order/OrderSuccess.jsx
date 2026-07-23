@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, Download, MessageSquare, Truck } from "lucide-react";
 import { useStore } from "../../store/store";
 import { downloadReceipt } from "../../utils/pdfGenerator";
 
 export default function OrderSuccess() {
+  const { t } = useTranslation();
   const { checkoutOrder, user } = useStore();
   const navigate = useNavigate();
   const orderId = checkoutOrder
@@ -21,7 +23,7 @@ export default function OrderSuccess() {
         {/* Header Text */}
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-2xl font-semibold text-[var(--color-on-surface)]">
-            Order Placed
+            {t("orderSuccess.title")}
           </h1>
           <p className="text-base font-medium text-[#414943]">
             Order ID: {orderId}
@@ -46,12 +48,11 @@ export default function OrderSuccess() {
             </span>
           </div>
           <p className="text-[12px] text-[#717973]">
-            WhatsApp/SMS confirmation will be sent once the SMS provider is
-            configured. Check the{" "}
+            {t("orderSuccess.smsNote")}{" "}
             <Link to="/myorder" className="text-[#3F81EA] underline">
-              bell icon
+              {t("orderSuccess.bellIcon")}
             </Link>{" "}
-            for live updates.
+            {t("orderSuccess.forUpdates")}
           </p>
         </div>
 
@@ -65,7 +66,7 @@ export default function OrderSuccess() {
 
           <div className="inline-flex items-center rounded-full bg-[var(--color-primary)] px-4 py-1">
             <span className="text-center text-[13px] font-bold tracking-wider text-[var(--color-on-primary)]">
-              ORDER: PLACED
+              {t("orderSuccess.statusBadge")}
             </span>
           </div>
         </div>
@@ -79,7 +80,7 @@ export default function OrderSuccess() {
             className="flex h-15 w-full max-w-[256px] items-center justify-center  gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-on-surface-variant transition-colors hover:bg-surface-low sm:w-[256px] cursor-pointer"
           >
             <Download className="h-5 w-5" />
-            Download PDF Receipt
+            {t("common.downloadReceipt")}
           </button>
 
           {isDigital && (
@@ -89,7 +90,7 @@ export default function OrderSuccess() {
               style={{ borderColor: "#C1C8C1" }}
               className="flex h-15 w-full max-w-[256px] items-center justify-center  gap-2 rounded-[10px] border bg-[#ffffff] px-6 text-lg font-semibold text-on-surface-variant transition-colors hover:bg-surface-low sm:w-[256px] cursor-pointer"
             >
-              Submit Payment Proof
+              {t("orderSuccess.submitProof")}
             </button>
           )}
 
@@ -98,7 +99,7 @@ export default function OrderSuccess() {
             className="flex h-15 w-full items-center justify-center gap-2 rounded-[10px] bg-primary px-6 text-lg font-semibold text-(--color-on-primary) shadow-(--shadow-level-1) transition-opacity hover:opacity-90 sm:w-auto sm:min-w-67.5 cursor-pointer"
           >
             <Truck className="h-5 w-5" />
-            Track Order
+            {t("orderSuccess.trackOrder")}
           </Link>
         </div>
       </div>

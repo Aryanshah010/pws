@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Bell, ChevronLeft, ShoppingCart } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { AlertCircle, Bell, ChevronLeft, ShoppingCart } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
@@ -14,16 +15,24 @@ export default function ViewProductDetailIS() {
   const [loading, setLoading] = useState(true);
   const [similarProducts, setSimilarProducts] = useState([]);
   const [restockMessage, setRestockMessage] = useState("");
+  // Tracked separately from the message: a failed attempt also produces a
+  // message, and that must not read as a successful subscription.
+  const [restockRequested, setRestockRequested] = useState(false);
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const id = searchParams.get("id");
 
   const { user, token, addToCart } = useStore();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const goBack = useGoBack();
 
   useEffect(() => {
+    // Similar-product cards swap the id on this same route, so the previous
+    // product's restock state has to be cleared with it.
+    setRestockRequested(false);
+    setRestockMessage("");
     if (!id) {
       setLoading(false);
       return;
@@ -53,10 +62,12 @@ export default function ViewProductDetailIS() {
   const decrementQty = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
 
   if (loading)
-    return <div className="p-8 text-center">Loading product details...</div>;
+    return <div className="p-8 text-center">{t("product.loading")}</div>;
   if (!product)
     return (
-      <div className="p-8 text-center text-red-500">Product not found.</div>
+      <div className="p-8 text-center text-red-500">
+        {t("product.notFound")}
+      </div>
     );
 
   const validTiers = tiersFor(product, user?.role);
@@ -98,10 +109,12 @@ export default function ViewProductDetailIS() {
         method: "POST",
         headers: authHeader(token),
       });
-      setRestockMessage("Restock notification requested");
-      toast.success(`We'll alert you when ${product.name} is back`);
+      setRestockRequested(true);
+      setRestockMessage(t("product.restockRequested"));
+      toast.success(t("home.restockAlert", { name: product.name }));
     } catch (error) {
       const message = error.message || "Could not request notification";
+      setRestockRequested(false);
       setRestockMessage(message);
       toast.error(message);
     }
@@ -115,13 +128,13 @@ export default function ViewProductDetailIS() {
           <button
             type="button"
             onClick={goBack}
-            aria-label="Go back"
+            aria-label={t("common.goBack")}
             className="inline-flex items-center justify-center w-6 h-6 text-[var(--color-on-surface)] hover:opacity-70 transition shrink-0"
           >
             <ChevronLeft size={24} />
           </button>
           <h1 className="text-headline-sm md:text-headline-md font-semibold text-[var(--color-on-surface)]">
-            Product Detail
+            {t("product.detail")}
           </h1>
         </div>
       </div>
@@ -157,7 +170,7 @@ export default function ViewProductDetailIS() {
                   {/* Price Section */}
                   <div className="mb-4">
                     <p className="text-[13px] font-semibold text-on-surface-variant mb-2">
-                      Your buyer price:
+                      {t("product.yourPrice")}
                     </p>
                     <div className="flex items-baseline gap-3 mb-3">
                       <span className="text-3xl md:text-4xl font-bold text-[var(--color-on-primary-fixed)]">
@@ -217,38 +230,41 @@ export default function ViewProductDetailIS() {
                         onClick={() => {
                           addToCart(product, quantity, displayPrice);
                           toast.success(
-                            `${quantity} x ${product.name} added to cart`,
+                            t("product.addedToCart", {
+                              quantity,
+                              name: product.name,
+                            }),
                           );
                         }}
                         className={`w-62 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold ${isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-(--color-on-primary) cursor-pointer hover:opacity-90"}`}
                       >
                         <ShoppingCart size={16} />
-                        {isOutOfStock ? "Out of Stock" : "Add to Cart"}
+                        {isOutOfStock
+                          ? t("stock.outOfStock")
+                          : t("product.addToCart")}
                       </button>
                       <button
                         type="button"
-                        disabled={
-                          isOutOfStock &&
-                          restockMessage === "Restock notification requested"
-                        }
+                        disabled={isOutOfStock && restockRequested}
                         onClick={isOutOfStock ? handleRestock : handleBuyNow}
                         className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${
-                          isOutOfStock &&
-                          restockMessage === "Restock notification requested"
+                          isOutOfStock && restockRequested
                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                             : "bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100"
                         }`}
                       >
                         {isOutOfStock ? <Bell size={16} /> : null}
                         {isOutOfStock
-                          ? restockMessage
-                            ? "Requested"
-                            : "Notify"
-                          : "Buy Now"}
+                          ? restockRequested
+                            ? t("product.requested")
+                            : t("product.notify")
+                          : t("product.buyNow")}
                       </button>
                     </div>
                     {restockMessage && (
-                      <p className="text-sm text-[var(--color-primary)]">
+                      <p
+                        className={`text-sm ${restockRequested ? "text-primary" : "text-error"}`}
+                      >
                         {restockMessage}
                       </p>
                     )}
@@ -256,6 +272,16 @@ export default function ViewProductDetailIS() {
                 </div>
               </div>
             </div>
+
+            {/* Out Of Stock Contextual Notice Banner */}
+            {isOutOfStock && (
+              <div className="flex items-start gap-3 rounded-md border border-secondary-fixed-dim bg-secondary-fixed p-4 shadow-(--shadow-level-1)">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-on-secondary-container" />
+                <p className="text-sm font-semibold text-on-secondary-container leading-relaxed">
+                  {t("product.outOfStockNotice")}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Right Column */}
@@ -263,25 +289,25 @@ export default function ViewProductDetailIS() {
             {/* Wholesale Pricing Card */}
             <div className="bg-[var(--color-surface-categories)] rounded-[var(--radius-md)] border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)]">
               <h3 className="font-bold text-[var(--color-on-primary-fixed)] mb-4">
-                Discount Pricing Table
+                {t("product.discountTable")}
               </h3>
 
               <div className="space-y-2">
                 <div className="grid grid-cols-3 gap-2 px-3 py-2 text-xs font-bold text-on-surface-variant uppercase tracking-wider">
-                  <div>QTY</div>
-                  <div>PRICE</div>
-                  <div className="text-right">SAVING</div>
+                  <div>{t("product.qty")}</div>
+                  <div>{t("product.price")}</div>
+                  <div className="text-right">{t("product.saving")}</div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 px-3 py-3 bg-(--color-surface-lowest) rounded-default border border-outline-variant/20">
                   <div className="text-sm font-medium text-(--color-on-surface)">
-                    Retail
+                    {t("product.retail")}
                   </div>
                   <div className="text-sm font-bold text-[var(--color-on-primary-fixed)]">
                     Rs. {product.retailPrice}
                   </div>
                   <div className="text-right text-xs text-[var(--color-on-surface-variant)] italic opacity-60">
-                    None
+                    {t("common.none")}
                   </div>
                 </div>
 
@@ -314,7 +340,7 @@ export default function ViewProductDetailIS() {
 
                 {validTiers.length === 0 && (
                   <p className="px-3 py-3 text-xs text-[var(--color-on-surface-variant)]">
-                    No bulk discounts are set for this product.
+                    {t("product.noDiscounts")}
                   </p>
                 )}
               </div>
@@ -323,13 +349,13 @@ export default function ViewProductDetailIS() {
             {/* Product Specifications */}
             <div className="bg-(--color-surface-lowest) rounded-md border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)]">
               <h3 className="font-bold text-[var(--color-on-primary-fixed)] mb-4">
-                Specifications
+                {t("product.specifications")}
               </h3>
 
               <div className="space-y-0 divide-y divide-[var(--color-outline-variant)]/20">
                 <div className="flex justify-between items-center py-3 text-sm">
                   <span className="font-medium text-[var(--color-on-surface-variant)] uppercase text-xs tracking-wider">
-                    Grade
+                    {t("product.grade")}
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
                     {product.grade || "—"}
@@ -337,7 +363,7 @@ export default function ViewProductDetailIS() {
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
                   <span className="font-medium text-[var(--color-on-surface-variant)] uppercase text-xs tracking-wider">
-                    Unit Size
+                    {t("product.unitSize")}
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
                     {product.unit || "—"}
@@ -345,7 +371,7 @@ export default function ViewProductDetailIS() {
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
                   <span className="font-medium text-[var(--color-on-surface-variant)] uppercase text-xs tracking-wider">
-                    Pack Count
+                    {t("product.packCount")}
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
                     {product.packCount || "—"}
@@ -353,7 +379,7 @@ export default function ViewProductDetailIS() {
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
                   <span className="font-medium text-[var(--color-on-surface-variant)] uppercase text-xs tracking-wider">
-                    Shelf Life
+                    {t("product.shelfLife")}
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
                     {product.shelfLife || "—"}
@@ -361,7 +387,7 @@ export default function ViewProductDetailIS() {
                 </div>
                 <div className="flex justify-between items-center py-3 text-sm">
                   <span className="font-medium text-[var(--color-on-surface-variant)] uppercase text-xs tracking-wider">
-                    Origin
+                    {t("product.origin")}
                   </span>
                   <span className="font-bold text-[var(--color-on-surface)]">
                     {product.origin || "—"}
@@ -423,7 +449,7 @@ export default function ViewProductDetailIS() {
               color: "var(--color-on-background)",
             }}
           >
-            Similar Products
+            {t("product.similarProducts")}
           </h2>
 
           <div
