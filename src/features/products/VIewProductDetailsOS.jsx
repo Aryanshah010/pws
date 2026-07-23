@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import { useGoBack } from "../../hooks/useBackNavigation";
+import { tiersFor } from "../../utils/pricing";
 import { ProductCard } from "../home/HomePage";
 
 
@@ -73,24 +74,12 @@ export default function ViewProductDetailOOS() {
       <div className="p-8 text-center text-red-500">Product not found.</div>
     );
 
-  const isWholesale = user?.role === "verified_wholesale";
-  // Ignore tiers that are not a real bulk discount (qty above 1, price below
-  // retail) so bad catalogue data cannot show up as a 100% saving.
-  const validTiers = (product.tierPrices || [])
-    .filter(
-      (tier) =>
-        Number(tier.minQuantity) > 1 &&
-        Number(tier.price) > 0 &&
-        Number(tier.price) < product.retailPrice,
-    )
-    .sort((a, b) => a.minQuantity - b.minQuantity);
-  const applicableTier = [...validTiers]
-    .reverse()
-    .find((tier) => quantity >= tier.minQuantity);
-  const displayPrice =
-    isWholesale && applicableTier ? applicableTier.price : product.retailPrice;
-  const oldPrice =
-    displayPrice !== product.retailPrice ? product.retailPrice : null;
+  // The same table the cart and the order will use. The discount table applies
+  // to every buyer, so what is quoted here is what gets charged.
+  const validTiers = tiersFor(product, user?.role);
+  // A bracket takes a flat amount off the line, so the unit price never moves.
+  const displayPrice = product.retailPrice;
+  const oldPrice = null;
 
   return (
     <div className="min-h-screen bg-(--color-background)">
@@ -267,8 +256,11 @@ export default function ViewProductDetailOOS() {
 
                 {validTiers.map((tier, index) => {
                   const isBest = index === validTiers.length - 1;
+                  // Flat per bracket, so the biggest proportional saving lands
+                  // at the bracket's lowest quantity.
                   const saving = (
-                    ((product.retailPrice - tier.price) / product.retailPrice) *
+                    (tier.discountAmount /
+                      (product.retailPrice * tier.minQuantity)) *
                     100
                   ).toFixed(1);
                   return (
@@ -287,7 +279,9 @@ export default function ViewProductDetailOOS() {
                             : "text-sm font-medium text-[var(--color-on-surface)]"
                         }
                       >
-                        {tier.minQuantity}+
+                        {tier.maxQuantity
+                          ? `${tier.minQuantity}\u2013${tier.maxQuantity}`
+                          : `${tier.minQuantity}+`}
                       </div>
                       <div
                         className={
@@ -296,7 +290,7 @@ export default function ViewProductDetailOOS() {
                             : "text-sm font-bold text-[var(--color-secondary)]"
                         }
                       >
-                        Rs. {tier.price}
+                        Rs. {tier.discountAmount} off
                       </div>
                       <div
                         className={
@@ -305,7 +299,7 @@ export default function ViewProductDetailOOS() {
                             : "text-right text-xs font-bold text-[var(--color-secondary)]"
                         }
                       >
-                        {isBest ? "Best Rate" : `${saving}% Off`}
+                        {isBest ? "Best Rate" : `up to ${saving}%`}
                       </div>
                     </div>
                   );

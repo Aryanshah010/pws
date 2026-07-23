@@ -118,6 +118,14 @@ function OrderCard({ order, busy, onAdvance }) {
             <p className="text-xl font-bold text-[#1b1c1a] mt-1">
               Rs. {order.totalAmount}
             </p>
+            {order.margin !== null && (
+              <p className="text-xs font-semibold text-[#707972] mt-0.5">
+                Margin Rs. {Math.round(order.margin)}
+                {order.discountAmount > 0
+                  ? ` · after Rs. ${order.discountAmount} discount`
+                  : ""}
+              </p>
+            )}
           </div>
           <p className="text-xs text-[#707972] text-right flex-shrink-0 mt-1">
             {order.placedOn}
@@ -235,6 +243,14 @@ export default function AdminOrdersPage() {
           orderStatus: order.orderStatus,
           paymentStatus: order.paymentStatus,
           totalAmount: order.totalAmount,
+          // What the store actually kept: the goods value after discount, less
+          // what the stock cost. VAT is excluded — it belongs to the government,
+          // not the shop. Null when no cost was recorded for these items.
+          margin:
+            order.costAmount > 0
+              ? order.subtotalAmount - order.discountAmount - order.costAmount
+              : null,
+          discountAmount: order.discountAmount,
           pickupSlot: order.pickupSlot,
           notes: order.notes,
           placedOn: new Date(order.createdAt).toLocaleString(),

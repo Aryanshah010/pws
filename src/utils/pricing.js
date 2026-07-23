@@ -13,34 +13,84 @@
 // only, so there is no delivery charge to add on top.
 export const VAT_RATE = 0.13;
 
-/** The bulk tiers this buyer can actually reach, cheapest quantity first. */
-export const tiersFor = (product, role) => {
-  if (role !== "verified_wholesale") return [];
-  return [...(product?.tierPrices || [])]
-    .filter(
-      (tier) =>
-        Number(tier.minQuantity) > 1 &&
-        Number(tier.price) > 0 &&
-        Number(tier.price) < product.retailPrice,
-    )
+/**
+ * The discount table, cleaned into brackets that actually make sense.
+ *
+ * Each bracket is a quantity range with a flat rupee discount: 10–49 takes
+ * Rs. 50 off the line, once, however many units are in it. Brackets are sorted,
+ * and any that overlaps its predecessor or fails to beat it is dropped, so a
+ * table saved before these rules existed can never promise a buyer a discount
+ * that shrinks as they add more.
+ */
+export const normaliseTiers = (tiers) => {
+  let previousMax = 1;
+  let previousDiscount = 0;
+  return [...(tiers || [])]
     .map((tier) => ({
       minQuantity: Number(tier.minQuantity),
-      price: Number(tier.price),
+      maxQuantity:
+        tier.maxQuantity == null || tier.maxQuantity === ""
+          ? null
+          : Number(tier.maxQuantity),
+      discountAmount: Number(tier.discountAmount),
     }))
-    .sort((a, b) => a.minQuantity - b.minQuantity);
+    .filter(
+      (tier) =>
+        Number.isFinite(tier.minQuantity) &&
+        tier.minQuantity > 1 &&
+        Number.isFinite(tier.discountAmount) &&
+        tier.discountAmount > 0 &&
+        (tier.maxQuantity == null || tier.maxQuantity >= tier.minQuantity),
+    )
+    .sort((a, b) => a.minQuantity - b.minQuantity)
+    .filter((tier) => {
+      if (tier.minQuantity <= previousMax) return false;
+      if (tier.discountAmount <= previousDiscount) return false;
+      previousMax = tier.maxQuantity ?? Infinity;
+      previousDiscount = tier.discountAmount;
+      return true;
+    });
 };
 
-/** The unit price at this exact quantity — the tier the buyer has reached. */
-export const unitPriceFor = (product, quantity, role) => {
-  const tier = [...tiersFor(product, role)]
-    .reverse()
-    .find((item) => quantity >= item.minQuantity);
-  return tier?.price ?? product?.retailPrice ?? 0;
+/** The discount brackets this buyer can reach, lowest quantity first. */
+export const tiersFor = (product, role) => {
+  // A product taken off discount has no ladder at all, for anyone.
+  if (product?.discountable === false) return [];
+  const table =
+    role === "verified_wholesale" && product?.wholesaleDiscountTiers?.length
+      ? product.wholesaleDiscountTiers
+      : product?.discountTiers;
+  return normaliseTiers(table);
 };
+
+/** The bracket a quantity falls into, or null when it earns no discount yet. */
+export const tierAt = (tiers, quantity) =>
+  tiers.find(
+    (tier) =>
+      quantity >= tier.minQuantity &&
+      (tier.maxQuantity == null || quantity <= tier.maxQuantity),
+  ) ?? null;
+
+/** The next bracket up, for "add N more to reach it". */
+export const nextTierAfter = (tiers, quantity) =>
+  tiers.find((tier) => quantity < tier.minQuantity) ?? null;
+
+/**
+ * The flat discount on one line. Capped at the line's own value so a generous
+ * bracket can never hand back more than the goods are worth.
+ */
+export const lineDiscount = (tiers, quantity, retailPrice) => {
+  const tier = tierAt(tiers, quantity);
+  if (!tier) return 0;
+  return Math.min(tier.discountAmount, retailPrice * quantity);
+};
+
+/** The unit price never moves with quantity — bulk earns a flat amount off. */
+export const unitPriceFor = (product) => Number(product?.retailPrice) || 0;
 
 /**
  * Everything the cart row needs for one line, derived from the quantity that is
- * on screen right now: price, discount, and how far along the bulk threshold
+ * on screen right now: price, discount, and how far along the discount table
  * the buyer is.
  */
 export const lineFor = (item, role) => {
@@ -48,45 +98,40 @@ export const lineFor = (item, role) => {
   const quantity = item?.quantity || 0;
   const tiers = tiersFor(product, role);
 
-  const retailPrice = Number(product.retailPrice ?? item?.price ?? 0);
-  const unitPrice = tiers.length
-    ? unitPriceFor(product, quantity, role)
-    : Number(item?.price ?? retailPrice);
+  const unitPrice = Number(product.retailPrice ?? item?.price ?? 0);
+  const subtotal = unitPrice * quantity;
+  const discount = lineDiscount(tiers, quantity, unitPrice);
 
-  const subtotal = retailPrice * quantity;
-  const discount = Math.max(0, subtotal - unitPrice * quantity);
-
+  const activeTier = tierAt(tiers, quantity);
+  const nextTier = nextTierAfter(tiers, quantity);
   const threshold = tiers[0]?.minQuantity ?? null;
-  const topThreshold = tiers[tiers.length - 1]?.minQuantity ?? null;
-  const unlocked = threshold != null && quantity >= threshold;
-  const nextTier = tiers.find((tier) => quantity < tier.minQuantity) ?? null;
 
   return {
     productId: String(product._id || item?.id || ""),
     name: product.name || item?.name || "Product",
     unit: product.unit || item?.unit || "unit",
     quantity,
-    retailPrice,
+    retailPrice: unitPrice,
     unitPrice,
     subtotal,
     discount,
     final: Math.max(0, subtotal - discount),
     tiers,
     threshold,
-    unlocked,
+    unlocked: Boolean(activeTier),
     nextTier,
-    // The three Figma milestone blocks: none until the first tier is reached,
-    // then filling towards the deepest tier the product offers.
-    segments: segmentsFor({ quantity, threshold, topThreshold, unlocked }),
+    // The three Figma milestone blocks: none until the first bracket is
+    // reached, then one per bracket climbed.
+    segments: segmentsFor(tiers, activeTier),
   };
 };
 
-const segmentsFor = ({ quantity, threshold, topThreshold, unlocked }) => {
-  if (!unlocked) return 0;
-  if (topThreshold == null || topThreshold === threshold) return 3;
-  if (quantity >= topThreshold) return 3;
-  const progress = (quantity - threshold) / (topThreshold - threshold);
-  return Math.min(3, 1 + Math.floor(progress * 2));
+const segmentsFor = (tiers, activeTier) => {
+  if (!activeTier || !tiers.length) return 0;
+  const reached = tiers.indexOf(activeTier) + 1;
+  // Always fill the last block on the top bracket, however few brackets exist.
+  if (reached === tiers.length) return 3;
+  return Math.max(1, Math.round((reached / tiers.length) * 3) || 1);
 };
 
 /** Subtotal, discount and Nepal VAT rolled up from a set of lines. */

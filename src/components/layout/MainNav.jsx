@@ -295,26 +295,35 @@ export default function Navbar() {
                   Mark all read
                 </button>
               </div>
+              {/* The list is capped and scrolls: twenty notifications ran the
+                  panel off the bottom of the screen and buried the ones that
+                  mattered. */}
               {notifications.length ? (
-                notifications.map((item) => (
-                  <button
-                    key={item._id}
-                    type="button"
-                    onClick={() => openNotification(item)}
-                    disabled={!item.link}
-                    className={`block w-full border-t border-[#E2EAE3] py-3 text-left text-sm transition-colors ${item.read ? "text-[#717973]" : "text-[#1B1C1A]"} ${item.link ? "cursor-pointer hover:bg-[#F4FBF4]" : "cursor-default"}`}
-                  >
-                    <span className="flex items-start gap-2">
-                      {!item.read && (
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#BA1A1A]" />
-                      )}
-                      <span className="min-w-0">
-                        <span className="block font-semibold">{item.title}</span>
-                        <span className="block">{item.message}</span>
+                <div className="max-h-96 overflow-y-auto overscroll-contain">
+                  {notifications.map((item) => (
+                    <button
+                      key={item._id}
+                      type="button"
+                      onClick={() => openNotification(item)}
+                      disabled={!item.link}
+                      className={`block w-full border-t border-[#E2EAE3] py-3 pr-1 text-left text-sm transition-colors ${item.read ? "text-[#717973]" : "text-[#1B1C1A]"} ${item.link ? "cursor-pointer hover:bg-[#F4FBF4]" : "cursor-default"}`}
+                    >
+                      <span className="flex items-start gap-2">
+                        {!item.read && (
+                          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#BA1A1A]" />
+                        )}
+                        <span className="min-w-0">
+                          <span className="block font-semibold">
+                            {item.title}
+                          </span>
+                          <span className="block line-clamp-2">
+                            {item.message}
+                          </span>
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                ))
+                    </button>
+                  ))}
+                </div>
               ) : (
                 <p className="p-3 text-sm text-[#717973]">
                   No notifications yet.

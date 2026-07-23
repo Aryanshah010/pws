@@ -14,16 +14,18 @@ export default function WholesaleApproved() {
       .then((data) =>
         setPriceRows(
           (data.products || [])
-            .filter((product) => product.tierPrices?.length)
+            .filter((product) => product.wholesaleDiscountTiers?.length)
             .slice(0, 5)
             .map((product) => {
-              const best = product.tierPrices.reduce((cheapest, tier) =>
-                tier.price < cheapest.price ? tier : cheapest,
+              // The deepest bracket is the headline benefit worth advertising.
+              const best = product.wholesaleDiscountTiers.reduce(
+                (deepest, tier) =>
+                  tier.discountAmount > deepest.discountAmount ? tier : deepest,
               );
               return {
                 product: product.name,
                 regular: `Rs.${product.retailPrice}`,
-                wholesale: `Rs.${best.price}`,
+                wholesale: `Rs.${best.discountAmount} off ${best.minQuantity}+`,
               };
             }),
         ),

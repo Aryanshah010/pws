@@ -15,13 +15,13 @@ const persistCart = (cart) => {
  * One cart line, priced for who the buyer is *now*. Every entry point into the
  * cart goes through this, so a line added from a product page, a saved basket
  * or Order Again is shaped identically and carries the whole product — the
- * discount threshold and progress bar are read off product.tierPrices, and a
+ * discount brackets and progress bar are read off product.discountTiers, and a
  * line missing them silently reports "no discount yet" forever.
  */
-const cartLine = (product, quantity, price, role) => ({
+const cartLine = (product, quantity, price) => ({
   product,
   quantity,
-  price: price ?? unitPriceFor(product, quantity, role),
+  price: price ?? unitPriceFor(product),
   // What the catalogue charged when this line was built. The cart compares it
   // against today's price to spot a real price change, so that unlocking a bulk
   // tier is never mistaken for the storekeeper repricing the product.
@@ -181,7 +181,7 @@ export const useStore = create((set, get) => ({
       if (!existing)
         return persistCart([
           ...state.cart,
-          cartLine(product, quantity, price, state.user?.role),
+          cartLine(product, quantity, price),
         ]);
 
       // Adding more of something already in the cart can cross a bulk tier, so
@@ -191,7 +191,7 @@ export const useStore = create((set, get) => ({
       return persistCart(
         state.cart.map((item) =>
           item.product?._id === product._id
-            ? cartLine(product, merged, undefined, state.user?.role)
+            ? cartLine(product, merged)
             : item,
         ),
       );
@@ -212,12 +212,7 @@ export const useStore = create((set, get) => ({
         entries
           .filter((entry) => entry.product?._id)
           .map((entry) =>
-            cartLine(
-              entry.product,
-              entry.quantity,
-              entry.price,
-              state.user?.role,
-            ),
+            cartLine(entry.product, entry.quantity, entry.price),
           ),
       ),
     );
@@ -229,7 +224,7 @@ export const useStore = create((set, get) => ({
       return persistCart(
         state.cart.map((item) =>
           item.product?._id === productId
-            ? cartLine(item.product, quantity, undefined, state.user?.role)
+            ? cartLine(item.product, quantity)
             : item,
         ),
       );

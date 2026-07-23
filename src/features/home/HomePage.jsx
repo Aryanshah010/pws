@@ -74,15 +74,10 @@ export function ProductCard({ product }) {
   const [notificationRequested, setNotificationRequested] = useState(false);
   const navigate = useNavigate();
   const isWholesale = user?.role === "verified_wholesale";
-  const startingTier = product.tierPrices?.find(
-    (tier) => tier.minQuantity <= 1,
-  );
-  const displayPrice =
-    isWholesale && startingTier?.price < product.retailPrice
-      ? startingTier.price
-      : product.retailPrice;
-  const oldPrice =
-    displayPrice !== product.retailPrice ? product.retailPrice : null;
+  // Bulk buying earns a flat amount off the line, not a cheaper unit, so the
+  // card shows one price and the discount table explains the rest.
+  const displayPrice = product.retailPrice;
+  const oldPrice = null;
   const stockText =
     product.stockStatus || (product.stock > 0 ? "In Stock" : "Out of Stock");
   const action =

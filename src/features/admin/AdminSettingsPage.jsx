@@ -72,6 +72,8 @@ export default function AdminSettingsPage() {
           contactWhatsApp: settings.contactWhatsApp,
           pickupSlots: settings.pickupSlots,
           businessTypes: settings.businessTypes,
+          minMarginPercent: settings.minMarginPercent,
+          maxDiscountPercent: settings.maxDiscountPercent,
         }),
       });
       setSettings(data.settings);
@@ -203,6 +205,54 @@ export default function AdminSettingsPage() {
             <p className="text-xs text-[#707972]">
               Used by the &ldquo;Contact on WhatsApp&rdquo; buttons. Leave empty
               to hide them.
+            </p>
+          </div>
+        </div>
+
+        {/* Margin floor */}
+        <div className="bg-white rounded-2xl border border-[#C1C8C1]/40 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#C1C8C1]/30 bg-[#F5F3F0]/50 flex items-center gap-2">
+            <MessageCircle size={16} className="text-[#1b5e40]" />
+            <p className="text-xs font-bold text-[#707972] uppercase tracking-wider">
+              Minimum Margin
+            </p>
+          </div>
+          <div className="px-6 py-5 space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#707972]">
+              Lowest margin you will sell at (%)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={89}
+              value={settings.minMarginPercent ?? 10}
+              onChange={(event) =>
+                field("minMarginPercent", Number(event.target.value))
+              }
+              className="w-full rounded-xl border border-[#C1C8C1]/60 bg-[#F5F3F0] px-4 py-2.5 text-sm text-[#1b1c1a] outline-none focus:border-[#1b5e40]"
+            />
+            <p className="text-xs text-[#707972]">
+              No buyer price and no discount tier can be saved below this margin
+              on the product&rsquo;s cost price. Products with no cost entered
+              are not checked.
+            </p>
+
+            <label className="block pt-2 text-xs font-bold uppercase tracking-wider text-[#707972]">
+              Deepest discount any tier may give (%)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={90}
+              value={settings.maxDiscountPercent ?? 40}
+              onChange={(event) =>
+                field("maxDiscountPercent", Number(event.target.value))
+              }
+              className="w-full rounded-xl border border-[#C1C8C1]/60 bg-[#F5F3F0] px-4 py-2.5 text-sm text-[#1b1c1a] outline-none focus:border-[#1b5e40]"
+            />
+            <p className="text-xs text-[#707972]">
+              Applies even when no cost price is set, so a figure typed into the
+              wrong column cannot become a 99% discount.
             </p>
           </div>
         </div>

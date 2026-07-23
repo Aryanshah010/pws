@@ -55,6 +55,9 @@ const STOCK_STYLES = {
 const EMPTY_PRODUCT = {
   name: "",
   price: "",
+  costPrice: "",
+  discountable: true,
+  wholesaleTiers: [],
   oldPrice: "",
   description: "",
   stock: "IN STOCK",
@@ -185,11 +188,13 @@ function ProductCardPreview({ form }) {
 }
 
 
-function PricingTierEditor({ tiers, onChange }) {
+function PricingTierEditor({ tiers, onChange, retailPrice, maxDiscountPercent }) {
   const addTier = () => {
     const last = tiers[tiers.length - 1];
-    const newMin = last?.maxQty ? last.maxQty + 1 : 1;
-    onChange([...tiers, { minQty: newMin, maxQty: null, price: "" }]);
+    onChange([
+      ...tiers,
+      { minQty: last?.maxQty ? last.maxQty + 1 : 10, maxQty: null, discount: "" },
+    ]);
   };
 
   const removeTier = (idx) => {
@@ -209,46 +214,68 @@ function PricingTierEditor({ tiers, onChange }) {
       <div className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 text-[10px] font-bold uppercase tracking-wider text-[#707972] px-1">
         <span>Min Qty</span>
         <span>Max Qty</span>
-        <span>Price (Rs.)</span>
+        <span>Discount (Rs.)</span>
         <span />
       </div>
-      {tiers.map((tier, idx) => (
-        <div
-          key={idx}
-          className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 items-center"
-        >
-          <input
-            type="number"
-            min={1}
-            value={tier.minQty ?? ""}
-            onChange={(e) => updateTier(idx, "minQty", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition"
-          />
-          <input
-            type="number"
-            min={1}
-            placeholder="∞"
-            value={tier.maxQty ?? ""}
-            onChange={(e) => updateTier(idx, "maxQty", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition placeholder:text-[#9EA5A0]"
-          />
-          <input
-            type="number"
-            min={0}
-            value={tier.price ?? ""}
-            onChange={(e) => updateTier(idx, "price", e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition"
-          />
-          <button
-            type="button"
-            onClick={() => removeTier(idx)}
-            disabled={tiers.length <= 1}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[#ba1a1a] hover:bg-[#ffdad6]/50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+      {tiers.map((tier, idx) => {
+        // A flat discount bites hardest at the bottom of its own bracket, so
+        // that is where its true cost is shown.
+        const lineValue = Number(retailPrice) * Number(tier.minQty || 0);
+        const percentOff =
+          lineValue > 0 && Number(tier.discount) > 0
+            ? (Number(tier.discount) / lineValue) * 100
+            : null;
+        return (
+          <div
+            key={idx}
+            className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 items-start"
           >
-            <Minus size={14} />
-          </button>
-        </div>
-      ))}
+            <input
+              type="number"
+              min={2}
+              value={tier.minQty ?? ""}
+              onChange={(e) => updateTier(idx, "minQty", e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition"
+            />
+            <input
+              type="number"
+              min={2}
+              placeholder="\u221e"
+              value={tier.maxQty ?? ""}
+              onChange={(e) => updateTier(idx, "maxQty", e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition placeholder:text-[#9EA5A0]"
+            />
+            <div>
+              <input
+                type="number"
+                min={0}
+                value={tier.discount ?? ""}
+                onChange={(e) => updateTier(idx, "discount", e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-[#C1C8C1]/60 bg-[#F5F3F0] text-sm text-[#1b1c1a] outline-none focus:ring-2 focus:ring-[#1b5e40]/20 focus:border-[#1b5e40]/40 transition"
+              />
+              {percentOff !== null && (
+                <p
+                  className={`mt-1 text-[10px] font-bold ${
+                    percentOff > maxDiscountPercent
+                      ? "text-[#ba1a1a]"
+                      : "text-[#707972]"
+                  }`}
+                >
+                  {percentOff.toFixed(1)}% off Rs. {lineValue} at {tier.minQty}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => removeTier(idx)}
+              disabled={tiers.length <= 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[#ba1a1a] hover:bg-[#ffdad6]/50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Minus size={14} />
+            </button>
+          </div>
+        );
+      })}
       <button
         type="button"
         onClick={addTier}
@@ -260,59 +287,142 @@ function PricingTierEditor({ tiers, onChange }) {
   );
 }
 
+/**
+ * The revenue a line must keep to clear the store's minimum margin, and the
+ * margin a given revenue actually earns. Mirrors requiredRevenue/marginPercent
+ * in the backend's config/pricing.js so the drawer refuses exactly what the
+ * server would.
+ */
+function requiredRevenue(costTotal, minMarginPercent) {
+  return costTotal > 0
+    ? Math.ceil(costTotal / (1 - minMarginPercent / 100))
+    : 0;
+}
 
-function ProductDrawer({ open, editProduct, onClose, onSave }) {
+function marginPercent(revenue, cost) {
+  return cost > 0 && revenue > 0 ? ((revenue - cost) / revenue) * 100 : null;
+}
+
+/**
+ * The headline problem with a saved product's discount table, if it has one.
+ *
+ * Products stored before these rules existed are not re-validated until someone
+ * opens and saves them, so without this a broken table sits in the catalogue
+ * unnoticed.
+ */
+function ladderWarningFor(product, maxDiscountPercent = 40) {
+  const retail = Number(product.retailPrice) || 0;
+  if (!retail || product.discountable === false) return "";
+
+  for (const tiers of [product.discountTiers, product.wholesaleDiscountTiers]) {
+    const sorted = [...(tiers || [])].sort(
+      (a, b) => a.minQuantity - b.minQuantity,
+    );
+    let previousMax = 1;
+    let previousDiscount = 0;
+    for (const tier of sorted) {
+      const discount = Number(tier.discountAmount);
+      const lineValue = retail * Number(tier.minQuantity);
+      if (Number(tier.minQuantity) <= previousMax) return "Brackets overlap";
+      if (discount <= previousDiscount)
+        return "Bracket no better than the one below";
+      if (lineValue && (discount / lineValue) * 100 > maxDiscountPercent)
+        return `Bracket gives ${((discount / lineValue) * 100).toFixed(0)}% off`;
+      previousMax = tier.maxQuantity ?? Infinity;
+      previousDiscount = discount;
+    }
+  }
+  return "";
+}
+
+/**
+ * What each bracket actually earns, judged at its lowest quantity — the point
+ * where a flat discount costs the store the most.
+ */
+function MarginReadout({ price, cost, tiers, minMarginPercent }) {
+  if (!cost || !price) return null;
+
+  const rows = [
+    { label: "1 unit, no discount", revenue: Number(price), cost: Number(cost) },
+    ...tiers
+      .filter((tier) => Number(tier.discount) > 0 && Number(tier.minQty) > 0)
+      .map((tier) => ({
+        label: `${tier.minQty} units, Rs. ${tier.discount} off`,
+        revenue: Number(price) * Number(tier.minQty) - Number(tier.discount),
+        cost: Number(cost) * Number(tier.minQty),
+      })),
+  ];
+
+  return (
+    <div className="mt-3 rounded-xl bg-[#F5F3F0] p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[#707972]">
+          Margin at each bracket
+        </span>
+        <span className="text-[10px] font-semibold text-[#707972]">
+          Minimum {minMarginPercent}%
+        </span>
+      </div>
+      <div className="space-y-1">
+        {rows.map((row, index) => {
+          const percent = marginPercent(row.revenue, row.cost);
+          const below = row.revenue < requiredRevenue(row.cost, minMarginPercent);
+          return (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-3 text-xs"
+            >
+              <span className="text-[#404943]">{row.label}</span>
+              <span
+                className={`font-bold whitespace-nowrap ${below ? "text-[#ba1a1a]" : "text-[#1b5e40]"}`}
+              >
+                Rs. {Math.round(row.revenue - row.cost)} kept ·{" "}
+                {percent === null ? "—" : percent.toFixed(1)}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProductDrawer({
+  open,
+  editProduct,
+  onClose,
+  onSave,
+  minMarginPercent,
+  maxDiscountPercent,
+  saveError,
+}) {
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
 
-  // Populate form when opening for edit
-  useState(() => {
-    if (editProduct) {
-      setForm({
-        ...EMPTY_PRODUCT,
-        ...editProduct,
-        price: editProduct.price ?? "",
-        oldPrice: editProduct.oldPrice ?? "",
-        stockQty: editProduct.stockQty ?? "",
-        pricingTiers:
-          editProduct.pricingTiers?.length > 0
-            ? editProduct.pricingTiers
-            : EMPTY_PRODUCT.pricingTiers,
-      });
-    } else {
-      setForm(EMPTY_PRODUCT);
-    }
-  });
-
-  // Keep form in sync when editProduct changes
-  const prevEditRef = useRef(null);
-  if (prevEditRef.current !== editProduct) {
-    prevEditRef.current = editProduct;
-    if (editProduct) {
-      // will be set on next render via useEffect-equivalent pattern
-    }
-  }
-
-  // Re-initialize when drawer opens
+  // Re-initialise each time the drawer opens, so an abandoned edit never
+  // leaks into the next product.
   const [initialized, setInitialized] = useState(false);
   if (open && !initialized) {
     setInitialized(true);
-    if (editProduct) {
-      setForm({
-        ...EMPTY_PRODUCT,
-        ...editProduct,
-        price: editProduct.price ?? "",
-        oldPrice: editProduct.oldPrice ?? "",
-        stockQty: editProduct.stockQty ?? "",
-        pricingTiers:
-          editProduct.pricingTiers?.length > 0
-            ? editProduct.pricingTiers
-            : EMPTY_PRODUCT.pricingTiers,
-      });
-    } else {
-      setForm(EMPTY_PRODUCT);
-    }
+    setForm(
+      editProduct
+        ? {
+            ...EMPTY_PRODUCT,
+            ...editProduct,
+            price: editProduct.price ?? "",
+            costPrice: editProduct.costPrice ?? "",
+            discountable: editProduct.discountable !== false,
+            oldPrice: editProduct.oldPrice ?? "",
+            stockQty: editProduct.stockQty ?? "",
+            pricingTiers:
+              editProduct.pricingTiers?.length > 0
+                ? editProduct.pricingTiers
+                : EMPTY_PRODUCT.pricingTiers,
+            wholesaleTiers: editProduct.wholesaleTiers || [],
+          }
+        : EMPTY_PRODUCT,
+    );
   }
   if (!open && initialized) {
     setInitialized(false);
@@ -333,43 +443,102 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
     handleImageFile(e.dataTransfer.files[0]);
   }, []);
 
-  // A tier is only meaningful if it beats the retail price at a quantity above
-  // one. Without this check a typo (Rs. 0 at 1+) silently becomes a 100% off
-  // row on the product page.
-  const tierErrors = (() => {
+  // Every bracket is judged at its own lowest quantity, because that is where a
+  // flat discount costs the store the most: Rs. 50 off ten sacks is a far
+  // deeper cut than Rs. 50 off forty-nine of them. Checked while it is being
+  // typed rather than on a rejected save.
+  const cost = Number(form.costPrice) || 0;
+  const retailFloor = requiredRevenue(cost, minMarginPercent);
+
+  const ladderErrors = (tiers, prefix) => {
     const retail = Number(form.price);
-    const filled = form.pricingTiers.filter(
-      (tier) => tier.minQty || (tier.price !== "" && tier.price !== null),
+    const filled = (tiers || []).filter(
+      (tier) => tier.minQty || (tier.discount !== "" && tier.discount !== null),
     );
     const messages = [];
-    let previousMin = 1;
+    let previousMax = 1;
+    let previousDiscount = 0;
+
     filled.forEach((tier, index) => {
       const min = Number(tier.minQty);
-      const price = Number(tier.price);
-      const label = `Tier ${index + 1}`;
+      const max = tier.maxQty == null ? null : Number(tier.maxQty);
+      const discount = Number(tier.discount);
+      const label = `${prefix} ${index + 1}`;
+      const lineValue = retail * min;
+
       if (!min || min < 2) {
         messages.push(`${label}: min qty must be 2 or more.`);
-      } else if (min <= previousMin) {
-        messages.push(`${label}: min qty must be higher than the tier above.`);
+      } else if (min <= previousMax) {
+        messages.push(
+          `${label}: starts at ${min}, which overlaps the bracket above it.`,
+        );
       }
-      if (!tier.price && tier.price !== 0) {
-        messages.push(`${label}: price is required.`);
-      } else if (price <= 0) {
-        messages.push(`${label}: price must be greater than 0.`);
-      } else if (retail && price >= retail) {
-        messages.push(`${label}: price must be below the retail price.`);
+      if (max != null && max < min) {
+        messages.push(`${label}: max qty is below its own min qty.`);
       }
-      if (min) previousMin = min;
+      if (index < filled.length - 1 && max == null) {
+        messages.push(
+          `${label}: needs a max qty, because another bracket follows it.`,
+        );
+      }
+
+      if (!discount) {
+        messages.push(`${label}: discount is required.`);
+      } else if (discount <= 0) {
+        messages.push(`${label}: discount must be greater than 0.`);
+      } else if (lineValue && discount >= lineValue) {
+        messages.push(
+          `${label}: Rs. ${discount} off is more than the Rs. ${lineValue} that ${min} of these cost.`,
+        );
+      } else {
+        // A higher bracket must be worth more, or "add more for the best rate"
+        // walks the buyer towards a smaller discount.
+        if (index > 0 && discount <= previousDiscount) {
+          messages.push(
+            `${label}: Rs. ${discount} off is no better than the Rs. ${previousDiscount} bracket below it.`,
+          );
+        }
+        if (lineValue) {
+          const off = (discount / lineValue) * 100;
+          if (off > maxDiscountPercent) {
+            const most = Math.floor((lineValue * maxDiscountPercent) / 100);
+            messages.push(
+              `${label}: Rs. ${discount} is ${off.toFixed(1)}% off a Rs. ${lineValue} line, past the ${maxDiscountPercent}% limit. Most allowed is Rs. ${most}.`,
+            );
+          }
+        }
+        if (cost > 0 && min) {
+          const needed = requiredRevenue(cost * min, minMarginPercent);
+          if (lineValue - discount < needed) {
+            const most = Math.max(0, lineValue - needed);
+            messages.push(
+              `${label}: leaves Rs. ${lineValue - discount} against a Rs. ${cost * min} cost, under the ${minMarginPercent}% margin. Most allowed is Rs. ${most}.`,
+            );
+          }
+        }
+        previousDiscount = discount;
+      }
+      if (min) previousMax = max ?? Infinity;
     });
     return messages;
-  })();
+  };
+
+  const tierErrors = ladderErrors(form.pricingTiers, "Tier");
+  const wholesaleErrors = ladderErrors(form.wholesaleTiers, "Wholesale tier");
+  const priceError =
+    retailFloor && Number(form.price) && Number(form.price) < retailFloor
+      ? `Buyer price is below the Rs. ${retailFloor} needed for a ${minMarginPercent}% margin.`
+      : "";
+  const blocked =
+    tierErrors.length > 0 || wholesaleErrors.length > 0 || Boolean(priceError);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (tierErrors.length > 0) return;
+    if (blocked) return;
     onSave({
       ...form,
       price: Number(form.price),
+      costPrice: Number(form.costPrice) || 0,
       oldPrice: form.oldPrice ? Number(form.oldPrice) : null,
       stockQty: Number(form.stockQty),
     });
@@ -550,6 +719,30 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
               </div>
             </div>
 
+            {/* COST — never shown to buyers; drives the margin floor */}
+            <div>
+              <label className={labelCls}>Your Cost Price (Rs.)</label>
+              <input
+                type="number"
+                min={0}
+                placeholder="What you paid per unit — never shown to buyers"
+                value={form.costPrice}
+                onChange={(e) => field("costPrice", e.target.value)}
+                className={inputCls}
+              />
+              {priceError ? (
+                <p className="mt-1.5 text-xs font-semibold text-[#ba1a1a]">
+                  {priceError}
+                </p>
+              ) : (
+                <p className="mt-1.5 text-xs text-[#707972]">
+                  {cost > 0
+                    ? `Buyer price must be at least Rs. ${retailFloor}, and no bracket may cut below the ${minMarginPercent}% margin.`
+                    : "Leave blank if unknown — the margin floor stays off until you set a cost."}
+                </p>
+              )}
+            </div>
+
             {/* STOCK STATUS + QTY */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -644,25 +837,117 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
               />
             </div>
 
-            {/* PRICING TIERS */}
-            <div>
-              <label className={labelCls}>Discount Pricing Tiers</label>
-              <div className="bg-white rounded-xl border border-[#C1C8C1]/40 p-4">
-                <PricingTierEditor
-                  tiers={form.pricingTiers}
-                  onChange={(tiers) => field("pricingTiers", tiers)}
-                />
-                {tierErrors.length > 0 && (
-                  <ul className="mt-3 space-y-1">
-                    {tierErrors.map((message) => (
-                      <li key={message} className="text-xs text-[#ba1a1a]">
-                        {message}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+            {/* DISCOUNTABLE — thin-margin staples can opt out entirely */}
+            <div className="bg-white rounded-xl border border-[#C1C8C1]/40 p-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-[#1b1c1a]">
+                  Offer bulk discounts on this product
+                </p>
+                <p className="text-xs text-[#707972] mt-1 leading-relaxed">
+                  Turn this off for thin-margin staples like rice and cooking
+                  oil. They keep one price for every buyer, and the bulk
+                  incentive stays on the lines that can afford it.
+                </p>
               </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.discountable}
+                onClick={() => field("discountable", !form.discountable)}
+                className={`relative w-12 h-7 shrink-0 rounded-full transition ${
+                  form.discountable ? "bg-[#1b5e40]" : "bg-[#C1C8C1]"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
+                    form.discountable ? "left-6" : "left-1"
+                  }`}
+                />
+              </button>
             </div>
+
+            {/* PRICING TIERS */}
+            {form.discountable && (
+              <>
+                <div>
+                  <label className={labelCls}>
+                    Discount Pricing Tiers — everyone
+                  </label>
+                  <div className="bg-white rounded-xl border border-[#C1C8C1]/40 p-4">
+                    <PricingTierEditor
+                      tiers={form.pricingTiers}
+                      onChange={(tiers) => field("pricingTiers", tiers)}
+                      retailPrice={form.price}
+                      maxDiscountPercent={maxDiscountPercent}
+                    />
+                    {tierErrors.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {tierErrors.map((message) => (
+                          <li key={message} className="text-xs text-[#ba1a1a]">
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <MarginReadout
+                      price={form.price}
+                      cost={cost}
+                      tiers={form.pricingTiers}
+                      minMarginPercent={minMarginPercent}
+                    />
+                    <p className="mt-3 text-xs text-[#707972] leading-relaxed">
+                      Start the first tier <strong>above</strong> what a buyer
+                      normally takes. A tier at a quantity they already buy is
+                      money given away for a decision they had already made.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>
+                    Wholesale Tiers — verified wholesale only (optional)
+                  </label>
+                  <div className="bg-white rounded-xl border border-[#C1C8C1]/40 p-4">
+                    <PricingTierEditor
+                      tiers={
+                        form.wholesaleTiers.length
+                          ? form.wholesaleTiers
+                          : [{ minQty: "", maxQty: null, discount: "" }]
+                      }
+                      onChange={(tiers) => field("wholesaleTiers", tiers)}
+                      retailPrice={form.price}
+                      maxDiscountPercent={maxDiscountPercent}
+                    />
+                    {wholesaleErrors.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {wholesaleErrors.map((message) => (
+                          <li key={message} className="text-xs text-[#ba1a1a]">
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <MarginReadout
+                      price={form.price}
+                      cost={cost}
+                      tiers={form.wholesaleTiers}
+                      minMarginPercent={minMarginPercent}
+                    />
+                    <p className="mt-3 text-xs text-[#707972] leading-relaxed">
+                      Leave empty and wholesale buyers use the table above.
+                      Fill it in to give them a deeper ladder — they order
+                      repeatedly and cost less to serve per rupee.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {saveError && (
+              <div className="rounded-xl bg-[#ffdad6] px-4 py-3 text-xs font-semibold text-[#ba1a1a]">
+                {saveError}
+              </div>
+            )}
 
             {/* Submit */}
             <div className="flex gap-3 pt-2 pb-4">
@@ -675,7 +960,8 @@ function ProductDrawer({ open, editProduct, onClose, onSave }) {
               </button>
               <button
                 type="submit"
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-[#1b5e40] hover:bg-[#00452b] transition flex items-center justify-center gap-2"
+                disabled={blocked}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-[#1b5e40] hover:bg-[#00452b] transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 size={16} />
                 {editProduct ? "Save Changes" : "Add Product"}
@@ -783,6 +1069,15 @@ function ProductRow({ product, onEdit, onDelete }) {
               {product.name}
             </p>
             <p className="text-xs text-[#707972] mt-0.5">{product.id}</p>
+            {/* Catalogue saved before the ladder rules existed can still be
+                sitting here quietly overselling. Flag it so it can be found
+                without opening every product. */}
+            {product.ladderWarning && (
+              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#ffdad6] px-2 py-0.5 text-[10px] font-bold text-[#ba1a1a]">
+                <AlertTriangle size={10} />
+                {product.ladderWarning}
+              </span>
+            )}
           </div>
         </div>
       </td>
@@ -927,6 +1222,9 @@ export default function AdminProductsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [minMargin, setMinMargin] = useState(10);
+  const [maxDiscount, setMaxDiscount] = useState(40);
+  const [saveError, setSaveError] = useState("");
   const mapProduct = (product) => ({
     id: product._id,
     name: product.name,
@@ -942,17 +1240,34 @@ export default function AdminProductsPage() {
     packCount: product.packCount,
     shelfLife: product.shelfLife,
     origin: product.origin,
-    pricingTiers: (product.tierPrices || []).map((tier) => ({
+    costPrice: product.costPrice ?? "",
+    discountable: product.discountable !== false,
+    pricingTiers: (product.discountTiers || []).map((tier) => ({
       minQty: tier.minQuantity,
-      maxQty: null,
-      price: tier.price,
+      maxQty: tier.maxQuantity ?? null,
+      discount: tier.discountAmount,
     })),
+    wholesaleTiers: (product.wholesaleDiscountTiers || []).map((tier) => ({
+      minQty: tier.minQuantity,
+      maxQty: tier.maxQuantity ?? null,
+      discount: tier.discountAmount,
+    })),
+    ladderWarning: ladderWarningFor(product),
     createdAt: product.createdAt,
   });
+  // The admin list, not the public catalogue: it is the only route that
+  // returns costPrice, and it carries the store's margin floor so the drawer
+  // can flag a losing tier before the save is even attempted.
   const loadProducts = async () => {
     try {
-      const data = await apiRequest("/products");
+      const data = await apiRequest("/products/admin/list", {
+        headers: authHeader(token),
+      });
       setProducts(data.products.map(mapProduct));
+      if (typeof data.minMarginPercent === "number")
+        setMinMargin(data.minMarginPercent);
+      if (typeof data.maxDiscountPercent === "number")
+        setMaxDiscount(data.maxDiscountPercent);
     } catch {
       setProducts([]);
     }
@@ -998,10 +1313,25 @@ export default function AdminProductsPage() {
     setDrawerOpen(true);
   };
 
+  const toDiscountTiers = (tiers) =>
+    (tiers || [])
+      .filter(
+        (tier) => Number(tier.minQty) > 1 && Number(tier.discount) > 0,
+      )
+      .map((tier) => ({
+        minQuantity: Number(tier.minQty),
+        maxQuantity:
+          tier.maxQty == null || tier.maxQty === "" ? null : Number(tier.maxQty),
+        discountAmount: Number(tier.discount),
+      }))
+      .sort((a, b) => a.minQuantity - b.minQuantity);
+
   const handleSave = async (data) => {
     const body = {
       name: data.name,
       retailPrice: Number(data.price),
+      costPrice: Number(data.costPrice) || 0,
+      discountable: data.discountable !== false,
       category: data.category,
       unit: data.unit,
       stock: Number(data.stockQty),
@@ -1011,19 +1341,10 @@ export default function AdminProductsPage() {
       packCount: data.packCount || "",
       shelfLife: data.shelfLife || "",
       origin: data.origin || "",
-      tierPrices: (data.pricingTiers || [])
-        .filter(
-          (tier) =>
-            Number(tier.minQty) > 1 &&
-            Number(tier.price) > 0 &&
-            Number(tier.price) < Number(data.price),
-        )
-        .map((tier) => ({
-          minQuantity: Number(tier.minQty),
-          price: Number(tier.price),
-        }))
-        .sort((a, b) => a.minQuantity - b.minQuantity),
+      discountTiers: toDiscountTiers(data.pricingTiers),
+      wholesaleDiscountTiers: toDiscountTiers(data.wholesaleTiers),
     };
+    setSaveError("");
     try {
       await apiRequest(
         editProduct ? `/products/${editProduct.id}` : "/products",
@@ -1036,8 +1357,10 @@ export default function AdminProductsPage() {
       await loadProducts();
       setDrawerOpen(false);
       setEditProduct(null);
-    } catch {
-      /* retain drawer so the entered values remain available */
+    } catch (error) {
+      // The margin floor rejects losing ladders server-side. Swallowing that
+      // left the storekeeper staring at a form that silently refused to save.
+      setSaveError(error.message || "Could not save this product");
     }
   };
 
@@ -1279,8 +1602,12 @@ export default function AdminProductsPage() {
         onClose={() => {
           setDrawerOpen(false);
           setEditProduct(null);
+          setSaveError("");
         }}
         onSave={handleSave}
+        minMarginPercent={minMargin}
+        maxDiscountPercent={maxDiscount}
+        saveError={saveError}
       />
 
       {/* ── Delete Modal ──────────────────── */}

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import { useGoBack } from "../../hooks/useBackNavigation";
+import { tiersFor, tierAt } from "../../utils/pricing";
 import { ProductCard } from "../home/HomePage";
 
 export default function ViewProductDetailIS() {
@@ -21,7 +22,6 @@ export default function ViewProductDetailIS() {
   const { user, token, addToCart } = useStore();
   const navigate = useNavigate();
   const goBack = useGoBack();
-  const isWholesale = user?.role === "verified_wholesale";
 
   useEffect(() => {
     if (!id) {
@@ -59,31 +59,16 @@ export default function ViewProductDetailIS() {
       <div className="p-8 text-center text-red-500">Product not found.</div>
     );
 
-  // Only tiers that are a genuine bulk discount are usable: quantity above 1
-  // and a price strictly below retail. Anything else is bad catalogue data and
-  // must not drive the price shown to the buyer.
-  const validTiers = (product.tierPrices || [])
-    .filter(
-      (tier) =>
-        Number(tier.minQuantity) > 1 &&
-        Number(tier.price) > 0 &&
-        Number(tier.price) < product.retailPrice,
-    )
-    .sort((a, b) => a.minQuantity - b.minQuantity);
+  // The same table the cart and the order will use, so what is quoted here is
+  // what gets charged. The discount table applies to every buyer.
+  const validTiers = tiersFor(product, user?.role);
+  const activeTier = tierAt(validTiers, quantity);
+  const activeTierIndex = activeTier ? validTiers.indexOf(activeTier) : -1;
 
-  let displayPrice = product.retailPrice;
-  let oldPrice = null;
-  let activeTierIndex = -1;
-
-  if (isWholesale && validTiers.length > 0) {
-    for (let i = 0; i < validTiers.length; i += 1) {
-      if (quantity >= validTiers[i].minQuantity) activeTierIndex = i;
-    }
-    if (activeTierIndex >= 0) {
-      displayPrice = validTiers[activeTierIndex].price;
-      oldPrice = product.retailPrice;
-    }
-  }
+  // The unit price never moves: a bracket takes a flat amount off the line, so
+  // the sack still costs what the sack costs.
+  const displayPrice = product.retailPrice;
+  const oldPrice = null;
 
   const isOutOfStock = product.stock <= 0;
   const stockText =
@@ -305,8 +290,12 @@ export default function ViewProductDetailIS() {
                 </div>
 
                 {validTiers.map((tier, index) => {
+                  // The discount is flat for the whole bracket, so the biggest
+                  // proportional saving lands at its lowest quantity — that is
+                  // the honest figure to advertise.
                   const saving = (
-                    ((product.retailPrice - tier.price) / product.retailPrice) *
+                    (tier.discountAmount /
+                      (product.retailPrice * tier.minQuantity)) *
                     100
                   ).toFixed(1);
                   const isActive = index === activeTierIndex;
@@ -316,13 +305,15 @@ export default function ViewProductDetailIS() {
                       className={`grid grid-cols-3 gap-2 px-3 py-3 rounded-default border ${isActive ? "bg-[var(--color-secondary-fixed)]/40 border-[var(--color-secondary)]" : "bg-[var(--color-secondary-fixed)]/20 border-[var(--color-secondary-fixed-dim)]/30"}`}
                     >
                       <div className="text-sm font-medium text-[var(--color-on-surface)]">
-                        {tier.minQuantity}+
+                        {tier.maxQuantity
+                          ? `${tier.minQuantity}–${tier.maxQuantity}`
+                          : `${tier.minQuantity}+`}
                       </div>
                       <div className="text-sm font-bold text-[var(--color-secondary)]">
-                        Rs. {tier.price}
+                        Rs. {tier.discountAmount} off
                       </div>
                       <div className="text-right text-xs font-bold text-[var(--color-secondary)]">
-                        {saving}% Off
+                        up to {saving}%
                       </div>
                     </div>
                   );
@@ -335,11 +326,6 @@ export default function ViewProductDetailIS() {
                 )}
               </div>
 
-              {!isWholesale && validTiers.length > 0 && (
-                <p className="mt-4 text-xs text-[var(--color-on-surface-variant)]">
-                  Bulk prices apply to verified wholesale accounts.
-                </p>
-              )}
             </div>
 
             {/* Product Specifications */}

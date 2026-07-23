@@ -27,7 +27,10 @@ export default function PaymentProofPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!checkoutOrder || !token) return navigate("/login");
-    if (file && file.size > 5 * 1024 * 1024)
+    // The screenshot is what the storekeeper verifies against their bank app,
+    // so it is the one required part of this form.
+    if (!file) return toast.error("Attach a screenshot of the payment");
+    if (file.size > 5 * 1024 * 1024)
       return toast.error("Screenshot must be 5MB or smaller");
     const imageDataUrl = file
       ? await new Promise((resolve, reject) => {
