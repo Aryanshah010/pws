@@ -12,10 +12,16 @@ import {
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import Spinner from "../../components/common/Spinner";
+import useCartPricing from "../../hooks/useCartPricing";
+import { useGoBack } from "../../hooks/useBackNavigation";
 import { apiRequest, authHeader } from "../../services/api";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  // Buy Now lands here straight from a product page; the cart is the only thing
+  // that has been through the cart, so /cart is where "back" belongs when there
+  // is no history to walk.
+  const goBack = useGoBack("/cart");
   const {
     user,
     token,
@@ -44,35 +50,16 @@ export default function Checkout() {
       .catch(() => setTimeSlots([]));
   }, []);
 
-  const [quote, setQuote] = useState(null);
-
-  useEffect(() => {
-    if (!token || !cart.length) {
-      setQuote(null);
-      return;
-    }
-    apiRequest("/orders/quote", {
-      method: "POST",
-      headers: authHeader(token),
-      body: JSON.stringify({
-        items: cart.map((item) => ({
-          product: item.product._id,
-          quantity: item.quantity,
-        })),
-      }),
-    })
-      .then(setQuote)
-      .catch(() => setQuote(null));
-  }, [cart, token]);
-
-  const localSubtotal = cart.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
-  const subtotal = quote?.subtotalAmount ?? localSubtotal;
-  const discount = quote?.discountAmount ?? 0;
-  const tax = quote?.taxAmount ?? 0;
-  const grandTotal = quote?.totalAmount ?? localSubtotal;
+  // The same live figures the cart page shows. Reading them from anywhere else
+  // is how this page ended up opening on the price an item was added at rather
+  // than what it costs now.
+  const { totals } = useCartPricing();
+  const {
+    subtotal,
+    discount,
+    tax,
+    total: grandTotal,
+  } = totals;
 
   const handleConfirm = async () => {
     if (!cart || cart.length === 0) return;
@@ -114,7 +101,7 @@ export default function Checkout() {
     <div className="mx-auto w-full max-w-[1512px] px-4 py-10 sm:px-8 lg:px-[100px] lg:py-14 2xl:px-[202px]  bg-background text-on-background">
       <div className="mb-8 flex items-center gap-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           aria-label="Go back"
           className="flex h-6 w-6 items-center justify-center text-on-surface transition-opacity hover:opacity-70"
         >

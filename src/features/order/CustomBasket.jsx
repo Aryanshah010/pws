@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function CustomBasketTemplate() {
   const [name, setName] = useState("");
@@ -12,6 +13,7 @@ export default function CustomBasketTemplate() {
   const [saving, setSaving] = useState(false);
   const { cart, token } = useStore();
   const navigate = useNavigate();
+  const goBack = useGoBack("/myorder");
   const save = async () => {
     if (!token) return navigate("/login");
     setSaving(true);
@@ -104,7 +106,7 @@ export default function CustomBasketTemplate() {
           </button>
           {error && <p className="text-sm text-red-700">{error}</p>}
           <button
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="text-lg font-semibold text-[var(--color-on-surface-variant)]"
           >
             Cancel

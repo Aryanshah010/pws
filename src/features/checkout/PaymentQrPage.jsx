@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Info, UploadCloud } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function PaymentProofPage() {
   const [transactionId, setTransactionId] = useState("");
@@ -11,6 +12,9 @@ export default function PaymentProofPage() {
   const [file, setFile] = useState(null);
   const { checkoutOrder, token, setCheckoutOrder } = useStore();
   const navigate = useNavigate();
+  // The order is already placed by the time this page opens, and checkout has
+  // emptied the cart. Back belongs on the order, never on a dead checkout.
+  const goBack = useGoBack("/order-success");
 
   const [qrImage, setQrImage] = useState("");
 
@@ -62,13 +66,14 @@ export default function PaymentProofPage() {
 
   return (
     <div className="mx-auto w-full max-w-378 px-6 py-8 md:px-14 md:py-12  bg-(--color-background) text-(--color-on-background)">
-      <Link
-        to="/"
+      <button
+        type="button"
+        onClick={goBack}
         aria-label="Go back"
         className="mb-6 flex h-9 w-9 items-center justify-center  text-[var(--color-on-surface)] transition-opacity hover:opacity-80 cursor-pointer"
       >
         <ArrowLeft className="h-5 w-5" />
-      </Link>
+      </button>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Left Info Column */}

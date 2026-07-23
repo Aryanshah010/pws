@@ -10,12 +10,14 @@ import {
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 const BasketReview = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const goBack = useGoBack("/myorder");
   const basketId = new URLSearchParams(location.search).get("id");
-  const { token, addToCart } = useStore();
+  const { token, addToCart, loadCart } = useStore();
 
   const [basket, setBasket] = useState(null);
   const [items, setItems] = useState([]);
@@ -74,12 +76,20 @@ const BasketReview = () => {
     }
   };
 
+  // The reviewed basket *is* the order the buyer just approved, so it replaces
+  // the cart rather than piling on top of whatever was left in it — merging is
+  // what left old quantities behind and threw off the totals and the discount
+  // progress on the cart page.
   const checkout = () => {
-    items
-      .filter((item) => item.available)
-      .forEach((item) =>
-        addToCart(item.product, item.quantity, item.unitPrice),
-      );
+    loadCart(
+      items
+        .filter((item) => item.available)
+        .map((item) => ({
+          product: item.product,
+          quantity: item.quantity,
+          price: item.unitPrice,
+        })),
+    );
     toast.success(`${availableItems.length} item(s) moved to your cart`);
     navigate("/cart");
   };
@@ -100,7 +110,8 @@ const BasketReview = () => {
       {/* Top Navigation Row (Back Button) */}
       <div className="mx-8 mb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
+          aria-label="Go back"
           className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface)"
         >
           <ArrowLeft size={24} />

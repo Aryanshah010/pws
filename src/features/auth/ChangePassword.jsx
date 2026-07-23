@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
@@ -300,9 +300,10 @@ const ChangePassword = () => {
                 )}
               </button>
 
-              {/* BACK TO LOGIN */}
-              <a
-                href="/login"
+              {/* BACK TO LOGIN — a router link, not an anchor: a full page
+                  load here throws away the recovery state this flow holds. */}
+              <Link
+                to="/login"
                 className="
                   mt-[18px]
                   flex
@@ -316,7 +317,7 @@ const ChangePassword = () => {
               >
                 <ArrowLeft size={14} />
                 Back to login
-              </a>
+              </Link>
             </div>
           </div>
         </div>

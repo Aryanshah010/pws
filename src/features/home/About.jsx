@@ -1,14 +1,17 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function About() {
   const navigate = useNavigate();
+  // A signed-out visitor's home is the landing page, not the shop.
+  const homePath = useHomePath();
 
   return (
     <div className="max-w-6xl mx-auto px-md py-xl min-h-screen font-sans">
       <button
-        onClick={() => navigate("/homepage")}
+        onClick={() => navigate(homePath)}
         className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
       >
         <ArrowLeft size={16} />

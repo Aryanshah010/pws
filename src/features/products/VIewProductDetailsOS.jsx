@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ShoppingCart, Bell, AlertCircle } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
+import { useGoBack } from "../../hooks/useBackNavigation";
 import { ProductCard } from "../home/HomePage";
 
 
@@ -18,6 +19,7 @@ export default function ViewProductDetailOOS() {
   const navigate = useNavigate();
   const id = new URLSearchParams(location.search).get("id");
   const { user, token } = useStore();
+  const goBack = useGoBack();
 
   useEffect(() => {
     if (!id) {
@@ -95,12 +97,14 @@ export default function ViewProductDetailOOS() {
       {/* Product Detail sub-header */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 pb-2 md:pt-8">
         <div className="flex items-center gap-4">
-          <Link
-            to="/"
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Go back"
             className="inline-flex items-center justify-center w-6 h-6 text-[var(--color-on-surface)] hover:opacity-70 transition shrink-0"
           >
             <ChevronLeft size={24} />
-          </Link>
+          </button>
           <h1 className="text-headline-sm md:text-headline-md font-semibold text-[var(--color-on-surface)]">
             Product Detail
           </h1>

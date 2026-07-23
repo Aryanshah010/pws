@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2, ArrowLeft, TriangleAlert } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
-import { apiRequest, authHeader } from "../../services/api";
+import useCartPricing from "../../hooks/useCartPricing";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 // --- COMPONENTS ---
 
@@ -36,9 +36,7 @@ function PriceChangeAlert({ message, onRemove, onKeep }) {
   );
 }
 
-function OrderSummary({ subtotal, discount, tax, onCheckout }) {
-  const total = subtotal - discount + tax;
-
+function OrderSummary({ subtotal, discount, tax, total, onCheckout }) {
   return (
     <div className="flex flex-col gap-6 rounded-md border border-[#C1C8C1] bg-white p-6 shadow-[0_1px_3px_1px_rgba(27,28,26,0.06)]">
       <h2 className="text-[22px] font-bold leading-[130%] text-[#1B1C1A]">
@@ -84,66 +82,26 @@ function OrderSummary({ subtotal, discount, tax, onCheckout }) {
   );
 }
 
-function CartItemRow({ item, quotedItem, onIncrement, onDecrement, onRemove }) {
-  const product = item.product || {};
-  const productId = product._id || item.id;
-  const productName = product.name || item.name;
-  const unit = product.unit || item.unit || "unit";
-  const quantity = item.quantity;
-
-  // Admin Tier Discount calculations
-  const tierPrices = product.tierPrices || [];
-  const sortedTiers = [...tierPrices].sort(
-    (a, b) => a.minQuantity - b.minQuantity,
-  );
-
-  const discountThreshold =
-    sortedTiers[0]?.minQuantity ?? item.discountThreshold ?? 10;
-  const unlocked = quantity >= discountThreshold;
-  const remaining = discountThreshold - quantity;
-
-  const activeTier = [...sortedTiers]
-    .reverse()
-    .find((t) => t.minQuantity <= quantity);
-  const nextTier = sortedTiers.find((t) => t.minQuantity > quantity);
-
-  // 3-Segment progress calculation:
-  // 1-9 qty -> 0 segments (No discount)
-  // 10+ qty -> 1 to 3 segments depending on progress towards highest tier threshold
-  let segments = 0;
-  if (unlocked) {
-    if (sortedTiers.length > 1) {
-      const highestThreshold = sortedTiers[sortedTiers.length - 1].minQuantity;
-      if (quantity >= highestThreshold) {
-        segments = 3;
-      } else {
-        const progressRatio =
-          (quantity - discountThreshold) /
-          (highestThreshold - discountThreshold);
-        segments = 1 + Math.floor(progressRatio * 2);
-      }
-    } else {
-      segments = 3;
-    }
-  }
-
-  // Price & Subtotal calculations
-  const pricePerUnit =
-    item.price ?? product.retailPrice ?? item.pricePerUnit ?? 0;
-  const subtotal = pricePerUnit * quantity;
-
-  let discount = 0;
-  if (quotedItem && typeof quotedItem.discount === "number") {
-    discount = quotedItem.discount;
-  } else if (activeTier) {
-    const regularTotal = (product.retailPrice || pricePerUnit) * quantity;
-    const tieredTotal = activeTier.price * quantity;
-    discount = Math.max(0, regularTotal - tieredTotal);
-  } else if (unlocked && item.discountAmount) {
-    discount = item.discountAmount;
-  }
-
-  const final = Math.max(0, subtotal - discount);
+/**
+ * Purely presentational: every figure below — price, discount, how many
+ * milestone blocks are lit — is derived once in useCartPricing so this row and
+ * the summary beside it can never tell the buyer two different things.
+ */
+function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
+  const {
+    productId,
+    name: productName,
+    unit,
+    quantity,
+    subtotal,
+    discount,
+    final,
+    threshold,
+    unlocked,
+    nextTier,
+    segments,
+  } = line;
+  const remaining = threshold == null ? 0 : threshold - quantity;
 
   return (
     <div className="grid grid-cols-1 gap-4 border-b border-[#C1C8C1] p-6 last:border-b-0 sm:grid-cols-12 sm:items-start">
@@ -191,7 +149,7 @@ function CartItemRow({ item, quotedItem, onIncrement, onDecrement, onRemove }) {
               />
             ))}
           </div>
-          {!unlocked ? (
+          {!unlocked && remaining > 0 ? (
             <p className="text-center text-[13px] leading-[140%] text-[#404943]">
               Add {remaining} more {unit}
               {remaining > 1 ? "s" : ""} to unlock discount
@@ -230,14 +188,12 @@ function CartItemRow({ item, quotedItem, onIncrement, onDecrement, onRemove }) {
 // --- MAIN CONTAINER ---
 export default function CartPage() {
   const navigate = useNavigate();
-  const {
-    cart = [],
-    token,
-    updateQuantity,
-    removeFromCart,
-    synchronizeCartPrices,
-  } = useStore();
-  const [quote, setQuote] = useState(null);
+  const goBack = useGoBack();
+  const cart = useStore((state) => state.cart);
+  const updateQuantity = useStore((state) => state.updateQuantity);
+  const removeFromCart = useStore((state) => state.removeFromCart);
+  const synchronizeCartPrices = useStore((state) => state.synchronizeCartPrices);
+  const { lines, totals, quoteItems, priceChanges } = useCartPricing();
 
   const increment = (id, currentQty) => updateQuantity(id, currentQty + 1);
   const decrement = (id, currentQty) => {
@@ -251,92 +207,17 @@ export default function CartPage() {
     toast.info(`${name || "Item"} removed from cart`);
   };
 
-  // Realtime quote sync with backend
-  useEffect(() => {
-    if (!token || !cart.length) {
-      setQuote(null);
-      return;
-    }
-    apiRequest("/orders/quote", {
-      method: "POST",
-      headers: authHeader(token),
-      body: JSON.stringify({
-        items: cart.map((item) => ({
-          product: item.product?._id || item.id,
-          quantity: item.quantity,
-        })),
-      }),
-    })
-      .then(setQuote)
-      .catch(() => setQuote(null));
-  }, [cart, token]);
-
-  const localTotals = useMemo(() => {
-    return cart.reduce(
-      (acc, item) => {
-        const price =
-          item.price ?? item.product?.retailPrice ?? item.pricePerUnit ?? 0;
-        const subtotal = price * item.quantity;
-
-        const tiers = item.product?.tierPrices || [];
-        const sortedTiers = [...tiers].sort(
-          (a, b) => a.minQuantity - b.minQuantity,
-        );
-        const activeTier = [...sortedTiers]
-          .reverse()
-          .find((t) => t.minQuantity <= item.quantity);
-
-        let discount = 0;
-        if (activeTier) {
-          const regularTotal =
-            (item.product?.retailPrice || price) * item.quantity;
-          const tieredTotal = activeTier.price * item.quantity;
-          discount = Math.max(0, regularTotal - tieredTotal);
-        } else if (item.quantity >= (item.discountThreshold || 10)) {
-          discount = item.discountAmount || 0;
-        }
-
-        return {
-          subtotal: acc.subtotal + subtotal,
-          discount: acc.discount + discount,
-        };
-      },
-      { subtotal: 0, discount: 0 },
-    );
-  }, [cart]);
-
-  const displayTotals = quote
-    ? {
-        subtotal: quote.subtotalAmount,
-        discount: quote.discountAmount,
-        total: quote.totalAmount,
-      }
-    : {
-        subtotal: localTotals.subtotal,
-        discount: localTotals.discount,
-        total: localTotals.subtotal - localTotals.discount,
-      };
-
-  // Detecting price increases in real-time
-  const priceChanges =
-    quote?.items?.filter((quoted) => {
-      const cartItem = cart.find(
-        (item) =>
-          String(item.product?._id || item.id) === String(quoted.productId),
-      );
-      return cartItem && cartItem.price !== quoted.unitPrice;
-    }) || [];
-
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Back Arrow links directly to Homepage */}
-      <Link
-        to="/"
+      {/* Back Arrow returns to wherever the buyer opened the cart from */}
+      <button
+        type="button"
+        onClick={goBack}
         aria-label="Go back"
         className="flex h-6 w-6 items-center justify-center text-[#1B1C1A] transition-opacity hover:opacity-70"
       >
         <ArrowLeft className="h-5 w-5" />
-      </Link>
+      </button>
 
       {!cart || cart.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-[#C1C8C1] bg-white py-24 text-center">
@@ -351,28 +232,17 @@ export default function CartPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           {/* Main Cart Items Card */}
           <div className="overflow-hidden rounded-md border border-[#C1C8C1] bg-white shadow-[0_1px_3px_1px_rgba(27,28,26,0.06)] lg:col-span-8">
-            {priceChanges.map((change) => {
-              const item = cart.find(
-                (cartItem) =>
-                  String(cartItem.product?._id || cartItem.id) ===
-                  String(change.productId),
-              );
-              const name = item?.product?.name || item?.name || "Product";
-              const oldPrice = item?.price ?? item?.pricePerUnit ?? 0;
-              return (
-                <PriceChangeAlert
-                  key={change.productId}
-                  message={`Price changed: ${name} was Rs.${oldPrice}, now Rs.${change.unitPrice}.`}
-                  onRemove={() => {
-                    removeItem(item?.product?._id || item?.id, name);
-                  }}
-                  onKeep={() => {
-                    synchronizeCartPrices(quote.items);
-                    toast.success("Cart updated to today's prices");
-                  }}
-                />
-              );
-            })}
+            {priceChanges.map((change) => (
+              <PriceChangeAlert
+                key={change.productId}
+                message={`Price changed: ${change.name} was Rs.${change.oldPrice}, now Rs.${change.newPrice}.`}
+                onRemove={() => removeItem(change.productId, change.name)}
+                onKeep={() => {
+                  synchronizeCartPrices(quoteItems);
+                  toast.success("Cart updated to today's prices");
+                }}
+              />
+            ))}
 
             <div className="hidden grid-cols-12 border-b border-[#C1C8C1] bg-[#fbf9f5] p-4 sm:grid">
               <span className="col-span-4 text-base font-semibold text-[#1B1C1A]">
@@ -389,31 +259,22 @@ export default function CartPage() {
               </span>
             </div>
 
-            {cart.map((item) => {
-              const pId = item.product?._id || item.id;
-              const quotedItem = quote?.items?.find(
-                (q) => String(q.productId) === String(pId),
-              );
-              return (
-                <CartItemRow
-                  key={pId}
-                  item={item}
-                  quotedItem={quotedItem}
-                  onIncrement={increment}
-                  onDecrement={decrement}
-                  onRemove={(id) =>
-                    removeItem(id, item.product?.name || item.name)
-                  }
-                />
-              );
-            })}
+            {lines.map((line) => (
+              <CartItemRow
+                key={line.productId}
+                line={line}
+                onIncrement={increment}
+                onDecrement={decrement}
+                onRemove={(id) => removeItem(id, line.name)}
+              />
+            ))}
 
             <div className="flex items-center justify-between border-t border-[#C1C8C1] p-4 mb-0">
               <span className="text-base font-semibold text-[#1B1C1A]">
                 Grand Total
               </span>
               <span className="text-base font-semibold text-[#1B1C1A]">
-                Rs. {displayTotals.total}
+                Rs. {totals.total}
               </span>
             </div>
           </div>
@@ -421,9 +282,10 @@ export default function CartPage() {
           {/* Sidebar Summary Card */}
           <div className="lg:col-span-4">
             <OrderSummary
-              subtotal={displayTotals.subtotal}
-              discount={displayTotals.discount}
-              tax={0}
+              subtotal={totals.subtotal}
+              discount={totals.discount}
+              tax={totals.tax}
+              total={totals.total}
               onCheckout={() => navigate("/checkout")}
             />
           </div>

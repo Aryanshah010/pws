@@ -1,9 +1,32 @@
 import { create } from "zustand";
 import { apiRequest, authHeader } from "../services/api";
+import { unitPriceFor } from "../utils/pricing";
 
 const savedUser = JSON.parse(localStorage.getItem("pathivara_user") || "null");
 const notificationKey = (user) =>
   `pathivara_notifications_${user?.id || "guest"}`;
+
+const persistCart = (cart) => {
+  localStorage.setItem("pathivara_cart", JSON.stringify(cart));
+  return { cart };
+};
+
+/**
+ * One cart line, priced for who the buyer is *now*. Every entry point into the
+ * cart goes through this, so a line added from a product page, a saved basket
+ * or Order Again is shaped identically and carries the whole product — the
+ * discount threshold and progress bar are read off product.tierPrices, and a
+ * line missing them silently reports "no discount yet" forever.
+ */
+const cartLine = (product, quantity, price, role) => ({
+  product,
+  quantity,
+  price: price ?? unitPriceFor(product, quantity, role),
+  // What the catalogue charged when this line was built. The cart compares it
+  // against today's price to spot a real price change, so that unlocking a bulk
+  // tier is never mistaken for the storekeeper repricing the product.
+  basePrice: product?.retailPrice ?? price ?? 0,
+});
 
 export const useStore = create((set, get) => ({
   // State
@@ -134,59 +157,91 @@ export const useStore = create((set, get) => ({
   synchronizeCartPrices: (quotedItems) => {
     set((state) => {
       const byProduct = new Map(
-        quotedItems.map((item) => [String(item.productId), item.unitPrice]),
+        quotedItems.map((item) => [String(item.productId), item]),
       );
-      const cart = state.cart.map((item) =>
-        byProduct.has(String(item.product._id))
-          ? { ...item, price: byProduct.get(String(item.product._id)) }
-          : item,
+      return persistCart(
+        state.cart.map((item) => {
+          const quoted = byProduct.get(String(item.product?._id));
+          if (!quoted) return item;
+          return {
+            ...item,
+            price: quoted.unitPrice,
+            basePrice: quoted.retailUnitPrice ?? item.basePrice,
+          };
+        }),
       );
-      localStorage.setItem("pathivara_cart", JSON.stringify(cart));
-      return { cart };
     });
   },
 
   addToCart: (product, quantity, price) => {
     set((state) => {
-      const existingItem = state.cart.find(
-        (item) => item.product._id === product._id,
+      const existing = state.cart.find(
+        (item) => item.product?._id === product._id,
       );
-      let newCart;
+      if (!existing)
+        return persistCart([
+          ...state.cart,
+          cartLine(product, quantity, price, state.user?.role),
+        ]);
 
-      if (existingItem) {
-        newCart = state.cart.map((item) =>
-          item.product._id === product._id
-            ? { ...item, quantity: item.quantity + quantity, price }
+      // Adding more of something already in the cart can cross a bulk tier, so
+      // the whole line is repriced at the new quantity rather than keeping the
+      // price the buyer happened to see on the product page.
+      const merged = existing.quantity + quantity;
+      return persistCart(
+        state.cart.map((item) =>
+          item.product?._id === product._id
+            ? cartLine(product, merged, undefined, state.user?.role)
             : item,
-        );
-      } else {
-        newCart = [...state.cart, { product, quantity, price }];
-      }
-
-      localStorage.setItem("pathivara_cart", JSON.stringify(newCart));
-      return { cart: newCart };
+        ),
+      );
     });
+  },
+
+  /**
+   * Replaces the cart outright with a prepared set of lines.
+   *
+   * Order Again and saved baskets are "order exactly this", not "add this to
+   * whatever is already there". Merging them left the previous cart's
+   * quantities in place, which is what threw off the totals and the discount
+   * progress bar when a buyer came back to the cart a second time.
+   */
+  loadCart: (entries) => {
+    set((state) =>
+      persistCart(
+        entries
+          .filter((entry) => entry.product?._id)
+          .map((entry) =>
+            cartLine(
+              entry.product,
+              entry.quantity,
+              entry.price,
+              state.user?.role,
+            ),
+          ),
+      ),
+    );
   },
 
   updateQuantity: (productId, quantity) => {
     set((state) => {
-      if (quantity <= 0) return state; // or could just remove
-      const newCart = state.cart.map((item) =>
-        item.product._id === productId ? { ...item, quantity } : item,
+      if (quantity <= 0) return state;
+      return persistCart(
+        state.cart.map((item) =>
+          item.product?._id === productId
+            ? cartLine(item.product, quantity, undefined, state.user?.role)
+            : item,
+        ),
       );
-      localStorage.setItem("pathivara_cart", JSON.stringify(newCart));
-      return { cart: newCart };
     });
   },
 
   removeFromCart: (productId) => {
-    set((state) => {
-      const newCart = state.cart.filter(
-        (item) => item.product._id !== productId,
-      );
-      localStorage.setItem("pathivara_cart", JSON.stringify(newCart));
-      return { cart: newCart };
-    });
+    set((state) =>
+      persistCart(
+        state.cart.filter((item) => item.product?._id !== productId),
+      ),
+    );
   },
 
   clearCart: () => {

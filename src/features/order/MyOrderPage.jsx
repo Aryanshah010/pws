@@ -101,7 +101,7 @@ function OrderRow({
 }
 
 export default function MyOrder() {
-  const { token, addToCart } = useStore();
+  const { token, loadCart } = useStore();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [baskets, setBaskets] = useState([]);
@@ -260,30 +260,20 @@ export default function MyOrder() {
                   onRaiseIssue={() =>
                     navigate(`/complain?orderId=${order._id}`)
                   }
+                  // Order Again means "this order, again" — it replaces the
+                  // cart instead of adding to it, and the price is left for the
+                  // cart to work out from today's catalogue rather than being
+                  // frozen in here.
                   onOrderAgain={() => {
                     const usable = order.items.filter((item) => item.product);
-                    usable.forEach((item) =>
-                      addToCart(
-                        item.product,
-                        item.quantity,
-                        item.product.retailPrice || item.priceAtPurchase,
-                      ),
-                    );
+                    loadCart(usable);
                     toast.success(
                       `${usable.length} item(s) added at today's prices`,
                     );
                     navigate("/cart");
                   }}
                   onMakeTemplate={() => {
-                    order.items
-                      .filter((item) => item.product)
-                      .forEach((item) =>
-                        addToCart(
-                          item.product,
-                          item.quantity,
-                          item.product.retailPrice || item.priceAtPurchase,
-                        ),
-                      );
+                    loadCart(order.items.filter((item) => item.product));
                     toast.info("Name this basket to save it as a template");
                     navigate("/custom-basket");
                   }}

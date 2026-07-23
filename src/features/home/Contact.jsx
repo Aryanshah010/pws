@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, MapPin, Mail, MessageSquare } from "lucide-react";
 import { apiRequest } from "../../services/api";
+import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function Contact() {
   const navigate = useNavigate();
+  // A signed-in buyer's home is the shop, not the landing page.
+  const homePath = useHomePath();
   const [whatsApp, setWhatsApp] = useState("");
 
   useEffect(() => {
@@ -16,7 +19,7 @@ export default function Contact() {
   return (
     <div className="max-w-6xl mx-auto px-md py-xl min-h-screen font-sans">
       <button
-        onClick={() => navigate("/")}
+        onClick={() => navigate(homePath)}
         className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
       >
         <ArrowLeft size={16} />
