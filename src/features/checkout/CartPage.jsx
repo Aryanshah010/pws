@@ -5,7 +5,6 @@ import { useStore } from "../../store/store";
 import useCartPricing from "../../hooks/useCartPricing";
 import { useGoBack } from "../../hooks/useBackNavigation";
 
-// --- COMPONENTS ---
 
 function PriceChangeAlert({ message, onRemove, onKeep }) {
   return (
@@ -82,11 +81,6 @@ function OrderSummary({ subtotal, discount, tax, total, onCheckout }) {
   );
 }
 
-/**
- * Purely presentational: every figure below — price, discount, how many
- * milestone blocks are lit — is derived once in useCartPricing so this row and
- * the summary beside it can never tell the buyer two different things.
- */
 function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
   const {
     productId,
@@ -185,14 +179,15 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
   );
 }
 
-// --- MAIN CONTAINER ---
 export default function CartPage() {
   const navigate = useNavigate();
   const goBack = useGoBack();
   const cart = useStore((state) => state.cart);
   const updateQuantity = useStore((state) => state.updateQuantity);
   const removeFromCart = useStore((state) => state.removeFromCart);
-  const synchronizeCartPrices = useStore((state) => state.synchronizeCartPrices);
+  const synchronizeCartPrices = useStore(
+    (state) => state.synchronizeCartPrices,
+  );
   const { lines, totals, quoteItems, priceChanges } = useCartPricing();
 
   const increment = (id, currentQty) => updateQuantity(id, currentQty + 1);
@@ -209,7 +204,6 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      {/* Back Arrow returns to wherever the buyer opened the cart from */}
       <button
         type="button"
         onClick={goBack}

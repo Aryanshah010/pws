@@ -202,12 +202,6 @@ select {
   line-height: inherit;
 }
 
-/* ---------------------------------------------------------------------------
-   Button micro-interactions
-   Applied globally so every control in the app confirms a press, without
-   touching the markup of any individual screen. Only transform and opacity
-   animate, so nothing reflows and no layout shifts.
---------------------------------------------------------------------------- */
 button,
 a[role="button"],
 [type="button"],
@@ -241,7 +235,6 @@ button:disabled,
   transform: none;
 }
 
-/* Keyboard users get the same affordance as pointer users. */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -251,7 +244,6 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
-/* Respect users who have asked the OS to reduce motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

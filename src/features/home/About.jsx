@@ -5,7 +5,6 @@ import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function About() {
   const navigate = useNavigate();
-  // A signed-out visitor's home is the landing page, not the shop.
   const homePath = useHomePath();
 
   return (

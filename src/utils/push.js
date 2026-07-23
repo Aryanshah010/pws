@@ -11,6 +11,6 @@ export function showPush(push) {
       tag: push.tag || push.title,
     });
   } catch {
-    console.log("Notification error")
+    console.log("Notification error");
   }
 }

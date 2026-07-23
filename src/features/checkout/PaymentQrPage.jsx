@@ -12,8 +12,6 @@ export default function PaymentProofPage() {
   const [file, setFile] = useState(null);
   const { checkoutOrder, token, setCheckoutOrder } = useStore();
   const navigate = useNavigate();
-  // The order is already placed by the time this page opens, and checkout has
-  // emptied the cart. Back belongs on the order, never on a dead checkout.
   const goBack = useGoBack("/order-success");
 
   const [qrImage, setQrImage] = useState("");
@@ -27,8 +25,6 @@ export default function PaymentProofPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!checkoutOrder || !token) return navigate("/login");
-    // The screenshot is what the storekeeper verifies against their bank app,
-    // so it is the one required part of this form.
     if (!file) return toast.error("Attach a screenshot of the payment");
     if (file.size > 5 * 1024 * 1024)
       return toast.error("Screenshot must be 5MB or smaller");

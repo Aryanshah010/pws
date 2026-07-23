@@ -59,14 +59,10 @@ export default function ViewProductDetailIS() {
       <div className="p-8 text-center text-red-500">Product not found.</div>
     );
 
-  // The same table the cart and the order will use, so what is quoted here is
-  // what gets charged. The discount table applies to every buyer.
   const validTiers = tiersFor(product, user?.role);
   const activeTier = tierAt(validTiers, quantity);
   const activeTierIndex = activeTier ? validTiers.indexOf(activeTier) : -1;
 
-  // The unit price never moves: a bracket takes a flat amount off the line, so
-  // the sack still costs what the sack costs.
   const displayPrice = product.retailPrice;
   const oldPrice = null;
 
@@ -290,9 +286,6 @@ export default function ViewProductDetailIS() {
                 </div>
 
                 {validTiers.map((tier, index) => {
-                  // The discount is flat for the whole bracket, so the biggest
-                  // proportional saving lands at its lowest quantity — that is
-                  // the honest figure to advertise.
                   const saving = (
                     (tier.discountAmount /
                       (product.retailPrice * tier.minQuantity)) *
@@ -325,7 +318,6 @@ export default function ViewProductDetailIS() {
                   </p>
                 )}
               </div>
-
             </div>
 
             {/* Product Specifications */}
@@ -421,7 +413,6 @@ export default function ViewProductDetailIS() {
           </div>
         </div>
 
-  
         <div style={{ marginTop: "var(--spacing-3xl)" }}>
           <h2
             style={{

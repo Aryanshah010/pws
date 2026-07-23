@@ -132,7 +132,6 @@ export default function MyOrder() {
       ? orders
       : orders.filter((order) => order.orderStatus === statusFilter);
 
-
   const priceAlertFor = (order) => {
     const moved = order.items.filter(
       (item) =>
@@ -206,8 +205,7 @@ export default function MyOrder() {
                 description={basket.items
                   .map((item) => item.product?.name || "Product")
                   .join(", ")}
-                // US #42 — never load a template straight into the cart;
-                // the buyer confirms today's stock and prices first.
+
                 onUse={() => navigate(`/basket-review?id=${basket._id}`)}
               />
             ))
@@ -260,10 +258,7 @@ export default function MyOrder() {
                   onRaiseIssue={() =>
                     navigate(`/complain?orderId=${order._id}`)
                   }
-                  // Order Again means "this order, again" — it replaces the
-                  // cart instead of adding to it, and the price is left for the
-                  // cart to work out from today's catalogue rather than being
-                  // frozen in here.
+                
                   onOrderAgain={() => {
                     const usable = order.items.filter((item) => item.product);
                     loadCart(usable);

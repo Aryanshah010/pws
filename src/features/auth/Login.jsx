@@ -10,7 +10,6 @@ import Spinner from "../../components/common/Spinner";
 
 export default function LoginPage() {
   const location = useLocation();
-  // Carried over from the register screen so the buyer does not retype it.
   const [phone, setPhone] = useState(location.state?.phone || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,13 +36,14 @@ export default function LoginPage() {
         return navigate("/admin");
       }
 
-      // The welcome screen belongs to the first real sign-in, not to signup.
       if (data.firstLogin) {
         toast.success(`Welcome to Pathivara, ${firstName}`);
         const needsWholesaleForm =
           data.user.role === "bulk/shop" &&
           data.user.wholesaleStatus === "not_requested";
-        return navigate(needsWholesaleForm ? "/wholesale-form" : "/account-active");
+        return navigate(
+          needsWholesaleForm ? "/wholesale-form" : "/account-active",
+        );
       }
 
       toast.success(`Welcome back, ${firstName}`);

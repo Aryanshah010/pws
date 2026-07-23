@@ -11,20 +11,10 @@ const persistCart = (cart) => {
   return { cart };
 };
 
-/**
- * One cart line, priced for who the buyer is *now*. Every entry point into the
- * cart goes through this, so a line added from a product page, a saved basket
- * or Order Again is shaped identically and carries the whole product — the
- * discount brackets and progress bar are read off product.discountTiers, and a
- * line missing them silently reports "no discount yet" forever.
- */
 const cartLine = (product, quantity, price) => ({
   product,
   quantity,
   price: price ?? unitPriceFor(product),
-  // What the catalogue charged when this line was built. The cart compares it
-  // against today's price to spot a real price change, so that unlocking a bulk
-  // tier is never mistaken for the storekeeper repricing the product.
   basePrice: product?.retailPrice ?? price ?? 0,
 });
 
@@ -54,8 +44,6 @@ export const useStore = create((set, get) => ({
     set({ onboarded: val });
   },
 
-  // The permission modal is opened on demand — the first time the buyer
-  // actually clicks the notification bell — never automatically on login.
   notificationPromptOpen: false,
 
   openNotificationPrompt: () => set({ notificationPromptOpen: true }),
@@ -90,13 +78,6 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  /**
-   * Re-reads the account behind the saved token. The stored session is what
-   * keeps a returning buyer signed in, so this is also the only place that
-   * notices the storekeeper changed their buyer type: prices, tier discounts
-   * and basket quotes are all derived from the role, so a change means the
-   * whole app has to come back up as the new buyer type.
-   */
   refreshUser: async () => {
     const token = get().token;
     if (!token) return null;
@@ -107,11 +88,6 @@ export const useStore = create((set, get) => ({
       const isWholesale = data.user.role === "verified_wholesale";
       get().setUser(data.user, token);
 
-      // Only a move in or out of wholesale changes what anything costs. Going
-      // from bulk/shop to pending_wholesale must not reload, or submitting the
-      // request would throw the buyer off the form. setUser has already
-      // persisted the new role, so the reloaded app sees no change and does
-      // not loop.
       if (wasWholesale !== isWholesale) {
         window.location.reload();
       }
@@ -179,41 +155,23 @@ export const useStore = create((set, get) => ({
         (item) => item.product?._id === product._id,
       );
       if (!existing)
-        return persistCart([
-          ...state.cart,
-          cartLine(product, quantity, price),
-        ]);
+        return persistCart([...state.cart, cartLine(product, quantity, price)]);
 
-      // Adding more of something already in the cart can cross a bulk tier, so
-      // the whole line is repriced at the new quantity rather than keeping the
-      // price the buyer happened to see on the product page.
       const merged = existing.quantity + quantity;
       return persistCart(
         state.cart.map((item) =>
-          item.product?._id === product._id
-            ? cartLine(product, merged)
-            : item,
+          item.product?._id === product._id ? cartLine(product, merged) : item,
         ),
       );
     });
   },
 
-  /**
-   * Replaces the cart outright with a prepared set of lines.
-   *
-   * Order Again and saved baskets are "order exactly this", not "add this to
-   * whatever is already there". Merging them left the previous cart's
-   * quantities in place, which is what threw off the totals and the discount
-   * progress bar when a buyer came back to the cart a second time.
-   */
   loadCart: (entries) => {
     set((state) =>
       persistCart(
         entries
           .filter((entry) => entry.product?._id)
-          .map((entry) =>
-            cartLine(entry.product, entry.quantity, entry.price),
-          ),
+          .map((entry) => cartLine(entry.product, entry.quantity, entry.price)),
       ),
     );
   },
@@ -233,9 +191,7 @@ export const useStore = create((set, get) => ({
 
   removeFromCart: (productId) => {
     set((state) =>
-      persistCart(
-        state.cart.filter((item) => item.product?._id !== productId),
-      ),
+      persistCart(state.cart.filter((item) => item.product?._id !== productId)),
     );
   },
 

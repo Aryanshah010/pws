@@ -13,7 +13,6 @@ import {
   Store,
 } from "lucide-react";
 
-
 export default function AdminSettingsPage() {
   const { token } = useStore();
   const qrFileRef = useRef(null);

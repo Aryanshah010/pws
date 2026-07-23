@@ -76,10 +76,6 @@ const BasketReview = () => {
     }
   };
 
-  // The reviewed basket *is* the order the buyer just approved, so it replaces
-  // the cart rather than piling on top of whatever was left in it — merging is
-  // what left old quantities behind and threw off the totals and the discount
-  // progress on the cart page.
   const checkout = () => {
     loadCart(
       items
@@ -174,7 +170,6 @@ const BasketReview = () => {
               {items.map((item, index) => {
                 const isLast = index === items.length - 1;
 
-                /* Out-of-stock row: dimmed, tinted, no edit affordance. */
                 if (!item.available) {
                   return (
                     <div

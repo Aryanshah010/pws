@@ -12,13 +12,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 
-/**
- * Storekeeper fulfilment queue (US #33, #37, #38).
- *
- * Advancing an order here is what triggers the buyer's push + SMS, so this is
- * the vendor half of the tracking flow. Styling deliberately mirrors
- * AdminPaymentsPage so the admin area stays visually consistent.
- */
+
 const STAGES = ["Placed", "Acknowledged", "Ready", "Collected"];
 
 const NEXT_STAGE = {

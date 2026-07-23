@@ -300,8 +300,6 @@ const ChangePassword = () => {
                 )}
               </button>
 
-              {/* BACK TO LOGIN — a router link, not an anchor: a full page
-                  load here throws away the recovery state this flow holds. */}
               <Link
                 to="/login"
                 className="

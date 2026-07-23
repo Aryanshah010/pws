@@ -13,7 +13,6 @@ export default function LanguageModal() {
     i18n.changeLanguage(langCode);
     setLanguage(langCode);
     setOnboarded(true);
-    // FirstVisitGate will now render the actual page
   };
 
   return (

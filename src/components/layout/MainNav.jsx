@@ -61,9 +61,6 @@ export default function Navbar() {
       loadNotifications();
       showPush(payload.push);
     });
-    // Wholesale decisions land here. The bell is updated first so the buyer
-    // always has something to click; refreshUser then reloads the app on its
-    // own if the decision actually changed what they pay.
     stream.addEventListener("account-updated", (event) => {
       loadNotifications();
       showPush(readPayload(event)?.push);
@@ -202,8 +199,6 @@ export default function Navbar() {
             <button
               onClick={() => {
                 setProfileOpen(false);
-                // First time the bell is used is the right moment to ask for
-                // the OS permission — the buyer has just shown they care.
                 if (user && notificationsEnabled === "pending") {
                   openNotificationPrompt();
                   return;
@@ -295,9 +290,7 @@ export default function Navbar() {
                   Mark all read
                 </button>
               </div>
-              {/* The list is capped and scrolls: twenty notifications ran the
-                  panel off the bottom of the screen and buried the ones that
-                  mattered. */}
+          
               {notifications.length ? (
                 <div className="max-h-96 overflow-y-auto overscroll-contain">
                   {notifications.map((item) => (

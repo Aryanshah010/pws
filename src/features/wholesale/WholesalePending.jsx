@@ -77,14 +77,14 @@ export default function WholesalePending() {
               {user ? "Continue shopping" : "Login"}
             </button>
             {whatsApp && (
-            <a
-              href={`https://wa.me/${whatsApp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)]  font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors flex items-center justify-center"
-            >
-              Contact on WhatsApp
-            </a>
+              <a
+                href={`https://wa.me/${whatsApp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-[278px] h-[60px] bg-[var(--color-surface-lowest)] rounded-[10px] border border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)]  font-semibold text-lg leading-6 hover:bg-[var(--color-surface-categories)] transition-colors flex items-center justify-center"
+              >
+                Contact on WhatsApp
+              </a>
             )}
           </div>
         </div>

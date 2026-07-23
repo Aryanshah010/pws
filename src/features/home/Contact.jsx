@@ -6,7 +6,6 @@ import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function Contact() {
   const navigate = useNavigate();
-  // A signed-in buyer's home is the shop, not the landing page.
   const homePath = useHomePath();
   const [whatsApp, setWhatsApp] = useState("");
 

@@ -22,8 +22,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Registering does not sign you in — the buyer confirms the account
-      // by logging in, and the welcome screen follows that first sign-in.
       const data = await apiRequest("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

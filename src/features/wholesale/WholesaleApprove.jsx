@@ -17,7 +17,6 @@ export default function WholesaleApproved() {
             .filter((product) => product.wholesaleDiscountTiers?.length)
             .slice(0, 5)
             .map((product) => {
-              // The deepest bracket is the headline benefit worth advertising.
               const best = product.wholesaleDiscountTiers.reduce(
                 (deepest, tier) =>
                   tier.discountAmount > deepest.discountAmount ? tier : deepest,

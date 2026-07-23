@@ -118,10 +118,6 @@ function DeleteModal({ product, onConfirm, onCancel }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// Live ProductCard Preview (mirrors HomePage style)
-// ─────────────────────────────────────────────
-
 function ProductCardPreview({ form }) {
   const stockStyle = STOCK_STYLES[form.stock] || STOCK_STYLES["IN STOCK"];
   const isNotify = form.stock === "OUT OF STOCK";
@@ -187,13 +183,21 @@ function ProductCardPreview({ form }) {
   );
 }
 
-
-function PricingTierEditor({ tiers, onChange, retailPrice, maxDiscountPercent }) {
+function PricingTierEditor({
+  tiers,
+  onChange,
+  retailPrice,
+  maxDiscountPercent,
+}) {
   const addTier = () => {
     const last = tiers[tiers.length - 1];
     onChange([
       ...tiers,
-      { minQty: last?.maxQty ? last.maxQty + 1 : 10, maxQty: null, discount: "" },
+      {
+        minQty: last?.maxQty ? last.maxQty + 1 : 10,
+        maxQty: null,
+        discount: "",
+      },
     ]);
   };
 
@@ -218,8 +222,6 @@ function PricingTierEditor({ tiers, onChange, retailPrice, maxDiscountPercent })
         <span />
       </div>
       {tiers.map((tier, idx) => {
-        // A flat discount bites hardest at the bottom of its own bracket, so
-        // that is where its true cost is shown.
         const lineValue = Number(retailPrice) * Number(tier.minQty || 0);
         const percentOff =
           lineValue > 0 && Number(tier.discount) > 0
@@ -287,12 +289,6 @@ function PricingTierEditor({ tiers, onChange, retailPrice, maxDiscountPercent })
   );
 }
 
-/**
- * The revenue a line must keep to clear the store's minimum margin, and the
- * margin a given revenue actually earns. Mirrors requiredRevenue/marginPercent
- * in the backend's config/pricing.js so the drawer refuses exactly what the
- * server would.
- */
 function requiredRevenue(costTotal, minMarginPercent) {
   return costTotal > 0
     ? Math.ceil(costTotal / (1 - minMarginPercent / 100))
@@ -303,13 +299,6 @@ function marginPercent(revenue, cost) {
   return cost > 0 && revenue > 0 ? ((revenue - cost) / revenue) * 100 : null;
 }
 
-/**
- * The headline problem with a saved product's discount table, if it has one.
- *
- * Products stored before these rules existed are not re-validated until someone
- * opens and saves them, so without this a broken table sits in the catalogue
- * unnoticed.
- */
 function ladderWarningFor(product, maxDiscountPercent = 40) {
   const retail = Number(product.retailPrice) || 0;
   if (!retail || product.discountable === false) return "";
@@ -335,15 +324,15 @@ function ladderWarningFor(product, maxDiscountPercent = 40) {
   return "";
 }
 
-/**
- * What each bracket actually earns, judged at its lowest quantity — the point
- * where a flat discount costs the store the most.
- */
 function MarginReadout({ price, cost, tiers, minMarginPercent }) {
   if (!cost || !price) return null;
 
   const rows = [
-    { label: "1 unit, no discount", revenue: Number(price), cost: Number(cost) },
+    {
+      label: "1 unit, no discount",
+      revenue: Number(price),
+      cost: Number(cost),
+    },
     ...tiers
       .filter((tier) => Number(tier.discount) > 0 && Number(tier.minQty) > 0)
       .map((tier) => ({
@@ -366,7 +355,8 @@ function MarginReadout({ price, cost, tiers, minMarginPercent }) {
       <div className="space-y-1">
         {rows.map((row, index) => {
           const percent = marginPercent(row.revenue, row.cost);
-          const below = row.revenue < requiredRevenue(row.cost, minMarginPercent);
+          const below =
+            row.revenue < requiredRevenue(row.cost, minMarginPercent);
           return (
             <div
               key={index}
@@ -400,8 +390,6 @@ function ProductDrawer({
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
 
-  // Re-initialise each time the drawer opens, so an abandoned edit never
-  // leaks into the next product.
   const [initialized, setInitialized] = useState(false);
   if (open && !initialized) {
     setInitialized(true);
@@ -443,10 +431,6 @@ function ProductDrawer({
     handleImageFile(e.dataTransfer.files[0]);
   }, []);
 
-  // Every bracket is judged at its own lowest quantity, because that is where a
-  // flat discount costs the store the most: Rs. 50 off ten sacks is a far
-  // deeper cut than Rs. 50 off forty-nine of them. Checked while it is being
-  // typed rather than on a rejected save.
   const cost = Number(form.costPrice) || 0;
   const retailFloor = requiredRevenue(cost, minMarginPercent);
 
@@ -491,8 +475,6 @@ function ProductDrawer({
           `${label}: Rs. ${discount} off is more than the Rs. ${lineValue} that ${min} of these cost.`,
         );
       } else {
-        // A higher bracket must be worth more, or "add more for the best rate"
-        // walks the buyer towards a smaller discount.
         if (index > 0 && discount <= previousDiscount) {
           messages.push(
             `${label}: Rs. ${discount} off is no better than the Rs. ${previousDiscount} bracket below it.`,
@@ -934,9 +916,9 @@ function ProductDrawer({
                       minMarginPercent={minMarginPercent}
                     />
                     <p className="mt-3 text-xs text-[#707972] leading-relaxed">
-                      Leave empty and wholesale buyers use the table above.
-                      Fill it in to give them a deeper ladder — they order
-                      repeatedly and cost less to serve per rupee.
+                      Leave empty and wholesale buyers use the table above. Fill
+                      it in to give them a deeper ladder — they order repeatedly
+                      and cost less to serve per rupee.
                     </p>
                   </div>
                 </div>
@@ -1041,10 +1023,6 @@ function ProductDrawer({
   );
 }
 
-// ─────────────────────────────────────────────
-// Product Row (Table)
-// ─────────────────────────────────────────────
-
 function ProductRow({ product, onEdit, onDelete }) {
   const stockStyle = STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
 
@@ -1069,9 +1047,7 @@ function ProductRow({ product, onEdit, onDelete }) {
               {product.name}
             </p>
             <p className="text-xs text-[#707972] mt-0.5">{product.id}</p>
-            {/* Catalogue saved before the ladder rules existed can still be
-                sitting here quietly overselling. Flag it so it can be found
-                without opening every product. */}
+
             {product.ladderWarning && (
               <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#ffdad6] px-2 py-0.5 text-[10px] font-bold text-[#ba1a1a]">
                 <AlertTriangle size={10} />
@@ -1147,8 +1123,6 @@ function ProductRow({ product, onEdit, onDelete }) {
   );
 }
 
-
-
 function ProductMobileCard({ product, onEdit, onDelete }) {
   const stockStyle = STOCK_STYLES[product.stock] || STOCK_STYLES["IN STOCK"];
   return (
@@ -1209,7 +1183,6 @@ function ProductMobileCard({ product, onEdit, onDelete }) {
   );
 }
 
-
 export default function AdminProductsPage() {
   const { token } = useStore();
   const [products, setProducts] = useState([]);
@@ -1255,9 +1228,7 @@ export default function AdminProductsPage() {
     ladderWarning: ladderWarningFor(product),
     createdAt: product.createdAt,
   });
-  // The admin list, not the public catalogue: it is the only route that
-  // returns costPrice, and it carries the store's margin floor so the drawer
-  // can flag a losing tier before the save is even attempted.
+
   const loadProducts = async () => {
     try {
       const data = await apiRequest("/products/admin/list", {
@@ -1276,12 +1247,10 @@ export default function AdminProductsPage() {
     loadProducts();
   }, []);
 
-  // ── Stats ─────────────────────────────────
   const totalProducts = products.length;
   const lowStock = products.filter((p) => p.stock === "LOW STOCK").length;
   const outOfStock = products.filter((p) => p.stock === "OUT OF STOCK").length;
 
-  // ── Filtering + Sorting ───────────────────
   const filtered = products
     .filter((p) => {
       const q = search.toLowerCase();
@@ -1302,7 +1271,6 @@ export default function AdminProductsPage() {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-  // ── Handlers ──────────────────────────────
   const openAdd = () => {
     setEditProduct(null);
     setDrawerOpen(true);
@@ -1315,13 +1283,13 @@ export default function AdminProductsPage() {
 
   const toDiscountTiers = (tiers) =>
     (tiers || [])
-      .filter(
-        (tier) => Number(tier.minQty) > 1 && Number(tier.discount) > 0,
-      )
+      .filter((tier) => Number(tier.minQty) > 1 && Number(tier.discount) > 0)
       .map((tier) => ({
         minQuantity: Number(tier.minQty),
         maxQuantity:
-          tier.maxQty == null || tier.maxQty === "" ? null : Number(tier.maxQty),
+          tier.maxQty == null || tier.maxQty === ""
+            ? null
+            : Number(tier.maxQty),
         discountAmount: Number(tier.discount),
       }))
       .sort((a, b) => a.minQuantity - b.minQuantity);
@@ -1358,8 +1326,6 @@ export default function AdminProductsPage() {
       setDrawerOpen(false);
       setEditProduct(null);
     } catch (error) {
-      // The margin floor rejects losing ladders server-side. Swallowing that
-      // left the storekeeper staring at a form that silently refused to save.
       setSaveError(error.message || "Could not save this product");
     }
   };
@@ -1373,16 +1339,13 @@ export default function AdminProductsPage() {
         });
         await loadProducts();
         setDeleteTarget(null);
-      } catch {
-        /* deletion is not applied locally on failure */
-      }
+      } catch {}
     }
   };
 
   return (
     <>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* ── Page Header ─────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#1b1c1a]">Products</h1>
@@ -1399,7 +1362,6 @@ export default function AdminProductsPage() {
           </button>
         </div>
 
-        {/* ── Stat Row ──────────────────────── */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl border border-[#C1C8C1]/40 shadow-sm p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-[#E2EAE3] text-[#1b5e40] flex items-center justify-center">
@@ -1436,7 +1398,6 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
-        {/* ── Filters ───────────────────────── */}
         <div className="bg-white rounded-2xl border border-[#C1C8C1]/40 shadow-sm p-4 flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
@@ -1513,7 +1474,6 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
-        {/* ── Product Table ─────────────────── */}
         <div className="bg-white rounded-2xl border border-[#C1C8C1]/40 shadow-sm overflow-hidden">
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
@@ -1595,7 +1555,6 @@ export default function AdminProductsPage() {
         </p>
       </div>
 
-      {/* ── Drawer ────────────────────────── */}
       <ProductDrawer
         open={drawerOpen}
         editProduct={editProduct}
@@ -1610,7 +1569,6 @@ export default function AdminProductsPage() {
         saveError={saveError}
       />
 
-      {/* ── Delete Modal ──────────────────── */}
       <DeleteModal
         product={deleteTarget}
         onConfirm={handleDelete}

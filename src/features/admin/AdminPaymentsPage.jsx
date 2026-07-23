@@ -50,7 +50,6 @@ function ConfirmModal({
   );
 }
 
-/** Full-size look at the screenshot the buyer uploaded. */
 function ProofLightbox({ proof, onClose }) {
   if (!proof) return null;
   return (
@@ -96,7 +95,6 @@ function ProofLightbox({ proof, onClose }) {
   );
 }
 
-/** The screenshot itself, thumbnailed. Clicking opens it full size. */
 function ProofPreview({ image, transactionId, onOpen }) {
   if (!image && !transactionId) {
     return (
@@ -427,10 +425,7 @@ export default function AdminPaymentsPage() {
         )}
       </div>
 
-      <ProofLightbox
-        proof={proofInView}
-        onClose={() => setProofInView(null)}
-      />
+      <ProofLightbox proof={proofInView} onClose={() => setProofInView(null)} />
     </div>
   );
 }

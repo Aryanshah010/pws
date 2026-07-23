@@ -86,10 +86,6 @@ function Layout2({ children }) {
   );
 }
 
-/**
- * FirstVisitGate: For first-time visitors hitting /login or /register,
- * show the language selection screen first. Once they proceed, show the real page.
- */
 function FirstVisitGate({ children }) {
   const { onboarded } = useStore();
   if (!onboarded)
@@ -101,12 +97,6 @@ function FirstVisitGate({ children }) {
   return children;
 }
 
-/**
- * GuestOnly: the saved session token is read back at store init, so a buyer who
- * signed in earlier lands straight on their homepage instead of the landing or
- * login screen. If the token turns out to be stale, AuthSession clears it and
- * the guest screens become reachable again.
- */
 function GuestOnly({ children }) {
   const { token, user } = useStore();
   if (!token) return children;
@@ -119,8 +109,6 @@ function App() {
   return (
     <Router>
       <AuthSession />
-      {/* Single toast host for the whole app. Without this, every toast()
-          call in the codebase renders nothing at all. */}
       <ToastContainer
         position="top-right"
         autoClose={3500}
@@ -316,14 +304,7 @@ function App() {
             </Layout2>
           }
         />
-        <Route
-          path="/about"
-          element={
-            <Layout>
-              <About />
-            </Layout>
-          }
-        />
+        <Route path="/about" element={<About />} />
         <Route
           path="/contact"
           element={
@@ -333,7 +314,6 @@ function App() {
           }
         />
 
-        {/* ── Admin Routes ─────────────────────── */}
         <Route
           path="/admin"
           element={

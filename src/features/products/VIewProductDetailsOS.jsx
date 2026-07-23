@@ -8,7 +8,6 @@ import { useGoBack } from "../../hooks/useBackNavigation";
 import { tiersFor } from "../../utils/pricing";
 import { ProductCard } from "../home/HomePage";
 
-
 export default function ViewProductDetailOOS() {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState(null);
@@ -74,10 +73,7 @@ export default function ViewProductDetailOOS() {
       <div className="p-8 text-center text-red-500">Product not found.</div>
     );
 
-  // The same table the cart and the order will use. The discount table applies
-  // to every buyer, so what is quoted here is what gets charged.
   const validTiers = tiersFor(product, user?.role);
-  // A bracket takes a flat amount off the line, so the unit price never moves.
   const displayPrice = product.retailPrice;
   const oldPrice = null;
 

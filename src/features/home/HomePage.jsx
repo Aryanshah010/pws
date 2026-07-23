@@ -74,8 +74,6 @@ export function ProductCard({ product }) {
   const [notificationRequested, setNotificationRequested] = useState(false);
   const navigate = useNavigate();
   const isWholesale = user?.role === "verified_wholesale";
-  // Bulk buying earns a flat amount off the line, not a cheaper unit, so the
-  // card shows one price and the discount table explains the rest.
   const displayPrice = product.retailPrice;
   const oldPrice = null;
   const stockText =
@@ -124,8 +122,6 @@ export function ProductCard({ product }) {
         boxShadow: "var(--shadow-level-1)",
         display: "flex",
         flexDirection: "column",
-        // Cap the card so a short result list (e.g. 1 product) can't
-        // stretch the grid track to the full row width.
         width: "100%",
         maxWidth: 299,
       }}
@@ -261,8 +257,6 @@ export default function Home() {
     apiRequest("/products/categories")
       .then((data) => setCategories(data.categories || []))
       .catch(() => {});
-    // Catalogue events are public, but sending the token also lets this page
-    // pick up the restock events addressed to the signed-in buyer.
     const token = localStorage.getItem("pathivara_token");
     const stream = new EventSource(
       `${API_URL}/events${token ? `?token=${encodeURIComponent(token)}` : ""}`,
@@ -444,8 +438,6 @@ export default function Home() {
           <div
             style={{
               display: "grid",
-              // Fixed max (299px, matching the design) instead of 1fr so a
-              // short result list doesn't stretch cards to fill the row.
               gridTemplateColumns: "repeat(auto-fill, minmax(280px, 299px))",
               gap: 32,
             }}
