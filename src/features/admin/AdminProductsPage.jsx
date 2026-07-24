@@ -55,6 +55,7 @@ const STOCK_STYLES = {
 const EMPTY_PRODUCT = {
   name: "",
   price: "",
+  wholesalePrice: "",
   costPrice: "",
   discountable: true,
   wholesaleTiers: [],
@@ -399,6 +400,7 @@ function ProductDrawer({
             ...EMPTY_PRODUCT,
             ...editProduct,
             price: editProduct.price ?? "",
+            wholesalePrice: editProduct.wholesalePrice ?? "",
             costPrice: editProduct.costPrice ?? "",
             discountable: editProduct.discountable !== false,
             oldPrice: editProduct.oldPrice ?? "",
@@ -434,8 +436,8 @@ function ProductDrawer({
   const cost = Number(form.costPrice) || 0;
   const retailFloor = requiredRevenue(cost, minMarginPercent);
 
-  const ladderErrors = (tiers, prefix) => {
-    const retail = Number(form.price);
+  const ladderErrors = (tiers, prefix, basePrice) => {
+    const retail = Number(basePrice || form.price);
     const filled = (tiers || []).filter(
       (tier) => tier.minQty || (tier.discount !== "" && tier.discount !== null),
     );
@@ -506,13 +508,26 @@ function ProductDrawer({
   };
 
   const tierErrors = ladderErrors(form.pricingTiers, "Tier");
-  const wholesaleErrors = ladderErrors(form.wholesaleTiers, "Wholesale tier");
+  const wholesaleErrors = ladderErrors(
+    form.wholesaleTiers,
+    "Wholesale tier",
+    form.wholesalePrice || form.price,
+  );
   const priceError =
     retailFloor && Number(form.price) && Number(form.price) < retailFloor
       ? `Buyer price is below the Rs. ${retailFloor} needed for a ${minMarginPercent}% margin.`
       : "";
+  const wholesalePriceError =
+    retailFloor &&
+    Number(form.wholesalePrice) &&
+    Number(form.wholesalePrice) < retailFloor
+      ? `Wholesale price is below the Rs. ${retailFloor} needed for a ${minMarginPercent}% margin.`
+      : "";
   const blocked =
-    tierErrors.length > 0 || wholesaleErrors.length > 0 || Boolean(priceError);
+    tierErrors.length > 0 ||
+    wholesaleErrors.length > 0 ||
+    Boolean(priceError) ||
+    Boolean(wholesalePriceError);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -520,6 +535,7 @@ function ProductDrawer({
     onSave({
       ...form,
       price: Number(form.price),
+      wholesalePrice: form.wholesalePrice ? Number(form.wholesalePrice) : null,
       costPrice: Number(form.costPrice) || 0,
       oldPrice: form.oldPrice ? Number(form.oldPrice) : null,
       stockQty: Number(form.stockQty),
@@ -699,6 +715,29 @@ function ProductDrawer({
                   className={inputCls}
                 />
               </div>
+            </div>
+
+            {/* WHOLESALE PRICE — base price verified wholesale buyers pay */}
+            <div>
+              <label className={labelCls}>Wholesale Buyer Price (Rs.)</label>
+              <input
+                type="number"
+                min={0}
+                placeholder="Optional — verified wholesale buyers pay this instead"
+                value={form.wholesalePrice}
+                onChange={(e) => field("wholesalePrice", e.target.value)}
+                className={inputCls}
+              />
+              {wholesalePriceError ? (
+                <p className="mt-1.5 text-xs font-semibold text-[#ba1a1a]">
+                  {wholesalePriceError}
+                </p>
+              ) : (
+                <p className="mt-1.5 text-xs text-[#707972]">
+                  Leave blank and wholesale buyers pay the buyer price above.
+                  Bulk discounts apply on top of whichever price they pay.
+                </p>
+              )}
             </div>
 
             {/* COST — never shown to buyers; drives the margin floor */}
@@ -897,7 +936,7 @@ function ProductDrawer({
                           : [{ minQty: "", maxQty: null, discount: "" }]
                       }
                       onChange={(tiers) => field("wholesaleTiers", tiers)}
-                      retailPrice={form.price}
+                      retailPrice={form.wholesalePrice || form.price}
                       maxDiscountPercent={maxDiscountPercent}
                     />
                     {wholesaleErrors.length > 0 && (
@@ -910,7 +949,7 @@ function ProductDrawer({
                       </ul>
                     )}
                     <MarginReadout
-                      price={form.price}
+                      price={form.wholesalePrice || form.price}
                       cost={cost}
                       tiers={form.wholesaleTiers}
                       minMarginPercent={minMarginPercent}
@@ -1202,6 +1241,7 @@ export default function AdminProductsPage() {
     id: product._id,
     name: product.name,
     price: product.retailPrice,
+    wholesalePrice: product.wholesalePrice ?? "",
     oldPrice: product.priceHistory?.[0]?.price,
     description: product.description,
     stock: product.stockStatus?.toUpperCase(),
@@ -1298,6 +1338,8 @@ export default function AdminProductsPage() {
     const body = {
       name: data.name,
       retailPrice: Number(data.price),
+      wholesalePrice:
+        data.wholesalePrice != null ? Number(data.wholesalePrice) : null,
       costPrice: Number(data.costPrice) || 0,
       discountable: data.discountable !== false,
       category: data.category,

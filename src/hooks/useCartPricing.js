@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store/store";
 import { apiRequest, authHeader } from "../services/api";
-import { lineFor, totalsFor } from "../utils/pricing";
+import { lineFor, totalsFor, unitPriceFor } from "../utils/pricing";
 
 export default function useCartPricing() {
   const cart = useStore((state) => state.cart);
@@ -69,6 +69,13 @@ export default function useCartPricing() {
         discount: match.discount,
         final: match.total,
         stockStatus: match.stockStatus,
+        // Once the server quote covers this exact line, trust it for the
+        // discount progress too, so the bar can never disagree with the amount.
+        tiers: match.tiers ?? line.tiers,
+        threshold: match.threshold !== undefined ? match.threshold : line.threshold,
+        unlocked: match.unlocked !== undefined ? match.unlocked : line.unlocked,
+        nextTier: match.nextTier !== undefined ? match.nextTier : line.nextTier,
+        segments: match.segments !== undefined ? match.segments : line.segments,
       };
     });
 
@@ -86,7 +93,7 @@ export default function useCartPricing() {
       ? cart
           .map((item) => {
             const match = quoted.get(String(item.product?._id));
-            const was = item.basePrice ?? item.product?.retailPrice;
+            const was = item.basePrice ?? unitPriceFor(item.product, role);
             if (!match || was == null || match.retailUnitPrice == null)
               return null;
             if (was === match.retailUnitPrice) return null;
@@ -107,5 +114,5 @@ export default function useCartPricing() {
       quoteItems: quote?.items || [],
       priceChanges,
     };
-  }, [cart, localLines, quote]);
+  }, [cart, localLines, quote, role]);
 }

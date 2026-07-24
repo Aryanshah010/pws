@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Hourglass, Info } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
 
 export default function WholesalePending() {
   const { t } = useTranslation();
-  const { user } = useStore();
+  const { user: storeUser, token, refreshUser } = useStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromRegistration = Boolean(location.state?.fromRegistration);
+  const user = location.state?.user || storeUser;
   const details = user?.wholesaleDetails || {};
   const [whatsApp, setWhatsApp] = useState("");
 
@@ -17,6 +20,18 @@ export default function WholesalePending() {
       .then((data) => setWhatsApp(data.settings?.contactWhatsApp || ""))
       .catch(() => setWhatsApp(""));
   }, []);
+
+  useEffect(() => {
+    if (token) refreshUser();
+  }, [token, refreshUser]);
+
+  const handlePrimaryAction = () => {
+    if (fromRegistration) {
+      navigate("/login", { state: { phone: user?.phone || "" } });
+      return;
+    }
+    navigate(token ? "/homepage" : "/login");
+  };
 
   return (
     <div className="min-h-screen bg-color-surface flex items-center justify-center p-4 sm:p-6 md:p-8">
@@ -39,8 +54,10 @@ export default function WholesalePending() {
 
           {/* Shop Info */}
           <div className="text-[var(--color-on-surface-variant)]  text-body-md leading-6 text-center mb-4">
+            <p>Name: {user?.fullName || "—"}</p>
             <p>Shop Name: {details.shopName || "—"}</p>
             <p>Location: {details.shopLocation || "—"}</p>
+            <p>Business Type: {details.businessType || "—"}</p>
             <p>Phone Number: {user?.phone || "—"}</p>
           </div>
 
@@ -72,10 +89,12 @@ export default function WholesalePending() {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full">
             <button
-              onClick={() => navigate(user ? "/homepage" : "/login")}
+              onClick={handlePrimaryAction}
               className="w-full sm:w-[278px] h-[60px] bg-[var(--color-primary-container)] rounded-[10px] shadow-[var(--shadow-level-1)] text-[var(--color-on-primary)]  font-semibold text-lg leading-6 hover:bg-[var(--color-primary)] transition-colors"
             >
-              {user ? "Continue shopping" : "Login"}
+              {fromRegistration || !token
+                ? t("auth.loginButton")
+                : t("wholesale.continueShopping")}
             </button>
             {whatsApp && (
               <a

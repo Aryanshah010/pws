@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
+import { unitPriceFor } from "../../utils/pricing";
 
 function TemplateCard({ title, description, onUse }) {
   const { t } = useTranslation();
@@ -136,7 +137,7 @@ function OrderRow({
 
 export default function MyOrder() {
   const { t } = useTranslation();
-  const { token, loadCart, mergeIntoCart } = useStore();
+  const { token, user, loadCart, mergeIntoCart } = useStore();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [baskets, setBaskets] = useState([]);
@@ -211,13 +212,14 @@ export default function MyOrder() {
     const moved = order.items.filter(
       (item) =>
         item.product?.retailPrice != null &&
-        item.product.retailPrice !== item.priceAtPurchase,
+        unitPriceFor(item.product, user?.role) !== item.priceAtPurchase,
     );
     if (!moved.length) return null;
     const delta = moved.reduce(
       (total, item) =>
         total +
-        (item.product.retailPrice - item.priceAtPurchase) * item.quantity,
+        (unitPriceFor(item.product, user?.role) - item.priceAtPurchase) *
+          item.quantity,
       0,
     );
     if (delta === 0) return null;
@@ -315,12 +317,11 @@ export default function MyOrder() {
           ) : (
             visibleOrders.map((order) => {
               const itemString = order.items
-                .map(
-                  (i) =>
-                    `${i.product?.name || t("orders.removedProduct")} ${i.quantity}${
-                      i.product?.unit || ""
-                    }`,
-                )
+                .map((i) => {
+                  const name = i.product?.name || t("orders.removedProduct");
+                  const unit = i.product?.unit ? ` × ${i.product.unit}` : "";
+                  return `${name} — ${i.quantity}${unit}`;
+                })
                 .join(", ");
               return (
                 <OrderRow

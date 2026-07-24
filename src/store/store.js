@@ -12,12 +12,10 @@ const persistCart = (cart) => {
   return { cart };
 };
 
-const cartLine = (product, quantity, price) => ({
-  product,
-  quantity,
-  price: price ?? unitPriceFor(product),
-  basePrice: product?.retailPrice ?? price ?? 0,
-});
+const cartLine = (product, quantity, price, role) => {
+  const base = price ?? unitPriceFor(product, role);
+  return { product, quantity, price: base, basePrice: base };
+};
 
 export const useStore = create((set, get) => ({
   // State
@@ -88,13 +86,7 @@ export const useStore = create((set, get) => ({
 
     try {
       const data = await apiRequest("/auth/me", { headers: authHeader(token) });
-      const wasWholesale = get().user?.role === "verified_wholesale";
-      const isWholesale = data.user.role === "verified_wholesale";
       get().setUser(data.user, token);
-
-      if (wasWholesale !== isWholesale) {
-        window.location.reload();
-      }
       return data.user;
     } catch {
       get().logout();
@@ -154,28 +146,37 @@ export const useStore = create((set, get) => ({
   },
 
   addToCart: (product, quantity, price) => {
+    const role = get().user?.role;
     set((state) => {
       const existing = state.cart.find(
         (item) => item.product?._id === product._id,
       );
       if (!existing)
-        return persistCart([...state.cart, cartLine(product, quantity, price)]);
+        return persistCart([
+          ...state.cart,
+          cartLine(product, quantity, price, role),
+        ]);
 
       const merged = existing.quantity + quantity;
       return persistCart(
         state.cart.map((item) =>
-          item.product?._id === product._id ? cartLine(product, merged) : item,
+          item.product?._id === product._id
+            ? cartLine(product, merged, undefined, role)
+            : item,
         ),
       );
     });
   },
 
   loadCart: (entries) => {
+    const role = get().user?.role;
     set(() =>
       persistCart(
         entries
           .filter((entry) => entry.product?._id)
-          .map((entry) => cartLine(entry.product, entry.quantity, entry.price)),
+          .map((entry) =>
+            cartLine(entry.product, entry.quantity, entry.price, role),
+          ),
       ),
     );
   },
@@ -184,6 +185,7 @@ export const useStore = create((set, get) => ({
   // so reordering a past order never discards an in-progress basket. Prices are
   // always re-read from the product, never carried over from the old order.
   mergeIntoCart: (entries) => {
+    const role = get().user?.role;
     set((state) => {
       const next = [...state.cart];
       entries
@@ -196,7 +198,7 @@ export const useStore = create((set, get) => ({
             index === -1
               ? entry.quantity
               : next[index].quantity + entry.quantity;
-          const line = cartLine(entry.product, quantity);
+          const line = cartLine(entry.product, quantity, undefined, role);
           if (index === -1) next.push(line);
           else next[index] = line;
         });
@@ -205,12 +207,13 @@ export const useStore = create((set, get) => ({
   },
 
   updateQuantity: (productId, quantity) => {
+    const role = get().user?.role;
     set((state) => {
       if (quantity <= 0) return state;
       return persistCart(
         state.cart.map((item) =>
           item.product?._id === productId
-            ? cartLine(item.product, quantity)
+            ? cartLine(item.product, quantity, undefined, role)
             : item,
         ),
       );

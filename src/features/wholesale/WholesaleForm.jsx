@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MapPin, ChevronDown, Upload, Store, Info } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
@@ -21,7 +21,10 @@ export default function WholesaleForm() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
-  const { token, setUser } = useStore();
+  const location = useLocation();
+  const { token: storeToken, setUser } = useStore();
+  const fromRegistration = Boolean(location.state?.fromRegistration);
+  const activeToken = storeToken || location.state?.token || null;
 
   const [businessTypes, setBusinessTypes] = useState([]);
 
@@ -41,6 +44,10 @@ export default function WholesaleForm() {
     if (e.dataTransfer.files?.[0]) setUploadedFile(e.dataTransfer.files[0]);
   };
 
+  const handleCancel = () => {
+    navigate(fromRegistration ? "/login" : "/homepage");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!shopName || !shopLocation || !businessType) {
@@ -49,19 +56,19 @@ export default function WholesaleForm() {
       return;
     }
 
-    setLoading(true);
-    setError("");
-
-    if (!token) {
+    if (!activeToken) {
       navigate("/login");
       return;
     }
+
+    setLoading(true);
+    setError("");
 
     try {
       const data = await apiRequest("/auth/wholesale-request", {
         method: "PUT",
         headers: {
-          ...authHeader(token),
+          ...authHeader(activeToken),
         },
         body: JSON.stringify({
           shopName,
@@ -71,9 +78,17 @@ export default function WholesaleForm() {
         }),
       });
 
-      setUser(data.user, token);
       toast.success(t("wholesale.submitted"));
-      navigate("/wholesale-pending");
+
+      if (fromRegistration) {
+        navigate("/wholesale-pending", {
+          replace: true,
+          state: { fromRegistration: true, user: data.user },
+        });
+      } else {
+        setUser(data.user, storeToken);
+        navigate("/wholesale-pending", { replace: true });
+      }
     } catch (err) {
       const message = err.message || "Server error. Please try again later.";
       setError(message);
@@ -327,12 +342,15 @@ export default function WholesaleForm() {
 
               {/* Cancel link */}
               <div className="text-center">
-                <Link
-                  to="/login"
+                <button
+                  type="button"
+                  onClick={handleCancel}
                   className="text-[13px] font-semibold text-[var(--color-on-surface-variant)] hover:underline"
                 >
-                  {t("wholesale.cancelReturn")}
-                </Link>
+                  {fromRegistration
+                    ? t("wholesale.cancelReturn")
+                    : t("wholesale.continueShopping")}
+                </button>
               </div>
             </div>
           </div>

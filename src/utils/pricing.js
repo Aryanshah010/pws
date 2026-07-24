@@ -30,13 +30,60 @@ export const normaliseTiers = (tiers) => {
     });
 };
 
+// Folds several tier tables into one ladder where, at every quantity, the buyer
+// gets the best discount any table offers — so wholesale buyers keep the shared
+// default table plus their own extra brackets. Mirrors config/pricing.js on the
+// server, which is the authority at checkout.
+export const combineTiers = (lists) => {
+  const flat = [];
+  (lists || []).forEach((list) =>
+    normaliseTiers(list).forEach((tier) => flat.push(tier)),
+  );
+  if (!flat.length) return [];
+
+  const discountAt = (quantity) =>
+    flat.reduce(
+      (best, tier) =>
+        quantity >= tier.minQuantity &&
+        (tier.maxQuantity == null || quantity <= tier.maxQuantity)
+          ? Math.max(best, tier.discountAmount)
+          : best,
+      0,
+    );
+
+  const points = new Set();
+  flat.forEach((tier) => {
+    points.add(tier.minQuantity);
+    if (tier.maxQuantity != null) points.add(tier.maxQuantity + 1);
+  });
+  const sorted = [...points].sort((a, b) => a - b);
+
+  const brackets = [];
+  sorted.forEach((start, index) => {
+    const discountAmount = discountAt(start);
+    if (discountAmount <= 0) return;
+    const nextPoint = sorted[index + 1];
+    const maxQuantity = nextPoint == null ? null : nextPoint - 1;
+    const previous = brackets[brackets.length - 1];
+    if (
+      previous &&
+      previous.discountAmount === discountAmount &&
+      previous.maxQuantity === start - 1
+    ) {
+      previous.maxQuantity = maxQuantity;
+    } else {
+      brackets.push({ minQuantity: start, maxQuantity, discountAmount });
+    }
+  });
+  return brackets;
+};
+
 export const tiersFor = (product, role) => {
-  if (product?.discountable === false) return [];
-  const table =
-    role === "verified_wholesale" && product?.wholesaleDiscountTiers?.length
-      ? product.wholesaleDiscountTiers
-      : product?.discountTiers;
-  return normaliseTiers(table);
+  if (!product || product.discountable === false) return [];
+  if (role === "verified_wholesale") {
+    return combineTiers([product.discountTiers, product.wholesaleDiscountTiers]);
+  }
+  return normaliseTiers(product.discountTiers);
 };
 
 export const tierAt = (tiers, quantity) =>
@@ -55,14 +102,26 @@ export const lineDiscount = (tiers, quantity, retailPrice) => {
   return Math.min(tier.discountAmount, retailPrice * quantity);
 };
 
-export const unitPriceFor = (product) => Number(product?.retailPrice) || 0;
+export const wholesaleBasePrice = (product) =>
+  product?.wholesalePrice != null && product.wholesalePrice > 0
+    ? product.wholesalePrice
+    : product?.retailPrice;
+
+// The buyer's base unit price before bulk discounts: wholesale buyers get the
+// admin-set wholesale price (falling back to retail when it is not set).
+export const unitPriceFor = (product, role) =>
+  Number(
+    role === "verified_wholesale"
+      ? wholesaleBasePrice(product)
+      : product?.retailPrice,
+  ) || 0;
 
 export const lineFor = (item, role) => {
   const product = item?.product || {};
   const quantity = item?.quantity || 0;
   const tiers = tiersFor(product, role);
 
-  const unitPrice = Number(product.retailPrice ?? item?.price ?? 0);
+  const unitPrice = unitPriceFor(product, role) || Number(item?.price) || 0;
   const subtotal = unitPrice * quantity;
   const discount = lineDiscount(tiers, quantity, unitPrice);
 

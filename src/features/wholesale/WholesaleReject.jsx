@@ -7,10 +7,14 @@ import { apiRequest } from "../../services/api";
 
 export default function WholesaleRejected() {
   const { t } = useTranslation();
-  const { user } = useStore();
+  const { user, token, refreshUser } = useStore();
   const navigate = useNavigate();
   const details = user?.wholesaleDetails || {};
   const [whatsApp, setWhatsApp] = useState("");
+
+  useEffect(() => {
+    if (token) refreshUser();
+  }, [token, refreshUser]);
 
   useEffect(() => {
     apiRequest("/settings")

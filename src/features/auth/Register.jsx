@@ -30,6 +30,17 @@ export default function RegisterPage() {
         body: JSON.stringify({ fullName, phone, password, role }),
       });
       toast.success(data.message || "Account created. Please log in.");
+
+      if (data.user?.role === "bulk/shop" && data.token) {
+        return navigate("/wholesale-form", {
+          state: {
+            fromRegistration: true,
+            token: data.token,
+            user: data.user,
+          },
+        });
+      }
+
       navigate("/login", { state: { phone } });
     } catch (err) {
       const message = err.message || "Failed to connect to server";

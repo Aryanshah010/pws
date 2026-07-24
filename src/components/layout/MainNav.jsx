@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Bell, ShoppingCart, Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,12 @@ import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { API_URL, apiRequest, authHeader } from "../../services/api";
 import { showPush } from "../../utils/push";
+
+const ACCOUNT_STATUS_LINKS = {
+  pending: "/wholesale-pending",
+  approved: "/wholesale-approved",
+  rejected: "/wholesale-rejected",
+};
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,6 +31,24 @@ export default function Navbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const notifBtnRef = useRef(null);
+  const notifPanelRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    if (!notificationsOpen && !profileOpen) return undefined;
+    const handleOutside = (event) => {
+      const insideNotif =
+        (notifBtnRef.current && notifBtnRef.current.contains(event.target)) ||
+        (notifPanelRef.current && notifPanelRef.current.contains(event.target));
+      if (!insideNotif) setNotificationsOpen(false);
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [notificationsOpen, profileOpen]);
   const loadNotifications = async () => {
     if (!user || !localStorage.getItem("pathivara_token")) return;
     try {
@@ -61,14 +85,28 @@ export default function Navbar() {
       loadNotifications();
       showPush(payload.push);
     });
-    stream.addEventListener("account-updated", (event) => {
+    stream.addEventListener("account-updated", async (event) => {
+      const payload = readPayload(event);
+      showPush(payload?.push);
+      await refreshUser();
       loadNotifications();
-      showPush(readPayload(event)?.push);
-      refreshUser();
+
+      if (!payload?.push?.title) return;
+      const link = ACCOUNT_STATUS_LINKS[payload.wholesaleStatus];
+      toast.info(
+        <span className="block">
+          <span className="block font-semibold">{payload.push.title}</span>
+          <span className="block text-sm">{payload.push.body}</span>
+        </span>,
+        {
+          autoClose: 10000,
+          onClick: link ? () => navigate(link) : undefined,
+        },
+      );
     });
 
     return () => stream.close();
-  }, [user]);
+  }, [user?.id]);
 
   const openNotification = async (item) => {
     setNotificationsOpen(false);
@@ -196,6 +234,7 @@ export default function Navbar() {
               {t("nav.trackOrder")}
             </Link>
             <button
+              ref={notifBtnRef}
               onClick={() => {
                 setProfileOpen(false);
                 if (user && notificationsEnabled === "pending") {
@@ -223,7 +262,7 @@ export default function Navbar() {
                 <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-[#BA1A1A]" />
               )}
             </button>
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
                 onClick={() => {
                   setProfileOpen(!profileOpen);
@@ -271,7 +310,10 @@ export default function Navbar() {
           </div>
 
           {notificationsOpen && (
-            <div className="absolute right-4 top-22 z-50 w-80 rounded-xl border border-[#C1C8C1] bg-white p-3 shadow-lg">
+            <div
+              ref={notifPanelRef}
+              className="absolute right-4 top-22 z-50 w-80 rounded-xl border border-[#C1C8C1] bg-white p-3 shadow-lg"
+            >
               <div className="mb-2 flex items-center justify-between">
                 <strong className="text-sm">{t("nav.notifications")}</strong>
                 <button

@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import Spinner from "../../components/common/Spinner";
 import { API_URL, apiRequest, authHeader } from "../../services/api";
+import { unitPriceFor } from "../../utils/pricing";
 
 export const STOCK_COLORS = {
   "In Stock": "var(--color-primary-fixed)",
@@ -92,8 +93,11 @@ export function ProductCard({ product }) {
   const [notificationRequested, setNotificationRequested] = useState(false);
   const navigate = useNavigate();
   const isWholesale = user?.role === "verified_wholesale";
-  const displayPrice = product.retailPrice;
-  const oldPrice = null;
+  const displayPrice = unitPriceFor(product, user?.role);
+  const oldPrice =
+    isWholesale && displayPrice !== product.retailPrice
+      ? product.retailPrice
+      : null;
   const stockText =
     product.stockStatus || (product.stock > 0 ? "In Stock" : "Out of Stock");
   const action =

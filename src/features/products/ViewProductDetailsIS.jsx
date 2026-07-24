@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import { useGoBack } from "../../hooks/useBackNavigation";
-import { tiersFor, tierAt } from "../../utils/pricing";
+import { tiersFor, tierAt, unitPriceFor } from "../../utils/pricing";
 import { ProductCard } from "../home/HomePage";
 
 export default function ViewProductDetailIS() {
@@ -74,8 +74,12 @@ export default function ViewProductDetailIS() {
   const activeTier = tierAt(validTiers, quantity);
   const activeTierIndex = activeTier ? validTiers.indexOf(activeTier) : -1;
 
-  const displayPrice = product.retailPrice;
-  const oldPrice = null;
+  const isWholesale = user?.role === "verified_wholesale";
+  const displayPrice = unitPriceFor(product, user?.role);
+  const oldPrice =
+    isWholesale && displayPrice !== product.retailPrice
+      ? product.retailPrice
+      : null;
 
   const isOutOfStock = product.stock <= 0;
   const stockText =
@@ -196,7 +200,8 @@ export default function ViewProductDetailIS() {
                     <div className="flex items-center border border-outline-variant rounded-default bg-[var(--color-surface-categories)] overflow-hidden">
                       <button
                         onClick={decrementQty}
-                        className="p-3 text-[var(--color-on-surface)] hover:bg-[var(--color-surface-lowest)] transition"
+                        disabled={isOutOfStock}
+                        className="p-3 text-[var(--color-on-surface)] hover:bg-[var(--color-surface-lowest)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       >
                         <svg width="9" height="2" viewBox="0 0 9 2" fill="none">
                           <path
@@ -213,7 +218,8 @@ export default function ViewProductDetailIS() {
                       />
                       <button
                         onClick={incrementQty}
-                        className="p-3 text-[var(--color-on-surface)] hover:bg-[var(--color-surface-lowest)] transition"
+                        disabled={isOutOfStock}
+                        className="p-3 text-[var(--color-on-surface)] hover:bg-[var(--color-surface-lowest)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       >
                         <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                           <path
@@ -287,7 +293,14 @@ export default function ViewProductDetailIS() {
           {/* Right Column */}
           <div className="flex flex-col gap-6">
             {/* Wholesale Pricing Card */}
-            <div className="bg-[var(--color-surface-categories)] rounded-[var(--radius-md)] border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)]">
+            <div
+              aria-hidden={isOutOfStock || undefined}
+              className={`bg-[var(--color-surface-categories)] rounded-[var(--radius-md)] border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)] ${
+                isOutOfStock
+                  ? "pointer-events-none select-none blur-[3px] opacity-60"
+                  : ""
+              }`}
+            >
               <h3 className="font-bold text-[var(--color-on-primary-fixed)] mb-4">
                 {t("product.discountTable")}
               </h3>
@@ -304,7 +317,7 @@ export default function ViewProductDetailIS() {
                     {t("product.retail")}
                   </div>
                   <div className="text-sm font-bold text-[var(--color-on-primary-fixed)]">
-                    Rs. {product.retailPrice}
+                    Rs. {displayPrice}
                   </div>
                   <div className="text-right text-xs text-[var(--color-on-surface-variant)] italic opacity-60">
                     {t("common.none")}
@@ -313,8 +326,7 @@ export default function ViewProductDetailIS() {
 
                 {validTiers.map((tier, index) => {
                   const saving = (
-                    (tier.discountAmount /
-                      (product.retailPrice * tier.minQuantity)) *
+                    (tier.discountAmount / (displayPrice * tier.minQuantity)) *
                     100
                   ).toFixed(1);
                   const isActive = index === activeTierIndex;
@@ -347,7 +359,14 @@ export default function ViewProductDetailIS() {
             </div>
 
             {/* Product Specifications */}
-            <div className="bg-(--color-surface-lowest) rounded-md border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)]">
+            <div
+              aria-hidden={isOutOfStock || undefined}
+              className={`bg-(--color-surface-lowest) rounded-md border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)] ${
+                isOutOfStock
+                  ? "pointer-events-none select-none blur-[3px] opacity-60"
+                  : ""
+              }`}
+            >
               <h3 className="font-bold text-[var(--color-on-primary-fixed)] mb-4">
                 {t("product.specifications")}
               </h3>
@@ -396,46 +415,48 @@ export default function ViewProductDetailIS() {
               </div>
             </div>
 
-            {/* 30-Day Price Trend */}
-            <div className="bg-[var(--color-surface-lowest)] rounded-[var(--radius-md)] border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-[var(--color-on-primary-fixed)]">
-                  30-Day Trend
-                </h3>
-                <div className="inline-block px-2.5 py-1 bg-[var(--color-primary-fixed)] rounded-full">
-                  <span className="text-xs font-bold text-[var(--color-on-primary-fixed)]">
-                    {trendPercent > 0 ? "+" : ""}
-                    {trendPercent.toFixed(1)}%
-                  </span>
+            {/* 30-Day Price Trend — hidden while out of stock */}
+            {!isOutOfStock && (
+              <div className="bg-[var(--color-surface-lowest)] rounded-[var(--radius-md)] border border-[var(--color-outline-variant)]/30 p-6 shadow-[var(--shadow-level-1)]">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-[var(--color-on-primary-fixed)]">
+                    30-Day Trend
+                  </h3>
+                  <div className="inline-block px-2.5 py-1 bg-[var(--color-primary-fixed)] rounded-full">
+                    <span className="text-xs font-bold text-[var(--color-on-primary-fixed)]">
+                      {trendPercent > 0 ? "+" : ""}
+                      {trendPercent.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bar Chart */}
+                <div className="flex items-end justify-center gap-1 h-24 py-4 px-2">
+                  {pricePoints.map((price, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 rounded-t-sm"
+                      style={{
+                        height: `${Math.max((price / maxPrice) * 100, 8)}%`,
+                        backgroundColor:
+                          i < pricePoints.length - 4
+                            ? "rgba(0, 69, 43, 0.2)"
+                            : i < pricePoints.length - 1
+                              ? "rgba(0, 69, 43, 0.6)"
+                              : "var(--color-primary)",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-start text-xs text-[var(--color-on-surface-variant)]">
+                  <div>30d ago</div>
+                  <div className="font-bold text-[var(--color-on-primary-fixed)]">
+                    Today (Rs. {latestPrice})
+                  </div>
                 </div>
               </div>
-
-              {/* Bar Chart */}
-              <div className="flex items-end justify-center gap-1 h-24 py-4 px-2">
-                {pricePoints.map((price, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-t-sm"
-                    style={{
-                      height: `${Math.max((price / maxPrice) * 100, 8)}%`,
-                      backgroundColor:
-                        i < pricePoints.length - 4
-                          ? "rgba(0, 69, 43, 0.2)"
-                          : i < pricePoints.length - 1
-                            ? "rgba(0, 69, 43, 0.6)"
-                            : "var(--color-primary)",
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="flex justify-between items-start text-xs text-[var(--color-on-surface-variant)]">
-                <div>30d ago</div>
-                <div className="font-bold text-[var(--color-on-primary-fixed)]">
-                  Today (Rs. {latestPrice})
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

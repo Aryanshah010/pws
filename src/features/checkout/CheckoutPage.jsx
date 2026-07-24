@@ -38,6 +38,34 @@ export default function Checkout() {
 
   const [timeSlots, setTimeSlots] = useState([]);
 
+  // Per-order contact override — defaults to the account, but the buyer can be
+  // reached on a different name/number for this order without changing it.
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactOverride, setContactOverride] = useState(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftPhone, setDraftPhone] = useState("");
+  const [contactError, setContactError] = useState("");
+
+  const contactName = contactOverride?.name ?? (user?.fullName || "");
+  const contactPhone = contactOverride?.phone ?? (user?.phone || "");
+
+  const openContactEdit = () => {
+    setDraftName(contactName);
+    setDraftPhone(contactPhone);
+    setContactError("");
+    setEditingContact(true);
+  };
+
+  const saveContact = () => {
+    const phone = draftPhone.trim();
+    if (!/^\d{10}$/.test(phone)) {
+      setContactError(t("checkout.invalidPhone"));
+      return;
+    }
+    setContactOverride({ name: draftName.trim(), phone });
+    setEditingContact(false);
+  };
+
   useEffect(() => {
     apiRequest("/settings")
       .then((data) => {
@@ -72,6 +100,8 @@ export default function Checkout() {
           paymentMethod:
             payment === "digital" ? "Digital QR Transfer" : "Pay at Pickup",
           notes,
+          contactName,
+          contactPhone,
         }),
       });
       setCheckoutOrder(data.order);
@@ -114,18 +144,74 @@ export default function Checkout() {
                   {t("checkout.contactDetails")}
                 </h2>
               </div>
-              <button className="text-[13px] font-semibold text-[#3F81EA] transition-opacity hover:opacity-80">
-                {t("checkout.edit")}
-              </button>
+              {!editingContact && (
+                <button
+                  onClick={openContactEdit}
+                  className="text-[13px] font-semibold text-[#3F81EA] transition-opacity hover:opacity-80"
+                >
+                  {t("checkout.edit")}
+                </button>
+              )}
             </div>
-            <div className="flex flex-col items-start gap-1">
-              <p className="text-base font-semibold text-on-surface">
-                {user?.fullName || "Guest"}
-              </p>
-              <p className="text-base text-on-surface-variant">
-                {user?.phone || "No Phone"}
-              </p>
-            </div>
+
+            {editingContact ? (
+              <div className="flex w-full flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-on-surface-variant">
+                    {t("checkout.contactNameLabel")}
+                  </label>
+                  <input
+                    type="text"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    className="h-11 w-full rounded-[8px] border border-outline-border bg-[#F4FBF4] px-3.5 text-base text-on-surface outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-on-surface-variant">
+                    {t("checkout.contactPhoneLabel")}
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={draftPhone}
+                    onChange={(e) =>
+                      setDraftPhone(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                    className="h-11 w-full rounded-[8px] border border-outline-border bg-[#F4FBF4] px-3.5 text-base text-on-surface outline-none focus:border-primary"
+                  />
+                  {contactError && (
+                    <p className="text-[13px] text-red-500">{contactError}</p>
+                  )}
+                </div>
+                <p className="text-[13px] text-on-surface-variant">
+                  {t("checkout.contactHint")}
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={saveContact}
+                    className="rounded-[8px] bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    {t("checkout.save")}
+                  </button>
+                  <button
+                    onClick={() => setEditingContact(false)}
+                    className="rounded-[8px] border border-outline-border px-4 py-2 text-[13px] font-semibold text-on-surface-variant transition-colors hover:bg-surface-low"
+                  >
+                    {t("checkout.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start gap-1">
+                <p className="text-base font-semibold text-on-surface">
+                  {contactName || "Guest"}
+                </p>
+                <p className="text-base text-on-surface-variant">
+                  {contactPhone || "No Phone"}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Pickup Time Slot */}

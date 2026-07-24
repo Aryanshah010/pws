@@ -4,31 +4,33 @@ import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
+import { wholesaleBasePrice } from "../../utils/pricing";
 
 export default function WholesaleApproved() {
   const { t } = useTranslation();
-  const { user } = useStore();
+  const { user, token, refreshUser } = useStore();
   const details = user?.wholesaleDetails || {};
   const [priceRows, setPriceRows] = useState([]);
+
+  useEffect(() => {
+    if (token) refreshUser();
+  }, [token, refreshUser]);
 
   useEffect(() => {
     apiRequest("/products")
       .then((data) =>
         setPriceRows(
           (data.products || [])
-            .filter((product) => product.wholesaleDiscountTiers?.length)
+            .filter(
+              (product) =>
+                wholesaleBasePrice(product) !== product.retailPrice,
+            )
             .slice(0, 5)
-            .map((product) => {
-              const best = product.wholesaleDiscountTiers.reduce(
-                (deepest, tier) =>
-                  tier.discountAmount > deepest.discountAmount ? tier : deepest,
-              );
-              return {
-                product: product.name,
-                regular: `Rs.${product.retailPrice}`,
-                wholesale: `Rs.${best.discountAmount} off ${best.minQuantity}+`,
-              };
-            }),
+            .map((product) => ({
+              product: product.name,
+              regular: `Rs.${product.retailPrice}`,
+              wholesale: `Rs.${wholesaleBasePrice(product)}`,
+            })),
         ),
       )
       .catch(() => setPriceRows([]));
@@ -49,9 +51,13 @@ export default function WholesaleApproved() {
 
         {/* Info */}
         <p className="text-center text-body-md leading-6 text-[var(--color-on-surface-variant)] mb-3">
+          Name: {user?.fullName || "—"}
+          <br />
           Shop Name: {details.shopName || "—"}
           <br />
           Location: {details.shopLocation || "—"}
+          <br />
+          Business Type: {details.businessType || "—"}
           <br />
           Phone Number: {user?.phone || "—"}
         </p>

@@ -4,6 +4,7 @@ import { apiRequest, authHeader } from "../../services/api";
 import { Search, ChevronDown, Users } from "lucide-react";
 
 const ROLE_LABELS = {
+  admin: { label: "Storekeeper", color: "bg-[#1b5e40] text-white" },
   wholesale: { label: "Wholesale", color: "bg-[#ffdcbc] text-[#895100]" },
   regular: { label: "Regular", color: "bg-[#E2EAE3] text-[#404943]" },
   pending_wholesale: {
@@ -58,11 +59,13 @@ export default function AdminUsersPage() {
             phone: user.phone,
             location: user.wholesaleDetails?.shopLocation || "—",
             role:
-              user.role === "verified_wholesale"
-                ? "wholesale"
-                : user.role === "pending_wholesale"
-                  ? "pending_wholesale"
-                  : "regular",
+              user.role === "admin"
+                ? "admin"
+                : user.role === "verified_wholesale"
+                  ? "wholesale"
+                  : user.role === "pending_wholesale"
+                    ? "pending_wholesale"
+                    : "regular",
             status:
               user.wholesaleStatus === "pending"
                 ? "pending_wholesale"

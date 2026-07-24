@@ -87,7 +87,7 @@ function OrderSummary({ subtotal, discount, tax, total, onCheckout }) {
   );
 }
 
-function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
+function CartItemRow({ line, onIncrement, onDecrement, onSetQuantity, onRemove }) {
   const { t } = useTranslation();
   const {
     productId,
@@ -103,6 +103,12 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
     segments,
   } = line;
   const remaining = threshold == null ? 0 : threshold - quantity;
+
+  const commitQuantity = (input) => {
+    const parsed = parseInt(input.value, 10);
+    if (Number.isFinite(parsed) && parsed >= 1) onSetQuantity(productId, parsed);
+    else input.value = String(quantity);
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 border-b border-[#C1C8C1] p-6 last:border-b-0 sm:grid-cols-12 sm:items-start">
@@ -121,7 +127,21 @@ function CartItemRow({ line, onIncrement, onDecrement, onRemove }) {
             <Minus className="h-[11px] w-[11px] text-[#1B1C1A]" />
           </button>
           <div className="flex items-center gap-1 rounded border border-[#C1C8C1] bg-white px-3 py-1">
-            <span className="text-base text-[#1B1C1A]">{quantity}</span>
+            <input
+              key={quantity}
+              type="text"
+              inputMode="numeric"
+              defaultValue={quantity}
+              aria-label={`${productName} quantity`}
+              onChange={(e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, "");
+              }}
+              onBlur={(e) => commitQuantity(e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+              className="w-10 bg-transparent text-center text-base text-[#1B1C1A] outline-none"
+            />
             <span className="text-base text-[#404943]">({unit})</span>
           </div>
           <button
@@ -237,7 +257,7 @@ export default function CartPage() {
           <p className="text-on-surface-variant">{t("cart.emptyHint")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
           {/* Main Cart Items Card */}
           <div className="overflow-hidden rounded-md border border-[#C1C8C1] bg-white shadow-[0_1px_3px_1px_rgba(27,28,26,0.06)] lg:col-span-8">
             {priceChanges.map((change) => (
@@ -277,6 +297,7 @@ export default function CartPage() {
                 line={line}
                 onIncrement={increment}
                 onDecrement={decrement}
+                onSetQuantity={updateQuantity}
                 onRemove={(id) => removeItem(id, line.name)}
               />
             ))}

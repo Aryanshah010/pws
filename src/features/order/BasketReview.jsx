@@ -100,7 +100,8 @@ const BasketReview = () => {
     priceChangedCount: items.filter((item) => item.priceDelta !== 0).length,
     outOfStockCount: items.length - availableItems.length,
     estimatedTotal: availableItems.reduce(
-      (total, item) => total + item.unitPrice * item.quantity,
+      (total, item) =>
+        total + (item.lineTotal ?? item.unitPrice * item.quantity),
       0,
     ),
   };

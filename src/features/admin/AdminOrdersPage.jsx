@@ -144,6 +144,14 @@ function OrderCard({ order, busy, onAdvance }) {
                   <Phone size={10} />
                   {order.customerPhone}
                 </p>
+                {order.contactPhone && (
+                  <p className="text-xs font-semibold text-[#1b5e40] flex items-center gap-1 mt-0.5">
+                    <Phone size={10} />
+                    {order.contactPhone}
+                    {order.contactName ? ` · ${order.contactName}` : ""} (this
+                    order)
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-[#707972]">
@@ -250,6 +258,11 @@ export default function AdminOrdersPage() {
           placedOn: new Date(order.createdAt).toLocaleString(),
           customerName: order.user?.fullName || "Buyer",
           customerPhone: order.user?.phone || "—",
+          contactName: order.contactName || "",
+          contactPhone:
+            order.contactPhone && order.contactPhone !== order.user?.phone
+              ? order.contactPhone
+              : "",
           items: order.items.map(
             (item) =>
               `${item.product?.name || "Product"} x${item.quantity}${
