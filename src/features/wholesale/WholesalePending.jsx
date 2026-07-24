@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Hourglass, Info } from "lucide-react";
+import { Hourglass, Info, ArrowLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
+import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function WholesalePending() {
   const { t } = useTranslation();
   const { user: storeUser, token, refreshUser } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const homePath = useHomePath();
   const fromRegistration = Boolean(location.state?.fromRegistration);
   const user = location.state?.user || storeUser;
   const details = user?.wholesaleDetails || {};
@@ -34,7 +36,15 @@ export default function WholesalePending() {
   };
 
   return (
-    <div className="min-h-screen bg-color-surface flex items-center justify-center p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-color-surface flex flex-col p-4 sm:p-6 md:p-8">
+      <button
+        onClick={() => navigate(homePath)}
+        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-6 transition-colors w-fit"
+      >
+        <ArrowLeft size={16} />
+        {t("common.backToHome")}
+      </button>
+      <div className="flex flex-1 items-center justify-center">
       <div className="w-full max-w-168 bg-(--color-surface-lowest) rounded-md border border-outline-border shadow-(--shadow-level-2) overflow-hidden">
         <div className="flex flex-col items-center px-6 py-10 sm:px-10 sm:py-10 gap-0">
           {/* Icon */}
@@ -108,6 +118,7 @@ export default function WholesalePending() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

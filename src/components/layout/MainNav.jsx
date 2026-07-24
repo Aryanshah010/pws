@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, Bell, ShoppingCart, Menu, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
+import SearchDropdown from "../common/SearchDropdown";
 import { useStore } from "../../store/store";
 import { API_URL, apiRequest, authHeader } from "../../services/api";
 import { showPush } from "../../utils/push";
@@ -31,9 +32,14 @@ export default function Navbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [previewProducts, setPreviewProducts] = useState([]);
+  const [aliasMatch, setAliasMatch] = useState(null);
+  const [previewTotalCount, setPreviewTotalCount] = useState(0);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const notifBtnRef = useRef(null);
   const notifPanelRef = useRef(null);
   const profileRef = useRef(null);
+  const searchContainerRef = useRef(null);
 
   useEffect(() => {
     if (!notificationsOpen && !profileOpen) return undefined;
@@ -45,10 +51,52 @@ export default function Navbar() {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
       }
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target)
+      ) {
+        setSearchDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
-  }, [notificationsOpen, profileOpen]);
+  }, [notificationsOpen, profileOpen, searchDropdownOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!catalogSearch.trim()) {
+      setPreviewProducts([]);
+      setAliasMatch(null);
+      setPreviewTotalCount(0);
+      setSearchDropdownOpen(false);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const data = await apiRequest(
+          `/products/search-preview?q=${encodeURIComponent(catalogSearch.trim())}`
+        );
+        setPreviewProducts(data.products || []);
+        setAliasMatch(data.aliasMatch || null);
+        setPreviewTotalCount(data.totalCount || 0);
+        setSearchDropdownOpen(true);
+      } catch (err) {
+        console.error("Failed to fetch search preview", err);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [catalogSearch]);
   const loadNotifications = async () => {
     if (!user || !localStorage.getItem("pathivara_token")) return;
     try {
@@ -200,7 +248,10 @@ export default function Navbar() {
           </Link>
 
           {/* Search Bar - grows in the middle */}
-          <div className="flex-1 max-w-[592px] mx-auto hidden md:block">
+          <div
+            className="flex-1 max-w-[592px] mx-auto hidden md:block"
+            ref={searchContainerRef}
+          >
             <div className="relative">
               <Search
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717973]"
@@ -211,8 +262,28 @@ export default function Navbar() {
                 placeholder={t("nav.searchPlaceholder")}
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
+                onFocus={() => {
+                  if (catalogSearch.trim()) setSearchDropdownOpen(true);
+                }}
                 className="w-full pl-11 pr-4 py-2.5 bg-[#E2EAE3] rounded-full text-sm text-[#1D1B20] placeholder:text-[#6B7280] font-[Montserrat] font-normal focus:outline-none focus:ring-2 focus:ring-[#1B5E40]/30"
               />
+              {searchDropdownOpen && previewProducts.length > 0 && (
+                <SearchDropdown
+                  query={catalogSearch}
+                  products={previewProducts}
+                  aliasMatch={aliasMatch}
+                  totalCount={previewTotalCount}
+                  onSelectProduct={(productId) => {
+                    setSearchDropdownOpen(false);
+                    navigate(`/view-product?id=${productId}`);
+                  }}
+                  onViewAll={() => {
+                    setSearchDropdownOpen(false);
+                    // Search term handles the navigation correctly in home page
+                    navigate("/homepage");
+                  }}
+                />
+              )}
             </div>
           </div>
 
@@ -284,26 +355,116 @@ export default function Navbar() {
                 </svg>
               </button>
               {profileOpen && (
-                <div className="absolute right-0 mt-4 z-50 w-56 rounded-xl border border-[#C1C8C1] bg-white p-4 shadow-lg">
-                  <div className="mb-3 border-b border-[#E2EAE3] pb-3 flex flex-col gap-1">
-                    <p className="text-sm font-bold text-[#1B1C1A]">
-                      {user?.fullName || t("nav.userProfile")}
-                    </p>
-                    {user?.role === "verified_wholesale" && (
-                      <span className="inline-block rounded-full bg-[#c6e9d2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1B5E40] w-max">
-                        {t("nav.verifiedBulkBuyer")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      to="/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="text-sm font-medium text-[#414943] hover:text-[#1B5E40] transition-colors"
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    marginTop: 16,
+                    zIndex: 50,
+                    width: 260,
+                    borderRadius: 16,
+                    border: "1px solid #E2EAE3",
+                    background: "#FAFAF8",
+                    padding: 16,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                  }}
+                >
+                  {/* Verified wholesale badge — only shown for verified_wholesale */}
+                  {user?.role === "verified_wholesale" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        background: "#EAF4ED",
+                        borderRadius: 12,
+                        padding: "10px 14px",
+                        border: "1px solid #C6E9D2",
+                      }}
                     >
-                      {t("nav.editProfile")}
-                    </Link>
-                  </div>
+                      {/* Checkmark badge */}
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          background: "#1B5E40",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
+                            fill="white"
+                          />
+                        </svg>
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#1B5E40",
+                          fontFamily: "Montserrat, sans-serif",
+                        }}
+                      >
+                        Verified wholesale buyer
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Edit Profile button */}
+                  <Link
+                    to="/profile"
+                    onClick={() => setProfileOpen(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      background: "#1B5E40",
+                      color: "#FFFFFF",
+                      borderRadius: 10,
+                      padding: "13px 20px",
+                      fontFamily: "Montserrat, sans-serif",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      textDecoration: "none",
+                      transition: "background 0.18s ease",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#154d34")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "#1B5E40")
+                    }
+                  >
+                    {t("nav.editProfile")}
+                    {/* Pencil icon */}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </Link>
                 </div>
               )}
             </div>

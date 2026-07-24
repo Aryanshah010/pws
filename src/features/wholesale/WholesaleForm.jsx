@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MapPin, ChevronDown, Upload, Store, Info } from "lucide-react";
+import { MapPin, ChevronDown, Upload, Store, Info, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
+import { useHomePath } from "../../hooks/useBackNavigation";
 import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
 
@@ -103,6 +104,13 @@ export default function WholesaleForm() {
       <main className="max-w-288.75 mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
         {/* Page Header */}
         <div className="mb-8">
+          <button
+            onClick={() => navigate(homePath)}
+            className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-2 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            {t("common.backToHome")}
+          </button>
           <h1 className="text-headline-md sm:text-headline-lg font-bold text-primary-container leading-tight">
             {t("wholesale.requestTitle")}
           </h1>

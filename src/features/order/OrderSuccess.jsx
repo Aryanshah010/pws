@@ -1,19 +1,29 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, Download, MessageSquare, Truck } from "lucide-react";
+import { CheckCircle2, Download, MessageSquare, Truck, ArrowLeft } from "lucide-react";
 import { useStore } from "../../store/store";
 import { downloadReceipt } from "../../utils/pdfGenerator";
+import { useHomePath } from "../../hooks/useBackNavigation";
 
 export default function OrderSuccess() {
   const { t } = useTranslation();
   const { checkoutOrder, user } = useStore();
   const navigate = useNavigate();
+  const homePath = useHomePath();
   const orderId = checkoutOrder
     ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
     : "—";
   const isDigital = checkoutOrder?.paymentMethod === "Digital QR Transfer";
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-12 sm:py-20 bg-[var(--color-background)]">
+    <div className="flex flex-1 flex-col px-4 py-12 sm:py-20 bg-[var(--color-background)]">
+      <button
+        onClick={() => navigate(homePath)}
+        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-6 transition-colors w-fit"
+      >
+        <ArrowLeft size={16} />
+        {t("common.backToHome")}
+      </button>
+      <div className="flex flex-1 items-center justify-center">
       <div className="flex w-full max-w-[860px] min-h-[522px] flex-col items-center justify-center gap-6 rounded-md border border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] px-8 py-10 text-center shadow-[var(--shadow-level-1)]">
         {/* Success Icon */}
         <div className="flex w-24 h-24 shrink-0 items-center justify-center rounded-full border border-[var(--color-outline-variant)] bg-[#F4FBF4] mb-2 text-[var(--color-primary)]">
@@ -102,6 +112,7 @@ export default function OrderSuccess() {
             {t("orderSuccess.trackOrder")}
           </Link>
         </div>
+      </div>
       </div>
     </div>
   );

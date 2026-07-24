@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Circle, Info, Mail, Bell } from "lucide-react";
+import { CheckCircle2, Circle, Info, Mail, Bell, ArrowLeft } from "lucide-react";
+import { useHomePath } from "../../hooks/useBackNavigation";
+import { useNavigate } from "react-router-dom";
 import { useStore } from "../../store/store";
 import { API_URL, apiRequest, authHeader } from "../../services/api";
 
@@ -10,6 +12,8 @@ const steps = ["Placed", "Acknowledged", "Ready", "Collected"];
 export default function TrackOrder() {
   const { t } = useTranslation();
   const { token, checkoutOrder } = useStore();
+  const navigate = useNavigate();
+  const homePath = useHomePath();
   const [order, setOrder] = useState(checkoutOrder);
   const [loading, setLoading] = useState(!checkoutOrder);
 
@@ -55,6 +59,13 @@ export default function TrackOrder() {
     <main className="w-full bg-[var(--color-background)] font-sans text-[var(--color-on-background)] min-h-[calc(100vh-140px)] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-288.75 mx-auto">
         <div className="mb-8">
+          <button
+            onClick={() => navigate(homePath)}
+            className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-2 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            {t("common.backToHome")}
+          </button>
           <h1 className="text-[24px] font-semibold text-[#00452B]">
             {t("track.title")}
           </h1>

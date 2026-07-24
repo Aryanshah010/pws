@@ -250,8 +250,10 @@ export default function Home() {
   const [error, setError] = useState("");
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [unit, setUnit] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [stockFilter, setStockFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
+  const [priceOrder, setPriceOrder] = useState("");
   const { catalogSearch } = useStore();
 
   const loadProducts = useCallback(async () => {
@@ -261,7 +263,6 @@ export default function Home() {
       const params = new URLSearchParams();
       if (catalogSearch.trim()) params.set("search", catalogSearch.trim());
       if (selectedCategory !== "All") params.set("category", selectedCategory);
-      if (unit.trim()) params.set("unit", unit.trim());
       const data = await apiRequest(
         `/products${params.size ? `?${params}` : ""}`,
       );
@@ -271,7 +272,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [catalogSearch, selectedCategory, unit]);
+  }, [catalogSearch, selectedCategory]);
 
   useEffect(() => {
     loadProducts();
@@ -290,8 +291,44 @@ export default function Home() {
 
   const resetFilters = () => {
     setSelectedCategory("All");
-    setUnit("");
+    setStockFilter("");
+    setSortOrder("");
+    setPriceOrder("");
   };
+
+  // Derive the displayed products by applying frontend filters/sorting
+  const displayedProducts = (() => {
+    let list = [...products];
+
+    // Stock filter
+    if (stockFilter) {
+      list = list.filter((p) => {
+        const status =
+          p.stockStatus || (p.stock > 0 ? "In Stock" : "Out of Stock");
+        return status === stockFilter;
+      });
+    }
+
+    // Sort by name
+    if (sortOrder === "A to Z") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOrder === "Z to A") {
+      list.sort((a, b) => b.name.localeCompare(a.name));
+    }
+
+    // Sort by price (price sort takes precedence over name sort when set)
+    if (priceOrder === "High to Low") {
+      list.sort((a, b) => (b.retailPrice ?? 0) - (a.retailPrice ?? 0));
+    } else if (priceOrder === "Low to High") {
+      list.sort((a, b) => (a.retailPrice ?? 0) - (b.retailPrice ?? 0));
+    }
+
+    return list;
+  })();
+
+  const activeFilterCount = [stockFilter, sortOrder, priceOrder].filter(
+    Boolean,
+  ).length;
 
   const heading = catalogSearch.trim()
     ? t("home.resultsFor", { query: catalogSearch.trim() })
@@ -426,45 +463,205 @@ export default function Home() {
             <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700 }}>
               {heading}
             </h1>
-            <button
-              type="button"
-              onClick={() => setFilterOpen((open) => !open)}
-              style={{
-                border: 0,
-                background: "transparent",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                color: "#414943",
-                fontSize: 16,
-                fontWeight: 400,
-              }}
-            >
-              {t("home.filter")}
-              <ChevronDown size={16} />
-            </button>
-          </div>
-          {filterOpen && (
-            <div className="mb-8 flex items-center gap-3 rounded-[var(--radius-default)] border border-[var(--color-outline-variant)] bg-[var(--color-surface-lowest)] p-4">
-              <label className="text-sm font-semibold">
-                {t("home.unitSize")}
-              </label>
-              <input
-                value={unit}
-                onChange={(event) => setUnit(event.target.value)}
-                placeholder={t("home.unitPlaceholder")}
-                className="rounded border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] px-3 py-2 text-sm outline-none"
-              />
+            <div style={{ position: "relative" }}>
               <button
                 type="button"
-                onClick={() => setUnit("")}
-                className="text-sm font-semibold text-[var(--color-primary)]"
+                onClick={() => setFilterOpen((open) => !open)}
+                style={{
+                  border: 0,
+                  background: "transparent",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color: "#414943",
+                  fontSize: 16,
+                  fontWeight: 400,
+                }}
               >
-                {t("home.clear")}
+                {t("home.filter")}
+                {activeFilterCount > 0 && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      background: "var(--color-primary)",
+                      color: "var(--color-on-primary)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {activeFilterCount}
+                  </span>
+                )}
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transition: "transform 0.2s",
+                    transform: filterOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
               </button>
+
+              {filterOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 10px)",
+                    right: 0,
+                    zIndex: 100,
+                    background: "#FAFAF8",
+                    border: "1px solid var(--color-outline-variant)",
+                    borderRadius: 12,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                    padding: "20px 24px",
+                    minWidth: 200,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  {/* Stock */}
+                  <p
+                    style={{
+                      margin: "0 0 8px",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Stock
+                  </p>
+                  {["In Stock", "Low Stock", "Out of Stock"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setStockFilter((prev) => (prev === opt ? "" : opt));
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        fontSize: 14,
+                        fontWeight: stockFilter === opt ? 700 : 400,
+                        color:
+                          stockFilter === opt
+                            ? "var(--color-primary)"
+                            : "inherit",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+
+                  {/* Sort */}
+                  <p
+                    style={{
+                      margin: "16px 0 8px",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Sort
+                  </p>
+                  {["A to Z", "Z to A"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setSortOrder((prev) => (prev === opt ? "" : opt));
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        fontSize: 14,
+                        fontWeight: sortOrder === opt ? 700 : 400,
+                        color:
+                          sortOrder === opt
+                            ? "var(--color-primary)"
+                            : "inherit",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+
+                  {/* Price */}
+                  <p
+                    style={{
+                      margin: "16px 0 8px",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Price
+                  </p>
+                  {["High to Low", "Low to High"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setPriceOrder((prev) => (prev === opt ? "" : opt));
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        fontSize: 14,
+                        fontWeight: priceOrder === opt ? 700 : 400,
+                        color:
+                          priceOrder === opt
+                            ? "var(--color-primary)"
+                            : "inherit",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStockFilter("");
+                        setSortOrder("");
+                        setPriceOrder("");
+                        setFilterOpen(false);
+                      }}
+                      style={{
+                        marginTop: 16,
+                        background: "none",
+                        border: "1px solid var(--color-outline-variant)",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--color-primary)",
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
           <div
             style={{
               display: "grid",
@@ -476,10 +673,10 @@ export default function Home() {
               <div>{t("home.loadingProducts")}</div>
             ) : error ? (
               <div className="text-red-700">{error}</div>
-            ) : products.length === 0 ? (
+            ) : displayedProducts.length === 0 ? (
               <div>{t("home.noProducts")}</div>
             ) : (
-              products.map((product) => (
+              displayedProducts.map((product) => (
                 <ProductCard key={product._id} product={product} />
               ))
             )}

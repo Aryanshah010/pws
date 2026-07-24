@@ -5,12 +5,14 @@ import {
   TrendingUp,
   ArrowRight,
   MessageSquareWarning,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 import { apiRequest, authHeader } from "../../services/api";
 import { unitPriceFor } from "../../utils/pricing";
+import { useHomePath } from "../../hooks/useBackNavigation";
 
 function TemplateCard({ title, description, onUse }) {
   const { t } = useTranslation();
@@ -139,6 +141,7 @@ export default function MyOrder() {
   const { t } = useTranslation();
   const { token, user, loadCart, mergeIntoCart } = useStore();
   const navigate = useNavigate();
+  const homePath = useHomePath();
   const [orders, setOrders] = useState([]);
   const [baskets, setBaskets] = useState([]);
   const [complaints, setComplaints] = useState([]);
@@ -232,9 +235,18 @@ export default function MyOrder() {
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-6 py-8 sm:px-10 font-sans bg-[var(--color-background)] text-[var(--color-on-background)]">
       <div className="flex items-center justify-between">
-        <h1 className="text-[32px] font-(--text-headline-lg--font-weight) leading-(--text-headline-lg--line-height) text-[#00452B]">
-          {t("orders.title")}
-        </h1>
+        <div>
+          <button
+            onClick={() => navigate(homePath)}
+            className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-2 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            {t("common.backToHome")}
+          </button>
+          <h1 className="text-[32px] font-(--text-headline-lg--font-weight) leading-(--text-headline-lg--line-height) text-[#00452B]">
+            {t("orders.title")}
+          </h1>
+        </div>
         <div className="relative">
           <button
             type="button"
