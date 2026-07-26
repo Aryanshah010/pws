@@ -1,13 +1,41 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 import { Phone, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
+import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 const ForgetPassword = () => {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { setRecovery } = useStore();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiRequest("/auth/password-reset/request", {
+        method: "POST",
+        body: JSON.stringify({ phone }),
+      });
+      setRecovery({ phone, demoOtp: data.demoOtp || null });
+      toast.success(t("auth.otpSent"));
+      navigate("/otp");
+    } catch (err) {
+      const message = err.message || "Could not send OTP";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,7 +102,7 @@ const ForgetPassword = () => {
                   text-primary
                 "
               >
-                Forgot Password?
+                {t("auth.forgotTitle")}
               </h1>
 
               <p
@@ -85,9 +113,14 @@ const ForgetPassword = () => {
                   max-w-[280px]
                 "
               >
-                Enter your registered phone number to receive a One- Time
-                Password (OTP) for account recovery.
+                {t("auth.forgotSubtitle")}
               </p>
+
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
 
               {/* PHONE NUMBER */}
               <div className="mt-[30px]">
@@ -100,7 +133,7 @@ const ForgetPassword = () => {
                     text-on-surface-variant
                   "
                 >
-                  Phone Number
+                  {t("auth.phone")}
                 </label>
 
                 <div className="relative">
@@ -124,9 +157,10 @@ const ForgetPassword = () => {
 
                   <input
                     type="text"
-                    placeholder="98XXXXXXX"
+                    placeholder={t("auth.phonePlaceholder")}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    required
                     className="
                       h-[44px]
                       w-full
@@ -148,6 +182,7 @@ const ForgetPassword = () => {
               <button
                 type="submit"
                 onClick={handleSubmit}
+                disabled={loading}
                 className="
                   mt-6.5
                   h-[52px]
@@ -158,12 +193,18 @@ const ForgetPassword = () => {
                   text-on-primary
                 "
               >
-                Send OTP
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    {t("auth.sending")}
+                  </span>
+                ) : (
+                  "Send OTP"
+                )}
               </button>
 
-              {/* BACK TO LOGIN */}
-              <a
-                href="/login"
+              <Link
+                to="/login"
                 className="
                   mt-[18px]
                   flex
@@ -176,8 +217,8 @@ const ForgetPassword = () => {
                 "
               >
                 <ArrowLeft size={14} />
-                Cancel
-              </a>
+                {t("common.cancel")}
+              </Link>
             </div>
           </div>
         </div>

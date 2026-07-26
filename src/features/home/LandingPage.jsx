@@ -1,11 +1,14 @@
 import rice from "../../assets/rice.svg";
+import { useTranslation } from "react-i18next";
 import oil from "../../assets/oil.svg";
 import flour from "../../assets/flour.svg";
 import dal from "../../assets/dal.svg";
 
 import { ShieldCheck, LayoutGrid, RotateCcw, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   return (
     <main className="min-h-screen bg-background text-on-background">
       <section className="mx-auto max-w-378 px-17 pt-11.5 pb-20">
@@ -22,17 +25,17 @@ export default function LandingPage() {
                             text-primary
                         "
             >
-              Pickup only
+              {t("landing.pickupOnly")}
             </h1>
 
             <div className="mt-7">
               <p className="text-[18px] font-semibold leading-7">
-                Live stock before order
+                {t("landing.liveStock")}
               </p>
 
               <div className="mt-2.5 flex items-center gap-2.5">
                 <span className="text-[18px] font-semibold">
-                 💬 WhatsApp/SMS confirmation
+                  💬 WhatsApp/SMS confirmation
                 </span>
               </div>
 
@@ -45,13 +48,12 @@ export default function LandingPage() {
                                 text-on-surface-variant
                             "
               >
-                You receive exactly what you ordered or can raise an issue with
-                photo proof. Our guarantee ensures transparency and quality with
-                every pickup.
+                {t("landing.guaranteeBody")}
               </p>
             </div>
 
-            <button
+            <Link
+              to="/register"
               className="
                             mt-9
                             h-14
@@ -61,10 +63,11 @@ export default function LandingPage() {
                             text-[15px]
                             font-semibold
                             text-on-primary
+                            inline-flex items-center justify-center
                         "
             >
-              Register Now
-            </button>
+              {t("landing.registerNow")}
+            </Link>
           </div>
 
           {/* RIGHT */}
@@ -98,10 +101,10 @@ export default function LandingPage() {
 
               <div>
                 <div className="text-[13px] font-bold">
-                  First order guarantee:
+                  {t("landing.firstOrderGuarantee")}
                   <span className="font-medium">
                     {" "}
-                    receive exactly what you ordered.
+                    {t("landing.guaranteeShort")}
                   </span>
                 </div>
               </div>
@@ -131,27 +134,29 @@ export default function LandingPage() {
 
         {/* FEATURES */}
         <section className="mt-21">
-          <h2 className="text-[34px] font-bold leading-10">Features</h2>
+          <h2 className="text-[34px] font-bold leading-10">
+            {t("landing.features")}
+          </h2>
 
           <div className="mt-7 grid grid-cols-3 gap-15">
             <FeatureCard
               icon={<LayoutGrid size={18} />}
               iconBg="#CFE7D4"
-              title="Browse Products"
+              title={t("landing.browseProducts")}
               text="Explore our curated selection of fresh produce and pantry essentials available for immediate pickup."
             />
 
             <FeatureCard
               icon={<RotateCcw size={18} />}
               iconBg="#F6DFC7"
-              title="My Orders / Reorder"
+              title={t("landing.myOrdersReorder")}
               text="Quickly access your purchase history and restock your favorites with just a single click."
             />
 
             <FeatureCard
               icon={<Truck size={18} />}
               iconBg="#F5D1C8"
-              title="Track Order"
+              title={t("landing.trackOrder")}
               text="Real-time status updates from order confirmation through to your scheduled pickup time."
             />
           </div>
@@ -159,7 +164,7 @@ export default function LandingPage() {
 
         {/* QUICK ACCESS */}
         <section className="mt-18">
-          <h3 className="text-[34px] font-bold">Staples Quick Access</h3>
+          <h3 className="text-[34px] font-bold">{t("landing.quickAccess")}</h3>
 
           <div className="mt-6.5 flex gap-[16px]">
             <Chip image={rice} label="Rice" />
@@ -174,10 +179,12 @@ export default function LandingPage() {
   );
 }
 
-function FeatureCard({ icon, iconBg, title, text }) {
+function FeatureCard({ icon, iconBg, title, text, link }) {
   return (
-    <div
+    <Link
+      to={link || "#"}
       className="
+            block
             rounded-[10px]
             border
             border-outline-variant
@@ -206,7 +213,7 @@ function FeatureCard({ icon, iconBg, title, text }) {
       <h3 className="text-[18px] font-bold">{title}</h3>
 
       <p className="mt-2.5 text-body-md text-on-surface-variant">{text}</p>
-    </div>
+    </Link>
   );
 }
 

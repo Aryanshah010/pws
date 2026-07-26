@@ -1,16 +1,52 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
+import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 const ChangePassword = () => {
+  const { t } = useTranslation();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { recovery, setRecovery } = useStore();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error(t("auth.passwordMismatch"));
+      return setError("Passwords do not match");
+    }
+    if (!recovery?.resetToken) return navigate("/forget-password");
+    setError("");
+    setLoading(true);
+    try {
+      await apiRequest("/auth/password-reset", {
+        method: "PUT",
+        body: JSON.stringify({
+          resetToken: recovery.resetToken,
+          password: newPassword,
+        }),
+      });
+      setRecovery(null);
+      toast.success(t("auth.passwordChanged"));
+      navigate("/login");
+    } catch (err) {
+      const message = err.message || "Could not change password";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,7 +113,7 @@ const ChangePassword = () => {
                   text-primary
                 "
               >
-                Change your Password
+                {t("auth.changeTitle")}
               </h1>
 
               <p
@@ -88,8 +124,14 @@ const ChangePassword = () => {
                   max-w-[280px]
                 "
               >
-                Enter a new secure password below to update your account access.
+                {t("auth.changeSubtitle")}
               </p>
+
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
 
               {/* NEW PASSWORD */}
               <div className="mt-[30px]">
@@ -102,7 +144,7 @@ const ChangePassword = () => {
                     text-on-surface-variant
                   "
                 >
-                  New Password
+                  {t("auth.newPassword")}
                 </label>
 
                 <div className="relative">
@@ -128,7 +170,8 @@ const ChangePassword = () => {
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    required
+                    placeholder={t("auth.newPasswordPlaceholder")}
                     className="
                       h-[44px]
                       w-full
@@ -171,7 +214,7 @@ const ChangePassword = () => {
                     text-on-surface-variant
                   "
                 >
-                  Confirm Password
+                  {t("auth.confirmPassword")}
                 </label>
 
                 <div className="relative">
@@ -197,7 +240,8 @@ const ChangePassword = () => {
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    required
+                    placeholder={t("auth.confirmPasswordPlaceholder")}
                     className="
                       h-[44px]
                       w-full
@@ -237,6 +281,7 @@ const ChangePassword = () => {
               <button
                 type="submit"
                 onClick={handleSubmit}
+                disabled={loading}
                 className="
                   mt-6.5
                   h-13
@@ -247,12 +292,18 @@ const ChangePassword = () => {
                   text-on-primary
                 "
               >
-                Reset Password
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    {t("auth.resetting")}
+                  </span>
+                ) : (
+                  "Reset Password"
+                )}
               </button>
 
-              {/* BACK TO LOGIN */}
-              <a
-                href="/login"
+              <Link
+                to="/login"
                 className="
                   mt-[18px]
                   flex
@@ -265,8 +316,8 @@ const ChangePassword = () => {
                 "
               >
                 <ArrowLeft size={14} />
-                Back to login
-              </a>
+                {t("auth.backToLogin")}
+              </Link>
             </div>
           </div>
         </div>

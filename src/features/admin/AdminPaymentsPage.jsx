@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { useAdminStore } from "../../store/adminStore";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import {
   CheckCircle2,
   XCircle,
@@ -7,6 +9,7 @@ import {
   CreditCard,
   Image,
   AlertCircle,
+  X,
 } from "lucide-react";
 
 function ConfirmModal({
@@ -25,7 +28,7 @@ function ConfirmModal({
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onCancel}
       />
-      <div className="relative w-[calc(100%-2rem)] sm:w-[400px] flex-shrink-0 bg-white rounded-2xl shadow-xl p-6 z-10">
+      <div className="relative w-[calc(100%-2rem)] sm:w-100 shrink-0 bg-white rounded-2xl shadow-xl p-6 z-10">
         <h3 className="text-base font-bold text-[#1b1c1a] mb-2">{title}</h3>
         <p className="text-sm text-[#707972] mb-6">{message}</p>
         <div className="flex gap-3 justify-end">
@@ -47,9 +50,53 @@ function ConfirmModal({
   );
 }
 
-// Fake payment proof preview (placeholder since no real images)
-function ProofPreview({ available }) {
-  if (!available) {
+function ProofLightbox({ proof, onClose }) {
+  if (!proof) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#C1C8C1]/40 px-6 py-4">
+          <div>
+            <p className="text-sm font-bold text-[#1b1c1a]">
+              Payment proof · {proof.orderId}
+            </p>
+            <p className="text-xs text-[#707972] mt-0.5">
+              {proof.customerName} · {proof.amount}
+              {proof.transactionId ? ` · Txn ${proof.transactionId}` : ""}
+            </p>
+            {proof.note && (
+              <p className="text-xs text-[#404943] mt-1">“{proof.note}”</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl text-[#707972] hover:bg-[#F5F3F0] hover:text-[#1b1c1a] transition"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="overflow-auto bg-[#F5F3F0] p-4">
+          {proof.proofImage ? (
+            <img
+              src={proof.proofImage}
+              alt={`Payment proof for ${proof.orderId}`}
+              className="mx-auto max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
+            />
+          ) : (
+            <p className="py-12 text-center text-sm text-[#707972]">
+              This buyer submitted a transaction ID without a screenshot.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProofPreview({ image, transactionId, onOpen }) {
+  if (!image && !transactionId) {
     return (
       <div className="w-full h-32 rounded-xl border-2 border-dashed border-[#C1C8C1]/60 bg-[#F5F3F0] flex flex-col items-center justify-center gap-1.5 text-[#707972]">
         <AlertCircle size={20} />
@@ -58,27 +105,35 @@ function ProofPreview({ available }) {
     );
   }
   return (
-    <div className="w-full h-32 rounded-xl border border-[#C1C8C1]/60 bg-gradient-to-br from-[#E2EAE3] to-[#aef1ca]/30 flex flex-col items-center justify-center gap-1.5 text-[#1b5e40] cursor-pointer hover:opacity-80 transition relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(45deg, #1b5e40 0, #1b5e40 1px, transparent 0, transparent 50%)",
-          backgroundSize: "12px 12px",
-        }}
-      />
-      <Image size={24} className="relative z-10" />
-      <span className="text-xs font-semibold relative z-10">
-        View Payment Proof
-      </span>
-      <span className="text-[10px] text-[#707972] relative z-10">
-        Click to preview
-      </span>
-    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full h-32 rounded-xl border border-[#C1C8C1]/60 overflow-hidden relative group bg-[#F5F3F0] flex items-center justify-center"
+    >
+      {image ? (
+        <>
+          <img
+            src={image}
+            alt="Payment proof"
+            className="h-full w-full object-cover"
+          />
+          <span className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/45 text-white opacity-0 group-hover:opacity-100 transition">
+            <Image size={16} />
+            <span className="text-xs font-semibold">View full size</span>
+          </span>
+        </>
+      ) : (
+        <span className="flex flex-col items-center gap-1.5 text-[#1b5e40]">
+          <Image size={24} />
+          <span className="text-xs font-semibold">Transaction ID only</span>
+          <span className="text-[10px] text-[#707972]">{transactionId}</span>
+        </span>
+      )}
+    </button>
   );
 }
 
-function PaymentCard({ pay, onApprove, onReject }) {
+function PaymentCard({ pay, onApprove, onReject, onViewProof }) {
   const [confirmAction, setConfirmAction] = useState(null);
   const isPending = pay.status === "pending";
 
@@ -167,7 +222,11 @@ function PaymentCard({ pay, onApprove, onReject }) {
             <p className="text-xs font-bold uppercase tracking-wider text-[#707972]">
               Payment Proof
             </p>
-            <ProofPreview available={pay.proofAvailable} />
+            <ProofPreview
+              image={pay.proofImage}
+              transactionId={pay.transactionId}
+              onOpen={() => onViewProof(pay)}
+            />
           </div>
         </div>
 
@@ -242,8 +301,68 @@ function PaymentCard({ pay, onApprove, onReject }) {
 }
 
 export default function AdminPaymentsPage() {
-  const { payments, approvePayment, rejectPayment } = useAdminStore();
+  const { token } = useStore();
+  const [payments, setPayments] = useState([]);
   const [filter, setFilter] = useState("pending");
+  const [proofInView, setProofInView] = useState(null);
+  const loadPayments = async () => {
+    try {
+      const data = await apiRequest("/orders/admin/all", {
+        headers: authHeader(token),
+      });
+      setPayments(
+        data.orders
+          .filter((order) => order.paymentMethod === "Digital QR Transfer")
+          .map((order) => ({
+            id: order._id,
+            orderId: `PWS-${order._id.slice(-4).toUpperCase()}`,
+            status:
+              order.paymentStatus === "Paid"
+                ? "approved"
+                : order.paymentStatus === "Rejected"
+                  ? "rejected"
+                  : "pending",
+            amount: `Rs. ${order.totalAmount}`,
+            submittedDate: order.paymentProof?.submittedAt
+              ? new Date(order.paymentProof.submittedAt).toLocaleDateString()
+              : "Awaiting proof",
+            customerName: order.user?.fullName || "Buyer",
+            customerEmail: order.user?.phone || "",
+            method: "Digital QR Transfer",
+            // The actual evidence, so the storekeeper can check it against
+            // their bank app instead of a decorative placeholder.
+            proofImage: order.paymentProof?.imageDataUrl || "",
+            transactionId: order.paymentProof?.transactionId || "",
+            note: order.paymentProof?.note || "",
+            items: order.items.map(
+              (item) => `${item.product?.name || "Product"} x${item.quantity}`,
+            ),
+          })),
+      );
+    } catch {
+      setPayments([]);
+    }
+  };
+  useEffect(() => {
+    if (token) loadPayments();
+  }, [token]);
+  const setPayment = async (id, paymentStatus) => {
+    try {
+      await apiRequest(`/orders/${id}/payment-status`, {
+        method: "PUT",
+        headers: authHeader(token),
+        body: JSON.stringify({ paymentStatus }),
+      });
+      await loadPayments();
+      toast.success(
+        paymentStatus === "Paid"
+          ? "Payment confirmed — the buyer was notified"
+          : "Payment rejected — the buyer was asked to resubmit",
+      );
+    } catch (requestError) {
+      toast.error(requestError.message || "Could not update the payment");
+    }
+  };
 
   const filtered =
     filter === "all" ? payments : payments.filter((p) => p.status === filter);
@@ -290,8 +409,9 @@ export default function AdminPaymentsPage() {
           <PaymentCard
             key={pay.id}
             pay={pay}
-            onApprove={approvePayment}
-            onReject={rejectPayment}
+            onApprove={(id) => setPayment(id, "Paid")}
+            onReject={(id) => setPayment(id, "Rejected")}
+            onViewProof={setProofInView}
           />
         ))}
         {filtered.length === 0 && (
@@ -304,6 +424,8 @@ export default function AdminPaymentsPage() {
           </div>
         )}
       </div>
+
+      <ProofLightbox proof={proofInView} onClose={() => setProofInView(null)} />
     </div>
   );
 }

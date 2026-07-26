@@ -1,18 +1,49 @@
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
 function ShareIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="18" cy="5"  r="3" stroke="currentColor" strokeWidth="1.5"/>
-      <circle cx="6"  cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
-      <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="1.5"/>
-      <line x1="8.59"  y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="15.41" y1="6.51"  x2="8.59"  y2="10.49" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="18" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="6" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="18" cy="19" r="3" stroke="currentColor" strokeWidth="1.5" />
+      <line
+        x1="8.59"
+        y1="13.51"
+        x2="15.42"
+        y2="17.49"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="15.41"
+        y1="6.51"
+        x2="8.59"
+        y2="10.49"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 function PhoneIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M6.54 5C6.6 5.89 6.75 6.76 6.99 7.59L5.79 8.79C5.38 7.6 5.12 6.32 5.03 5H6.54ZM16.4 17.02C17.25 17.26 18.12 17.41 19 17.47V18.96C17.68 18.87 16.4 18.61 15.2 18.21L16.4 17.02ZM7.5 3H4C3.45 3 3 3.45 3 4C3 13.39 10.61 21 20 21C20.55 21 21 20.55 21 20V16.51C21 15.96 20.55 15.51 20 15.51C18.76 15.51 17.55 15.31 16.43 14.94C16.33 14.9 16.22 14.89 16.12 14.89C15.86 14.89 15.61 14.99 15.41 15.18L13.21 17.38C10.38 15.93 8.06 13.62 6.62 10.79L8.82 8.59C9.1 8.31 9.18 7.92 9.07 7.57C8.7 6.45 8.5 5.25 8.5 4C8.5 3.45 8.05 3 7.5 3Z"
         fill="currentColor"
@@ -22,27 +53,28 @@ function PhoneIcon() {
 }
 
 const FOOTER_LINKS = [
-  { label: "Contact", href: "#contact" },
-  { label: "Terms",   href: "#terms"   },
-  { label: "Privacy", href: "#privacy" },
+  { key: "footerLinks.contact", href: "/contact" },
+  { key: "footerLinks.terms", href: "#terms" },
+  { key: "footerLinks.privacy", href: "#privacy" },
 ];
 
 const SOCIAL_ICONS = [
   {
-    label: "Share",
-    href:  "#share",
-    icon:  <ShareIcon />,
+    key: "footerLinks.share",
+    href: "#share",
+    icon: <ShareIcon />,
     style: "outline", // outlined circle, blue icon
   },
   {
-    label: "Contact by phone",
-    href:  "#phone",
-    icon:  <PhoneIcon />,
-    style: "filled",  // green filled circle, white icon
+    key: "footerLinks.phone",
+    href: "#phone",
+    icon: <PhoneIcon />,
+    style: "filled", // green filled circle, white icon
   },
 ];
 
 export default function Footer() {
+  const { t } = useTranslation();
   return (
     <>
       <style>{`
@@ -202,12 +234,15 @@ export default function Footer() {
 
       <footer className="footer" role="contentinfo">
         <div className="footer__inner">
-
           {/* LEFT — Brand + copyright */}
           <div className="footer__brand">
-            <a href="/" className="footer__brand-name" aria-label="Pathivara home">
+            <Link
+              to="/"
+              className="footer__brand-name"
+              aria-label={t("nav.pathivaraHome")}
+            >
               Pathivara
-            </a>
+            </Link>
             <span className="footer__copyright">
               © 2025 Pathivara. All rights reserved.
             </span>
@@ -215,35 +250,33 @@ export default function Footer() {
 
           {/* CENTER — Nav links */}
           <ul className="footer__nav" role="list">
-            {FOOTER_LINKS.map(({ label, href }) => (
-              <li key={label}>
-                <a
-                  href={href}
-                  className="footer__nav-link"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  {label}
-                </a>
+            {FOOTER_LINKS.map(({ key, href }) => (
+              <li key={key}>
+                <Link to={href} className="footer__nav-link">
+                  {t(key)}
+                </Link>
               </li>
             ))}
           </ul>
 
           {/* RIGHT — Social / contact icons */}
-          <div className="footer__social" role="list" aria-label="Social links">
-            {SOCIAL_ICONS.map(({ label, href, icon, style }) => (
+          <div
+            className="footer__social"
+            role="list"
+            aria-label={t("nav.socialLinks")}
+          >
+            {SOCIAL_ICONS.map(({ key, href, icon, style }) => (
               <a
-                key={label}
+                key={key}
                 href={href}
                 className={`footer__icon-btn footer__icon-btn--${style}`}
-                aria-label={label}
+                aria-label={t(key)}
                 role="listitem"
-                onClick={(e) => e.preventDefault()}
               >
                 {icon}
               </a>
             ))}
           </div>
-
         </div>
       </footer>
     </>

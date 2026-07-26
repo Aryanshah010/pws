@@ -1,8 +1,64 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Lock, Phone } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
+import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const [phone, setPhone] = useState(location.state?.phone || "");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { setUser } = useStore();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await apiRequest("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }),
+      });
+      setUser(data.user, data.token);
+      const firstName = data.user.fullName?.split(" ")[0] || "there";
+
+      if (data.user.role === "admin") {
+        toast.success(t("auth.welcomeBack", { name: firstName }));
+        return navigate("/admin");
+      }
+
+      if (data.firstLogin) {
+        toast.success(t("auth.welcomeNew", { name: firstName }));
+        const needsWholesaleForm =
+          data.user.role === "bulk/shop" &&
+          data.user.wholesaleStatus === "not_requested";
+        return navigate(
+          needsWholesaleForm ? "/wholesale-form" : "/account-active",
+        );
+      }
+
+      toast.success(t("auth.welcomeBack", { name: firstName }));
+      navigate("/homepage");
+    } catch (err) {
+      const message = err.message || "Failed to connect to server";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="bg-background">
       <Nav />
@@ -67,7 +123,7 @@ export default function LoginPage() {
                   text-primary
                 "
               >
-                Login to Pathivara
+                {t("auth.loginTitle")}
               </h1>
 
               <p
@@ -78,26 +134,33 @@ export default function LoginPage() {
                   max-w-[280px]
                 "
               >
-                Welcome back. Please enter your credentials to continue.
+                {t("auth.loginSubtitle")}
               </p>
 
-              {/* PHONE */}
-              <div className="mt-[30px]">
-                <label
-                  className="
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleLogin}>
+                {/* PHONE */}
+                <div className="mt-[30px]">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Phone Number
-                </label>
+                  >
+                    {t("auth.phone")}
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -110,14 +173,17 @@ export default function LoginPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Phone size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Phone size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your number"
-                    className="
+                    <input
+                      type="text"
+                      placeholder={t("auth.phonePlaceholder")}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -130,27 +196,27 @@ export default function LoginPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* PASSWORD */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* PASSWORD */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Password
-                </label>
+                  >
+                    {t("auth.password")}
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-3
                       top-1/2
@@ -163,14 +229,17 @@ export default function LoginPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Lock size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Lock size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="
                       h-11
                       w-full
                       rounded-default
@@ -183,55 +252,59 @@ export default function LoginPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* LINKS */}
-              <div
-                className="
+                {/* LINKS */}
+                <div
+                  className="
                   mt-2.5
                   flex
                   justify-between
                   items-center
                 "
-              >
-                <button
-                  className="
+                >
+                  <Link
+                    to="/forget-password"
+                    className="
                     text-[12px]
                     font-semibold
                     text-[#3F81EA]
                   "
-                >
-                  Forgot password?
-                </button>
+                  >
+                    {t("auth.forgotPassword")}
+                  </Link>
 
-                <div className="flex items-center gap-0.5">
-                  <span
-                    className="
+                  <div className="flex items-center gap-0.5">
+                    <span
+                      className="
                       text-[12px]
                       font-semibold
                       text-black
                     "
-                  >
-                    New Buyer?
-                  </span>
+                    >
+                      {t("auth.newBuyer")}
+                    </span>
 
-                  <button
-                    className="
+                    <Link
+                      to="/register"
+                      className="
                       text-[12px]
                       font-semibold
                       text-[#D4820A]
                     "
-                  >
-                    Register
-                  </button>
+                    >
+                      {t("auth.register")}
+                    </Link>
+                  </div>
                 </div>
-              </div>
 
-              {/* LOGIN */}
-              <button
-                className="
+                {/* LOGIN */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
                   mt-6.5
                   h-13
                   rounded-default
@@ -239,10 +312,20 @@ export default function LoginPage() {
                   text-headline-xs
                   font-semibold
                   text-on-primary
+                  w-full
+                  disabled:opacity-70
                 "
-              >
-                Login
-              </button>
+                >
+                  {loading ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Spinner />
+                      {t("auth.loggingIn")}
+                    </span>
+                  ) : (
+                    "Login"
+                  )}
+                </button>
+              </form>
 
               {/* DIVIDER */}
               <div
@@ -260,9 +343,11 @@ export default function LoginPage() {
 
               {/* GUEST */}
               <button
+                onClick={() => navigate("/homepage")}
                 className="
                   mt-4.5
                   h-[48px]
+                  w-full
                   rounded-default
                   border
                   border-[#C1C8C1]
@@ -272,7 +357,7 @@ export default function LoginPage() {
                   text-on-surface
                 "
               >
-                Continue browsing as guest
+                {t("auth.browseGuest")}
               </button>
             </div>
           </div>

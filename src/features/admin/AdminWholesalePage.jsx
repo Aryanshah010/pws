@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { useAdminStore } from "../../store/adminStore";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import { apiRequest, authHeader } from "../../services/api";
 import {
   CheckCircle2,
   XCircle,
@@ -212,9 +214,52 @@ function WholesaleCard({ req, onApprove, onReject }) {
 }
 
 export default function AdminWholesalePage() {
-  const { wholesaleRequests, approveWholesale, rejectWholesale } =
-    useAdminStore();
+  const { token } = useStore();
+  const [wholesaleRequests, setWholesaleRequests] = useState([]);
   const [filter, setFilter] = useState("pending");
+  const loadRequests = async () => {
+    try {
+      const data = await apiRequest("/auth/wholesale-requests", {
+        headers: authHeader(token),
+      });
+      setWholesaleRequests(
+        data.users.map((user) => ({
+          id: user.id,
+          status: user.wholesaleStatus,
+          name: user.fullName,
+          phone: user.phone,
+          shopName: user.wholesaleDetails?.shopName || "Shop",
+          location: user.wholesaleDetails?.shopLocation || "—",
+          businessType: user.wholesaleDetails?.businessType || "—",
+          panVat: user.wholesaleDetails?.panNumber,
+          submittedDate: "Pending review",
+          hasPhoto: false,
+        })),
+      );
+    } catch {
+      setWholesaleRequests([]);
+    }
+  };
+  useEffect(() => {
+    if (token) loadRequests();
+  }, [token]);
+  const decide = async (id, decision) => {
+    try {
+      await apiRequest(`/auth/wholesale-requests/${id}`, {
+        method: "PUT",
+        headers: authHeader(token),
+        body: JSON.stringify({ decision }),
+      });
+      await loadRequests();
+      toast.success(
+        decision === "approved"
+          ? "Wholesale access approved — tier pricing is now active for them"
+          : "Wholesale request rejected",
+      );
+    } catch (requestError) {
+      toast.error(requestError.message || "Could not update the request");
+    }
+  };
 
   const filtered =
     filter === "all"
@@ -266,8 +311,8 @@ export default function AdminWholesalePage() {
           <WholesaleCard
             key={req.id}
             req={req}
-            onApprove={approveWholesale}
-            onReject={rejectWholesale}
+            onApprove={(id) => decide(id, "approved")}
+            onReject={(id) => decide(id, "rejected")}
           />
         ))}
         {filtered.length === 0 && (

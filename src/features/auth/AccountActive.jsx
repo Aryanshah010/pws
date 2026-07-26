@@ -1,7 +1,20 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
+import { useStore } from "../../store/store";
+
+const ROLE_LABELS = {
+  "household/individual": "HOUSEHOLD / REGULAR BUYER",
+  "bulk/shop": "SHOP / BULK BUYER",
+  pending_wholesale: "WHOLESALE REQUEST PENDING",
+  verified_wholesale: "VERIFIED WHOLESALE BUYER",
+  admin: "STOREKEEPER",
+};
 
 export default function AccountActive() {
+  const { t } = useTranslation();
+  const { user } = useStore();
+  const navigate = useNavigate();
   return (
     <main
       className="flex flex-col items-center justify-center flex-1 w-full min-h-[75vh] px-(--spacing-md) py-(--spacing-2xl)"
@@ -44,7 +57,7 @@ export default function AccountActive() {
             marginTop: "var(--spacing-lg)",
           }}
         >
-          Account active
+          {t("auth.accountActive")}
         </h1>
 
         {/* User Account Details */}
@@ -58,8 +71,8 @@ export default function AccountActive() {
             marginTop: "var(--spacing-sm)",
           }}
         >
-          <p>Name: XXXXXXXXXX</p>
-          <p>Phone Number: 98XXXXXXXX</p>
+          <p>Name: {user?.fullName || "—"}</p>
+          <p>Phone Number: {user?.phone || "—"}</p>
         </div>
 
         {/* Account Classification Pill */}
@@ -75,7 +88,7 @@ export default function AccountActive() {
             marginTop: "var(--spacing-sm)",
           }}
         >
-          HOUSEHOLD / REGULAR BUYER
+          {ROLE_LABELS[user?.role] || ROLE_LABELS["household/individual"]}
         </div>
 
         {/* Informational Description */}
@@ -89,8 +102,7 @@ export default function AccountActive() {
             marginTop: "var(--spacing-xl)",
           }}
         >
-          You can browse products, see regular buyer prices, and place pickup
-          orders.
+          {t("auth.accountActiveNote")}
         </p>
 
         {/* Action Button Group */}
@@ -119,8 +131,9 @@ export default function AccountActive() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "var(--color-primary)")
             }
+            onClick={() => navigate("/homepage")}
           >
-            Go to home
+            {t("auth.goToHome")}
           </button>
 
           {/* Secondary Action Button */}
@@ -144,8 +157,9 @@ export default function AccountActive() {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "transparent")
             }
+            onClick={() => navigate("/profile")}
           >
-            Complete Profile
+            {t("auth.completeProfile")}
           </button>
         </div>
       </div>

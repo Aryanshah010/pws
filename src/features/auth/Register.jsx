@@ -1,8 +1,56 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, Link } from "react-router-dom";
 import { Lock, Phone, User, ChevronDown } from "lucide-react";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { toast } from "react-toastify";
+import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("household/individual");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await apiRequest("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, phone, password, role }),
+      });
+      toast.success(data.message || "Account created. Please log in.");
+
+      if (data.user?.role === "bulk/shop" && data.token) {
+        return navigate("/wholesale-form", {
+          state: {
+            fromRegistration: true,
+            token: data.token,
+            user: data.user,
+          },
+        });
+      }
+
+      navigate("/login", { state: { phone } });
+    } catch (err) {
+      const message = err.message || "Failed to connect to server";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="bg-background">
       <Nav />
@@ -67,26 +115,33 @@ export default function RegisterPage() {
                   text-primary
                 "
               >
-                Create Account
+                {t("auth.createAccount")}
               </h1>
 
-              {/* FULL NAME */}
-              <div className="mt-[30px]">
-                <label
-                  className="
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleRegister}>
+                {/* FULL NAME */}
+                <div className="mt-[30px]">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Full Name
-                </label>
+                  >
+                    {t("auth.fullName")}
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -99,14 +154,17 @@ export default function RegisterPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <User size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <User size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your full name"
-                    className="
+                    <input
+                      type="text"
+                      placeholder={t("auth.fullNamePlaceholder")}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -119,27 +177,27 @@ export default function RegisterPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* PHONE NUMBER */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* PHONE NUMBER */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Phone Number
-                </label>
+                  >
+                    {t("auth.phone")}
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -152,14 +210,17 @@ export default function RegisterPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Phone size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Phone size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="text"
-                    placeholder="Enter your number"
-                    className="
+                    <input
+                      type="text"
+                      placeholder={t("auth.phonePlaceholder")}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -172,27 +233,27 @@ export default function RegisterPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* PASSWORD */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* PASSWORD */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Password
-                </label>
+                  >
+                    {t("auth.password")}
+                  </label>
 
-                <div className="relative">
-                  <div
-                    className="
+                  <div className="relative">
+                    <div
+                      className="
                       absolute
                       left-[12px]
                       top-1/2
@@ -205,14 +266,17 @@ export default function RegisterPage() {
                       rounded-full
                       bg-[#F4FBF4]
                     "
-                  >
-                    <Lock size={14} color="#9EA5A0" />
-                  </div>
+                    >
+                      <Lock size={14} color="#9EA5A0" />
+                    </div>
 
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    className="
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -225,28 +289,30 @@ export default function RegisterPage() {
                       outline-none
                       focus:border-primary
                     "
-                  />
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Buyer Type */}
-              <div className="mt-4.5">
-                <label
-                  className="
+                {/* Buyer Type */}
+                <div className="mt-4.5">
+                  <label
+                    className="
                     mb-[8px]
                     block
                     text-label-sm
                     font-semibold
                     text-on-surface-variant
                   "
-                >
-                  Buyer Type
-                </label>
+                  >
+                    {t("auth.buyerType")}
+                  </label>
 
-                <div className="relative">
-                  <select
-                    defaultValue=""
-                    className="
+                  <div className="relative">
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      required
+                      className="
                       h-[44px]
                       w-full
                       rounded-[8px]
@@ -261,42 +327,56 @@ export default function RegisterPage() {
                       focus:border-primary
                       appearance-none
                     "
-                  >
-                    <option value="" disabled>
-                      Choose buyer type
-                    </option>
-                    <option value="individual">Household/Regular Buyer</option>
-                    <option value="bulk">Shop/Bulk Buyer</option>
-                  </select>
+                    >
+                      <option value="" disabled>
+                        {t("auth.chooseBuyerType")}
+                      </option>
+                      <option value="household/individual">
+                        {t("auth.household")}
+                      </option>
+                      <option value="bulk/shop">{t("auth.shopBulk")}</option>
+                    </select>
 
-                  <div
-                    className="
+                    <div
+                      className="
                       pointer-events-none
                       absolute
                       right-[12px]
                       top-1/2
                       -translate-y-1/2
                     "
-                  >
-                    <ChevronDown size={16} color="#6B7280" />
+                    >
+                      <ChevronDown size={16} color="#6B7280" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* CONTINUE */}
-              <button
-                className="
+                {/* CONTINUE */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
                   mt-6.5
                   h-[52px]
+                  w-full
                   rounded-default
                   bg-primary
                   text-headline-xs
                   font-semibold
                   text-on-primary
+                  disabled:opacity-70
                 "
-              >
-                Continue
-              </button>
+                >
+                  {loading ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Spinner />
+                      {t("auth.creatingAccount")}
+                    </span>
+                  ) : (
+                    "Continue"
+                  )}
+                </button>
+              </form>
 
               {/* ALREADY HAVE ACCOUNT */}
               <div
@@ -314,10 +394,11 @@ export default function RegisterPage() {
                     text-on-surface
                   "
                 >
-                  Already have an account?
+                  {t("auth.haveAccount")}
                 </span>
 
-                <button
+                <Link
+                  to="/login"
                   className="
                     text-[12px]
                     text-[#3F81EA]
@@ -325,8 +406,8 @@ export default function RegisterPage() {
                     underline-offset-[2px]
                   "
                 >
-                  Login
-                </button>
+                  {t("auth.loginButton")}
+                </Link>
               </div>
 
               <div
@@ -348,13 +429,14 @@ export default function RegisterPage() {
                 </span>
               </div>
               <button
+                onClick={() => navigate("/homepage")}
                 className="
                     text-[12px]
                     text-[#3F81EA]
                     font-bold
                   "
               >
-                Browse as a guest →
+                {t("auth.browseAsGuest")}
               </button>
             </div>
           </div>

@@ -1,11 +1,21 @@
 import { useState, useRef } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import Nav from "../../components/layout/Nav";
 import Footer from "../../components/layout/Footer";
+import { useStore } from "../../store/store";
+import { toast } from "react-toastify";
+import { apiRequest } from "../../services/api";
+import Spinner from "../../components/common/Spinner";
 
 const OtpVerification = () => {
+  const { t } = useTranslation();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { recovery, setRecovery } = useStore();
 
   const handleChange = (index, value) => {
     if (/^[0-9]?$/.test(value)) {
@@ -24,8 +34,46 @@ const OtpVerification = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!recovery?.phone) {
+      navigate("/forget-password");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiRequest("/auth/password-reset/verify", {
+        method: "POST",
+        body: JSON.stringify({ phone: recovery.phone, otp: otp.join("") }),
+      });
+      setRecovery({ ...recovery, resetToken: data.resetToken });
+      toast.success(t("auth.otpVerified"));
+      navigate("/change-password");
+    } catch (err) {
+      const message = err.message || "Could not verify OTP";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!recovery?.phone) return navigate("/forget-password");
+    setError("");
+    try {
+      const data = await apiRequest("/auth/password-reset/request", {
+        method: "POST",
+        body: JSON.stringify({ phone: recovery.phone }),
+      });
+      setRecovery({ phone: recovery.phone, demoOtp: data.demoOtp || null });
+      toast.success(t("auth.otpResent"));
+    } catch (err) {
+      const message = err.message || "Could not resend OTP";
+      setError(message);
+      toast.error(message);
+    }
   };
 
   return (
@@ -92,7 +140,7 @@ const OtpVerification = () => {
                   text-primary
                 "
                 >
-                  Enter 6-digit OTP
+                  {t("auth.otpTitle")}
                 </h1>
 
                 <p
@@ -103,9 +151,18 @@ const OtpVerification = () => {
                   max-w-70
                 "
                 >
-                  We have sent a verification code to your registered mobile
-                  number.
+                  {t("auth.otpSubtitle")}
                 </p>
+                {error && (
+                  <div className="mt-4 p-3 bg-red-100 text-red-700 text-sm rounded-md">
+                    {error}
+                  </div>
+                )}
+                {recovery?.demoOtp && (
+                  <p className="mt-2 text-xs text-on-surface-variant">
+                    Demo OTP: {recovery.demoOtp}
+                  </p>
+                )}
               </div>
 
               {/* OTP INPUTS */}
@@ -144,6 +201,7 @@ const OtpVerification = () => {
               <button
                 type="submit"
                 onClick={handleSubmit}
+                disabled={loading}
                 className="
                   mt-6.5
                   h-13
@@ -154,12 +212,20 @@ const OtpVerification = () => {
                   text-on-primary
                 "
               >
-                Continue
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    {t("auth.verifying")}
+                  </span>
+                ) : (
+                  "Continue"
+                )}
               </button>
 
               {/* BACK TO LOGIN */}
-              <a
-                href="/login"
+              <button
+                type="button"
+                onClick={handleResend}
                 className="
                   mt-[18px]
                   flex
@@ -171,8 +237,8 @@ const OtpVerification = () => {
                   text-primary
                 "
               >
-                Resend OTP
-              </a>
+                {t("auth.resendOtp")}
+              </button>
             </div>
           </div>
         </div>

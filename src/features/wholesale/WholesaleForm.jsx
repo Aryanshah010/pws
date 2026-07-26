@@ -1,21 +1,40 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { MapPin, ChevronDown, Upload, Store, Info } from "lucide-react";
-
-const BUSINESS_TYPES = [
-  "Retail Store",
-  "Grocery Shop",
-  "Supermarket",
-  "Restaurant / Hotel",
-  "Distributor",
-  "Other",
-];
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
+import { MapPin, ChevronDown, Upload, Store, Info, ArrowLeft } from "lucide-react";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import { useGoBack } from "../../hooks/useBackNavigation";
+import Spinner from "../../components/common/Spinner";
+import { apiRequest, authHeader } from "../../services/api";
 
 export default function WholesaleForm() {
+  const { t } = useTranslation();
+  const [shopName, setShopName] = useState("");
+  const [shopLocation, setShopLocation] = useState("");
   const [businessType, setBusinessType] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const goBack = useGoBack();
+  const { token: storeToken, setUser } = useStore();
+  const fromRegistration = Boolean(location.state?.fromRegistration);
+  const activeToken = storeToken || location.state?.token || null;
+
+  const [businessTypes, setBusinessTypes] = useState([]);
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => setBusinessTypes(data.settings?.businessTypes || []))
+      .catch(() => setBusinessTypes([]));
+  }, []);
 
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) setUploadedFile(e.target.files[0]);
@@ -27,16 +46,78 @@ export default function WholesaleForm() {
     if (e.dataTransfer.files?.[0]) setUploadedFile(e.dataTransfer.files[0]);
   };
 
+  const handleCancel = () => {
+    navigate(fromRegistration ? "/login" : "/homepage");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!shopName || !shopLocation || !businessType) {
+      setError("Please fill out all required fields.");
+      toast.error(t("wholesale.fillRequired"));
+      return;
+    }
+
+    if (!activeToken) {
+      navigate("/login");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await apiRequest("/auth/wholesale-request", {
+        method: "PUT",
+        headers: {
+          ...authHeader(activeToken),
+        },
+        body: JSON.stringify({
+          shopName,
+          shopLocation,
+          businessType,
+          panNumber,
+        }),
+      });
+
+      toast.success(t("wholesale.submitted"));
+
+      if (fromRegistration) {
+        navigate("/wholesale-pending", {
+          replace: true,
+          state: { fromRegistration: true, user: data.user },
+        });
+      } else {
+        setUser(data.user, storeToken);
+        navigate("/wholesale-pending", { replace: true });
+      }
+    } catch (err) {
+      const message = err.message || "Server error. Please try again later.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen  bg-(--color-background)">
       <main className="max-w-288.75 mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
         {/* Page Header */}
         <div className="mb-8">
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label={t("common.goBack")}
+            className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-2"
+          >
+            <ArrowLeft size={24} />
+          </button>
           <h1 className="text-headline-md sm:text-headline-lg font-bold text-primary-container leading-tight">
-            Wholesale Access Request
+            {t("wholesale.requestTitle")}
           </h1>
           <p className="mt-2 text-body-lg text-on-surface-variant">
-            Apply for bulk pricing and specialized service.
+            {t("wholesale.requestSubtitle")}
           </p>
         </div>
 
@@ -47,7 +128,7 @@ export default function WholesaleForm() {
             {/* Card 1: Shop / Bulk Buyer Details */}
             <div className="bg-(--color-surface-lowest) rounded-md border border-outline-variant shadow-[var(--shadow-level-2)] p-8">
               <h2 className="text-headline-sm sm:text-headline-md font-semibold text-(--color-primary) pb-4 border-b border-[var(--color-outline-variant)] mb-6">
-                Shop / Bulk Buyer Details
+                {t("wholesale.shopDetails")}
               </h2>
 
               <div className="flex flex-col gap-6">
@@ -61,7 +142,9 @@ export default function WholesaleForm() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Ram Grocery Store"
+                    placeholder={t("wholesale.shopNamePlaceholder")}
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
                     className="w-full px-3 py-[10px] rounded-[10px] border border-[var(--color-outline-variant)] bg-[#F4FBF4] text-body-lg text-[var(--color-on-surface-variant)] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[var(--color-primary-container)]/30 focus:border-[var(--color-primary-container)] transition"
                   />
                 </div>
@@ -80,7 +163,9 @@ export default function WholesaleForm() {
                     </span>
                     <input
                       type="text"
-                      placeholder="e.g. Birtamode-3, Jhapa"
+                      placeholder={t("wholesale.shopLocationPlaceholder")}
+                      value={shopLocation}
+                      onChange={(e) => setShopLocation(e.target.value)}
                       className="w-full pl-10 pr-3 py-[10px] rounded-[10px] border border-[var(--color-outline-variant)] bg-[#F4FBF4] text-body-lg text-[var(--color-on-surface-variant)] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[var(--color-primary-container)]/30 focus:border-[var(--color-primary-container)] transition"
                     />
                   </div>
@@ -108,7 +193,7 @@ export default function WholesaleForm() {
 
                     {dropdownOpen && (
                       <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)] rounded-[10px] shadow-[var(--shadow-level-3)] overflow-hidden">
-                        {BUSINESS_TYPES.map((type) => (
+                        {businessTypes.map((type) => (
                           <button
                             key={type}
                             type="button"
@@ -131,11 +216,11 @@ export default function WholesaleForm() {
             {/* Card 2: Optional Verification Proof */}
             <div className="bg-[var(--color-surface-lowest)] rounded-md border border-[var(--color-outline-variant)] shadow-[var(--shadow-level-2)] p-8 pb-12">
               <h2 className="text-headline-sm sm:text-headline-md font-semibold text-[var(--color-primary)] pb-4 border-b border-[var(--color-outline-variant)] mb-6">
-                Optional Verification Proof
+                {t("wholesale.optionalProof")}
               </h2>
 
               <p className="text-body-lg text-[var(--color-outline)] mb-6">
-                Providing these details helps speed up the approval process.
+                {t("wholesale.optionalProofNote")}
               </p>
 
               <div className="flex flex-col gap-6">
@@ -151,7 +236,9 @@ export default function WholesaleForm() {
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter your 9-digit PAN"
+                    placeholder={t("wholesale.panPlaceholder")}
+                    value={panNumber}
+                    onChange={(e) => setPanNumber(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-[10px] border border-outline-variant bg-[#F4FBF4] text-body-lg text-on-surface-variant placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-primary-container/30 focus:border-primary-container transition"
                   />
                 </div>
@@ -189,7 +276,7 @@ export default function WholesaleForm() {
                       <>
                         <div className="flex items-center gap-1">
                           <span className="text-body-lg font-semibold text-[#3F81EA]">
-                            Upload a file
+                            {t("wholesale.uploadFile")}
                           </span>
                           <span className="text-body-lg text-on-surface-variant">
                             {" "}
@@ -197,7 +284,7 @@ export default function WholesaleForm() {
                           </span>
                         </div>
                         <span className="text-[13px] font-semibold text-outline">
-                          PNG, JPG, GIF up to 10MB
+                          {t("wholesale.uploadHint")}
                         </span>
                       </>
                     )}
@@ -222,7 +309,7 @@ export default function WholesaleForm() {
               <div className="flex items-center gap-3 mb-4 text-(--color-primary)">
                 <Store size={24} className="shrink-0 mt-1" />
                 <h3 className="text-[22px] font-bold leading-[28.6px]">
-                  Wholesale Access
+                  {t("wholesale.accessTitle")}
                 </h3>
               </div>
 
@@ -236,27 +323,44 @@ export default function WholesaleForm() {
               <div className="flex items-start gap-3 p-4 rounded-lg border border-outline-variant bg-(--color-surface-variant) mb-8">
                 <Info size={20} className="shrink-0 mt-0.5 text-[#D4820A]" />
                 <p className="text-body-lg text-on-surface-variant leading-5.5">
-                  Until approved, you can continue to order at regular buyer
-                  prices.
+                  {t("wholesale.accessNote")}
                 </p>
               </div>
+
+              {error && (
+                <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-md">
+                  {error}
+                </div>
+              )}
 
               {/* Submit Button */}
               <button
                 type="button"
-                className="w-full py-4.25 rounded-[10px] bg-primary-container text-(--color-on-primary) text-lg font-semibold leading-[25.2px] shadow-(--shadow-level-1) hover:bg-[#164f35] active:bg-[#0f3a27] transition-colors mb-4"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full py-4.25 rounded-[10px] bg-primary-container text-(--color-on-primary) text-lg font-semibold leading-[25.2px] shadow-(--shadow-level-1) hover:bg-[#164f35] active:bg-[#0f3a27] transition-colors mb-4 disabled:opacity-70"
               >
-                Request Wholesale Access
+                {loading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    {t("wholesale.submitting")}
+                  </span>
+                ) : (
+                  "Request Wholesale Access"
+                )}
               </button>
 
               {/* Cancel link */}
               <div className="text-center">
-                <Link
-                  to="/login"
+                <button
+                  type="button"
+                  onClick={handleCancel}
                   className="text-[13px] font-semibold text-[var(--color-on-surface-variant)] hover:underline"
                 >
-                  Cancel and return to login
-                </Link>
+                  {fromRegistration
+                    ? t("wholesale.cancelReturn")
+                    : t("wholesale.continueShopping")}
+                </button>
               </div>
             </div>
           </div>

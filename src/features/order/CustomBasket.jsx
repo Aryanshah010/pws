@@ -1,112 +1,121 @@
-import React from "react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Info } from "lucide-react";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
+import { apiRequest, authHeader } from "../../services/api";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
-const CustomBasketTemplate = () => {
+export default function CustomBasketTemplate() {
+  const { t } = useTranslation();
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { cart, token } = useStore();
+  const navigate = useNavigate();
+  const goBack = useGoBack("/myorder");
+  const save = async () => {
+    if (!token) return navigate("/login");
+    setSaving(true);
+    setError("");
+    try {
+      await apiRequest("/orders/baskets", {
+        method: "POST",
+        headers: authHeader(token),
+        body: JSON.stringify({
+          name,
+          items: cart.map((item) => ({
+            product: item.product._id,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+      toast.success(t("customBasket.saved", { name: name.trim() }));
+      navigate("/myorder");
+    } catch (requestError) {
+      setError(requestError.message);
+      toast.error(requestError.message || "Could not save this basket");
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <main className="min-h-screen bg-(--color-background) text-(--color-on-background) p-4 md:p-8 lg:px-16 flex flex-col items-center">
-      {/* Main Content Container */}
       <div className="w-full max-w-260.75 flex flex-col gap-6 mt-4">
-        {/* Custom Template Card */}
         <div className="bg-(--color-surface-lowest) rounded-md p-6 md:p-8 border border-outline-border shadow-[var(--shadow-level-1)]">
-          <h2 className="text-[24px] leading-(--text-headline-sm--line-height) font-bold text-(--color-primary-container) mb-6">
-            Custom Template
+          <h2 className="text-[24px] font-bold text-(--color-primary-container) mb-6">
+            {t("customBasket.title")}
           </h2>
-
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="basket-name"
-              className="text-[length:var(--text-label-md)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]"
-            >
-              Name this Basket:
-            </label>
-            <input
-              type="text"
-              id="basket-name"
-              placeholder="Example my weekly Basket"
-              className="w-full px-4 py-4 bg-[#F4FBF4] border border-[#C1C8C1] rounded-sm text-[length:var(--text-body-md)] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-on-surface-variant)]"
-            />
-          </div>
+          <label className="text-sm font-semibold">
+            {t("customBasket.nameBasket")}
+          </label>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder={t("customBasket.namePlaceholder")}
+            className="mt-2 w-full px-4 py-4 bg-[#F4FBF4] border border-[#C1C8C1] rounded-sm outline-none"
+          />
         </div>
-
-        {/* Order Table Card */}
         <div className="bg-[var(--color-surface-lowest)] rounded-[var(--radius-md)] p-6 md:p-8 border border-[var(--color-outline-variant)] shadow-[var(--shadow-level-1)]">
-          <h2 className="text-[length:var(--text-headline-sm)] leading-[var(--text-headline-sm--line-height)] font-[var(--text-headline-lg--font-weight)] text-[var(--color-primary-container)] mb-6">
-            Order Table:
+          <h2 className="text-[22px] font-bold text-[var(--color-primary-container)] mb-6">
+            {t("customBasket.orderTable")}
           </h2>
-
-          <div className="border border-[var(--color-outline-variant)] rounded-[var(--radius-sm)] overflow-hidden mb-6">
-            {/* Table Header */}
-            <div className="grid grid-cols-[2fr_1fr_1.5fr] bg-surface-low px-6 py-4 border-b border-[var(--color-outline-variant)]">
-              <div className="text-[length:var(--text-label-sm)] font-[var(--text-headline-sm--font-weight)] text-[#414943] uppercase tracking-wider text-left">
-                Item
-              </div>
-              <div className="text-[length:var(--text-label-sm)] font-[var(--text-headline-sm--font-weight)] text-[#414943] uppercase tracking-wider text-center">
-                Qty
-              </div>
-              <div className="text-[length:var(--text-label-sm)] font-[var(--text-headline-sm--font-weight)] text-[#414943] uppercase tracking-wider text-right">
-                Current Price per unit
-              </div>
+          <div className="border border-[var(--color-outline-variant)] rounded overflow-hidden">
+            <div className="grid grid-cols-[2fr_1fr_1.5fr] bg-surface-low px-6 py-4 text-xs font-bold uppercase">
+              <span>{t("common.item")}</span>
+              <span className="text-center">{t("common.qty")}</span>
+              <span className="text-right">
+                {t("customBasket.currentPrice")}
+              </span>
             </div>
-
-            {/* Row 1 */}
-            <div className="grid grid-cols-[2fr_1fr_1.5fr] px-6 py-5 border-b border-[var(--color-outline-variant)] items-center">
-              <div className="text-[length:var(--text-body-md)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
-                Mustard oil 1L
-              </div>
-              <div className="text-[length:var(--text-body-md)] text-[var(--color-on-surface-variant)] text-center">
-                9
-              </div>
-              <div className="text-[length:var(--text-body-md)] text-[var(--color-on-surface-variant)] text-right">
-                Rs. 1800
-              </div>
-            </div>
-
-            {/* Row 2 */}
-            <div className="grid grid-cols-[2fr_1fr_1.5fr] px-6 py-5 items-center">
-              <div className="text-[length:var(--text-body-md)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface)]">
-                Rice 20kg
-              </div>
-              <div className="text-[length:var(--text-body-md)] text-[var(--color-on-surface-variant)] text-center">
-                10
-              </div>
-              <div className="text-[length:var(--text-body-md)] text-[var(--color-on-surface-variant)] text-right">
-                Rs. 2300
-              </div>
-            </div>
+            {cart.length ? (
+              cart.map((item) => (
+                <div
+                  key={item.product._id}
+                  className="grid grid-cols-[2fr_1fr_1.5fr] px-6 py-5 border-t border-[var(--color-outline-variant)]"
+                >
+                  <span className="font-semibold">{item.product.name}</span>
+                  <span className="text-center">{item.quantity}</span>
+                  <span className="text-right">Rs. {item.price}</span>
+                </div>
+              ))
+            ) : (
+              <p className="p-6 text-center text-[#717973]">
+                {t("customBasket.emptyCart")}
+              </p>
+            )}
           </div>
-
-          {/* Note Alert */}
-          <div className="bg-surface-categories border-l-4 border-l-(--color-primary-container) p-4 rounded-r-default flex items-start gap-3">
-            <Info
-              className="text-[var(--color-primary-container)] shrink-0 mt-0.5"
-              size={20}
-            />
-            <div className="flex flex-col">
-              <span className="text-[length:var(--text-label-md)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-primary-container)] mb-1">
-                Note:
-              </span>
-              <span className="text-[length:var(--text-body-md)] text-[var(--color-on-surface-variant)] leading-relaxed">
-                This saves a template only. It will not order automatically.
-                <br />
-                Prices and stock will be checked when you use it.
-              </span>
-            </div>
+          <div className="mt-6 bg-surface-categories border-l-4 border-l-(--color-primary-container) p-4 rounded-r-default flex gap-3">
+            <Info size={20} />
+            <p>{t("customBasket.note")}</p>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col items-center gap-6 mt-6 mb-12">
-          <button className="w-full max-w-[320px] bg-[var(--color-primary)] text-[var(--color-on-primary)] py-4 rounded-[var(--radius-default)] text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] hover:bg-[var(--color-primary-container)] transition-colors shadow-[var(--shadow-level-1)]">
-            Save Template
+        <div className="flex flex-col items-center gap-4">
+          <button
+            onClick={save}
+            disabled={saving || !cart.length || !name.trim()}
+            className="w-full max-w-[320px] bg-[var(--color-primary)] text-white py-4 rounded-[var(--radius-default)] text-lg font-semibold disabled:opacity-50"
+          >
+            {saving ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner size={18} />
+                {t("customBasket.saving")}
+              </span>
+            ) : (
+              "Save Template"
+            )}
           </button>
-
-          <button className="text-[length:var(--text-body-lg)] font-[var(--text-headline-sm--font-weight)] text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors">
-            Cancel
+          {error && <p className="text-sm text-red-700">{error}</p>}
+          <button
+            onClick={goBack}
+            className="text-lg font-semibold text-[var(--color-on-surface-variant)]"
+          >
+            {t("common.cancel")}
           </button>
         </div>
       </div>
     </main>
   );
-};
-
-export default CustomBasketTemplate;
+}

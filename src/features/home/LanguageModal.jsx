@@ -1,103 +1,139 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
-import { Check } from "lucide-react";
 
 export default function LanguageModal() {
-  const { t, i18n } = useTranslation();
-  const { language, setLanguage, onboarded, setOnboarded } = useStore();
+  const { t } = useTranslation();
+  const { setOnboarded, setLanguage } = useStore();
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
-  // Local state to manage active selection before committing
-  const [selectedLang, setSelectedLang] = useState(language);
-
-  // If user is already onboarded, don't show the modal
-  if (onboarded) return null;
-
-  const handleSelect = (lang) => {
-    setSelectedLang(lang);
-    i18n.changeLanguage(lang);
-    setLanguage(lang);
-  };
-
-  const handleProceed = () => {
+  const handleContinue = () => {
+    const langCode = selectedLanguage === "Nepali" ? "ne" : "en";
+    setLanguage(langCode);
     setOnboarded(true);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-6">
-      <div className="w-full max-w-[520px] bg-[var(--color-surface-lowest)] rounded-[var(--radius-lg)] border border-[var(--color-outline-border)] shadow-[var(--shadow-level-3)] p-8 flex flex-col gap-6 transition-all">
-        {/* Header */}
-        <div className="text-center flex flex-col items-center">
-          <div className="w-[72px] h-[72px] rounded-[var(--radius-full)] bg-[var(--color-primary)] flex items-center justify-center text-[var(--color-on-primary)] font-bold text-[var(--text-headline-lg)] mb-4 shadow-[var(--shadow-level-2)]">
-            P
+    <main className="flex items-center justify-center min-h-[75vh] px-4 py-12 bg-[var(--color-background)]">
+      {/* Main Card Container */}
+      <div
+        className="w-full max-w-[540px] bg-[var(--color-surface-lowest)] rounded-md p-10 flex flex-col items-center text-center"
+        style={{ boxShadow: "var(--shadow-level-1)" }}
+      >
+        {/* Logo Icon */}
+        <div className="w-16 h-16 rounded-full bg-surface-categories flex items-center justify-center mb-6">
+          <div className="w-10 h-10 rounded-full bg-[#1B5E40] flex items-center justify-center flex-shrink-0">
+            <svg
+              width="22"
+              height="19"
+              viewBox="0 0 22 19"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M4.51288 19C4.06288 19 3.66288 18.8625 3.31288 18.5875C2.96288 18.3125 2.72121 17.9583 2.58788 17.525L0.0378788 8.275C-0.0454545 7.95833 0.00871213 7.66667 0.200379 7.4C0.392045 7.13333 0.654545 7 0.987879 7H5.73788L10.1379 0.45C10.2212 0.316667 10.3379 0.208333 10.4879 0.125C10.6379 0.0416667 10.7962 0 10.9629 0C11.1295 0 11.2879 0.0416667 11.4379 0.125C11.5879 0.208333 11.7045 0.316667 11.7879 0.45L16.1879 7H20.9879C21.3212 7 21.5837 7.13333 21.7754 7.4C21.967 7.66667 22.0212 7.95833 21.9379 8.275L19.3879 17.525C19.2545 17.9583 19.0129 18.3125 18.6629 18.5875C18.3129 18.8625 17.9129 19 17.4629 19H4.51288ZM10.9879 15C11.5379 15 12.0087 14.8042 12.4004 14.4125C12.792 14.0208 12.9879 13.55 12.9879 13C12.9879 12.45 12.792 11.9792 12.4004 11.5875C12.0087 11.1958 11.5379 11 10.9879 11C10.4379 11 9.96704 11.1958 9.57538 11.5875C9.18371 11.9792 8.98788 12.45 8.98788 13C8.98788 13.55 9.18371 14.0208 9.57538 14.4125C9.96704 14.8042 10.4379 15 10.9879 15ZM8.16288 7H13.7879L10.9629 2.8L8.16288 7Z"
+                fill="white"
+              />
+            </svg>
           </div>
-          <h2 className="font-sans text-[var(--text-headline-sm)] font-bold text-[var(--color-on-surface)] leading-snug">
-            {t("onboarding.title")}
-          </h2>
-          <p className="font-sans text-base text-[var(--color-on-surface-variant)] mt-2 max-w-sm">
-            {t("onboarding.subtitle")}
-          </p>
         </div>
 
-        {/* Language Selection Grid */}
-        <div className="grid grid-cols-1 gap-4 py-2">
-          {/* English Option */}
+        {/* Headings */}
+        <h1 className="text-[#00452B] leading-[var(--text-headline-lg--line-height)] font-semibold text-[24px] mb-4">
+          {t("onboarding.welcomeFull")}
+        </h1>
+
+        <p className="text-[#414943] leading-(--text-body-lg--line-height) mb-10 max-w-[400px]">
+          {t("onboarding.tagline")}
+        </p>
+
+        {/* Language Selection Section */}
+        <p className="text-(--text-label-md) font-medium mb-4">
+          {t("onboarding.selectLanguage")}
+        </p>
+
+        <div className="flex gap-4 w-full mb-6">
+          {/* English Button */}
           <button
-            onClick={() => handleSelect("en")}
-            className={`flex items-center justify-between p-5 rounded-[var(--radius-md)] border-2 text-left font-sans transition-all duration-200 cursor-pointer ${
-              selectedLang === "en"
-                ? "border-[var(--color-primary)] bg-[var(--color-primary-fixed)] text-[var(--color-on-primary-fixed-variant)]"
-                : "border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] text-[var(--color-on-surface-variant)] hover:border-[var(--color-primary-fixed-dim)]"
+            onClick={() => setSelectedLanguage("English")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] font-semibold text-(--text-body-lg) transition-all ${
+              selectedLanguage === "English"
+                ? "bg-primary text-(--color-on-primary) border-2 border-primary"
+                : "bg-[var(--color-surface-lowest)] text-[var(--color-on-surface)] border-2 border-[var(--color-outline-border)] hover:bg-[var(--color-surface-low)]"
             }`}
           >
-            <div className="flex flex-col gap-1">
-              <span className="text-lg font-bold text-[var(--color-on-surface)]">
-                English
-              </span>
-              <span className="text-sm text-[var(--color-on-surface-variant)] opacity-90">
-                Browse in English
-              </span>
-            </div>
-            {selectedLang === "en" && (
-              <div className="w-6 h-6 rounded-[var(--radius-full)] bg-[var(--color-primary)] flex items-center justify-center text-[var(--color-on-primary)] shadow-[var(--shadow-level-1)] shrink-0">
-                <Check size={16} strokeWidth={2.5} />
-              </div>
+            English
+            {selectedLanguage === "English" && (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="8" cy="8" r="8" fill="white" />
+                <path
+                  d="M4.5 8.5L7 11L11.5 5.5"
+                  stroke="var(--color-primary)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
           </button>
 
-          {/* Nepali Option */}
+          {/* Nepali Button */}
           <button
-            onClick={() => handleSelect("ne")}
-            className={`flex items-center justify-between p-5 rounded-[var(--radius-md)] border-2 text-left font-sans transition-all duration-200 cursor-pointer ${
-              selectedLang === "ne"
-                ? "border-[var(--color-primary)] bg-[var(--color-primary-fixed)] text-[var(--color-on-primary-fixed-variant)]"
-                : "border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] text-[var(--color-on-surface-variant)] hover:border-[var(--color-primary-fixed-dim)]"
+            onClick={() => setSelectedLanguage("Nepali")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] font-semibold text-(--text-body-lg) transition-all ${
+              selectedLanguage === "Nepali"
+                ? "bg-primary text-(--color-on-primary) border-2 border-[var(--color-primary)]"
+                : "bg-(--color-surface-lowest) text-(--color-on-surface) border-2 border-[var(--color-outline-border)] hover:bg-[var(--color-surface-low)]"
             }`}
           >
-            <div className="flex flex-col gap-1">
-              <span className="text-lg font-bold text-[var(--color-on-surface)]">
-                नेपाली (Nepali)
-              </span>
-              <span className="text-sm text-[var(--color-on-surface-variant)] opacity-90">
-                नेपाली भाषामा ब्राउज गर्नुहोस्
-              </span>
-            </div>
-            {selectedLang === "ne" && (
-              <div className="w-6 h-6 rounded-[var(--radius-full)] bg-[var(--color-primary)] flex items-center justify-center text-[var(--color-on-primary)] shadow-[var(--shadow-level-1)] shrink-0">
-                <Check size={16} strokeWidth={2.5} />
-              </div>
+            Nepali
+            {selectedLanguage === "Nepali" && (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="8" cy="8" r="8" fill="white" />
+                <path
+                  d="M4.5 8.5L7 11L11.5 5.5"
+                  stroke="var(--color-primary)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             )}
           </button>
         </div>
 
-        {/* Action Button */}
+        {/* Continue Button */}
         <button
-          onClick={handleProceed}
-          className="w-full h-[56px] flex items-center justify-center rounded-[var(--radius-default)] bg-[var(--color-primary)] text-[var(--color-on-primary)] font-sans text-lg font-bold hover:opacity-90 shadow-[var(--shadow-level-1)] active:scale-[0.99] transition-all cursor-pointer mt-2"
+          onClick={handleContinue}
+          className="w-full bg-surface-categories text-primary py-4 rounded-[10px] font-semibold mb-8 hover:bg-[#d5e0d7] transition-colors"
         >
-          {t("onboarding.proceed")}
+          {t("onboarding.continue")}
         </button>
+
+        {/* Login Link */}
+        <p className="text-(--text-label-md) font-medium">
+          {t("onboarding.alreadyRegistered")}{" "}
+          <Link
+            to="/login"
+            className="font-bold text-[#0052D5] hover:underline"
+          >
+            {t("onboarding.loginLink")}
+          </Link>
+        </p>
       </div>
-    </div>
+    </main>
   );
 }

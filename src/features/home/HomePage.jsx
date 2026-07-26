@@ -1,167 +1,186 @@
-import React from "react";
-import { ShoppingCart, Bell, ChevronRight, ChevronDown } from "lucide-react";
-const products = [
-  {
-    name: "Mustard Oil 1L",
-    price: "Rs. 160",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Tea Box",
-    price: "Rs. 320",
-    stock: "LOW STOCK",
-    action: "Add",
-  },
-  {
-    name: "Rice 25kg",
-    price: "Rs. 2100",
-    oldPrice: "Rs. 2350",
-    stock: "LOW STOCK",
-    action: "Add",
-  },
-  {
-    name: "Flour 10kg",
-    price: "Rs. 720",
-    stock: "OUT OF STOCK",
-    action: "Notify",
-  },
-  {
-    name: "Sugar 5kg",
-    price: "Rs. 475",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-  {
-    name: "Dal 5kg",
-    price: "Rs. 650",
-    stock: "IN STOCK",
-    action: "Add",
-  },
-];
-
-const categories = ["Rice", "Oil", "Soap", "Flour", "Dal"];
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
+import { Bell, ChevronDown, ChevronRight, ShoppingCart } from "lucide-react";
+import { toast } from "react-toastify";
+import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
+import { API_URL, apiRequest, authHeader } from "../../services/api";
+import { unitPriceFor } from "../../utils/pricing";
 
 export const STOCK_COLORS = {
-  "IN STOCK": "var(--color-primary-fixed)",
-  "LOW STOCK": "var(--color-secondary-fixed)",
-  "OUT OF STOCK": "var(--color-error-container)",
+  "In Stock": "var(--color-primary-fixed)",
+  "Low Stock": "var(--color-secondary-fixed)",
+  "Out of Stock": "var(--color-error-container)",
+};
+
+// Stock status arrives from the API in English; the badge is the single place
+// it gets mapped onto a translated label.
+const STOCK_KEYS = {
+  "In Stock": "stock.inStock",
+  "Low Stock": "stock.lowStock",
+  "Out of Stock": "stock.outOfStock",
 };
 
 export function StockBadge({ stock }) {
+  const { t } = useTranslation();
   return (
     <span
       style={{
         height: 25,
         padding: "4px 10px",
         borderRadius: "var(--radius-full)",
-        background: STOCK_COLORS[stock],
-
+        background: STOCK_COLORS[stock] || STOCK_COLORS["Out of Stock"],
         display: "inline-flex",
         alignItems: "center",
-
         fontSize: "var(--text-label-sm)",
         lineHeight: "var(--text-label-sm--line-height)",
         fontWeight: 700,
       }}
     >
-      {stock}
+      {STOCK_KEYS[stock] ? t(STOCK_KEYS[stock]) : stock}
     </span>
   );
 }
 
-export function ActionButton({ action }) {
-  const notify = action === "Notify";
+const ACTION_KEYS = {
+  Add: "home.add",
+  Notify: "home.notify",
+  Requested: "home.requested",
+};
 
+function ActionButton({ action, busy, onClick }) {
+  const { t } = useTranslation();
+  const notify = action !== "Add";
   return (
     <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
       style={{
         width: 121,
         height: 48,
-
         border: 0,
         cursor: "pointer",
-
         borderRadius: "var(--radius-default)",
-
         background: notify
           ? "var(--color-on-surface-variant)"
           : "var(--color-primary)",
-
         color: "var(--color-on-primary)",
-
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-
         gap: 6,
-
         fontSize: "var(--text-label-md)",
         fontWeight: 700,
       }}
     >
-      {notify ? <Bell size={16} /> : <ShoppingCart size={16} />}
-      {action}
+      {busy ? (
+        <Spinner />
+      ) : notify ? (
+        <Bell size={16} />
+      ) : (
+        <ShoppingCart size={16} />
+      )}
+      {busy ? t("home.saving") : t(ACTION_KEYS[action])}
     </button>
   );
 }
 
 export function ProductCard({ product }) {
+  const { t } = useTranslation();
+  const { user, token, addToCart } = useStore();
+  const [notificationRequested, setNotificationRequested] = useState(false);
+  const navigate = useNavigate();
+  const isWholesale = user?.role === "verified_wholesale";
+  const displayPrice = unitPriceFor(product, user?.role);
+  const oldPrice =
+    isWholesale && displayPrice !== product.retailPrice
+      ? product.retailPrice
+      : null;
+  const stockText =
+    product.stockStatus || (product.stock > 0 ? "In Stock" : "Out of Stock");
+  const action =
+    stockText === "Out of Stock"
+      ? notificationRequested
+        ? "Requested"
+        : "Notify"
+      : "Add";
+
+  const [busy, setBusy] = useState(false);
+
+  const handleActionClick = async (event) => {
+    event.preventDefault();
+    if (action === "Add") {
+      addToCart(product, 1, displayPrice);
+      toast.success(t("home.addedToCart", { name: product.name }));
+      return;
+    }
+    if (!user || !token) return navigate("/login");
+    setBusy(true);
+    try {
+      await apiRequest(`/products/${product._id}/restock-subscriptions`, {
+        method: "POST",
+        headers: authHeader(token),
+      });
+      setNotificationRequested(true);
+      toast.success(t("home.restockAlert", { name: product.name }));
+    } catch (error) {
+      toast.error(error.message || t("home.restockFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <article
+    <Link
+      to={`/view-product?id=${product._id}`}
       style={{
+        textDecoration: "none",
+        color: "inherit",
         background: "var(--color-surface-lowest)",
         borderRadius: "var(--radius-md)",
         overflow: "hidden",
         boxShadow: "var(--shadow-level-1)",
-
         display: "flex",
         flexDirection: "column",
+        width: "100%",
+        maxWidth: 299,
       }}
     >
       <div
         style={{
           height: 222,
-
-          background: "var(--color-primary-fixed)",
-
-          display: "grid",
-          placeItems: "center",
-
+          background: "#F5F3F0",
+          display: "block",
           position: "relative",
         }}
       >
-        <div
-          style={{
-            width: 140,
-            height: 140,
-
-            borderRadius: "var(--radius-lg)",
-
-            border: "3px dashed var(--color-outline)",
-          }}
-        />
-
-        <span
-          style={{
-            position: "absolute",
-            bottom: 20,
-
-            color: "var(--color-on-surface-variant)",
-
-            fontSize: "var(--text-label-sm)",
-          }}
-        >
-          PRODUCT IMAGE
-        </span>
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <span
+            style={{
+              color: "var(--color-on-surface-variant)",
+              fontSize: "var(--text-label-sm)",
+            }}
+          >
+            {t("home.productImage")}
+          </span>
+        )}
       </div>
-
       <div
         style={{
           padding: "var(--spacing-lg)",
-
           flex: 1,
-
           display: "flex",
           flexDirection: "column",
         }}
@@ -169,275 +188,498 @@ export function ProductCard({ product }) {
         <div
           style={{
             fontSize: "var(--text-headline-xs)",
-
             fontWeight: 700,
-
             marginBottom: "var(--spacing-sm)",
           }}
         >
           {product.name}
         </div>
-
         <div
           style={{
             display: "flex",
             alignItems: "center",
-
             gap: "var(--spacing-sm)",
           }}
         >
           <div
             style={{
               fontSize: "var(--text-headline-md)",
-
               fontWeight: "var(--font-weight-extrabold)",
+              color: isWholesale ? "var(--color-primary-container)" : "inherit",
             }}
           >
-            {product.price}
+            Rs. {displayPrice}
           </div>
-
-          {product.oldPrice && (
+          {oldPrice && (
             <div
               style={{
                 color: "var(--color-outline)",
-
                 textDecoration: "line-through",
+                fontSize: "var(--text-body-md)",
               }}
             >
-              {product.oldPrice}
+              Rs. {oldPrice}
             </div>
           )}
         </div>
-
         <div
           style={{
             marginTop: "auto",
-
             paddingTop: "var(--spacing-lg)",
-
             display: "flex",
-
             justifyContent: "space-between",
-
             alignItems: "center",
           }}
         >
-          <StockBadge stock={product.stock} />
-
-          <ActionButton action={product.action} />
+          <StockBadge stock={stockText} />
+          <ActionButton
+            action={action}
+            busy={busy}
+            onClick={handleActionClick}
+          />
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
 export default function Home() {
+  const { t } = useTranslation();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [stockFilter, setStockFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
+  const [priceOrder, setPriceOrder] = useState("");
+  const { catalogSearch } = useStore();
+
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (catalogSearch.trim()) params.set("search", catalogSearch.trim());
+      if (selectedCategory !== "All") params.set("category", selectedCategory);
+      const data = await apiRequest(
+        `/products${params.size ? `?${params}` : ""}`,
+      );
+      setProducts(data.products || []);
+    } catch (requestError) {
+      setError(requestError.message || "Could not load products");
+    } finally {
+      setLoading(false);
+    }
+  }, [catalogSearch, selectedCategory]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+  useEffect(() => {
+    apiRequest("/products/categories")
+      .then((data) => setCategories(data.categories || []))
+      .catch(() => {});
+    const token = localStorage.getItem("pathivara_token");
+    const stream = new EventSource(
+      `${API_URL}/events${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    );
+    stream.addEventListener("catalog-updated", loadProducts);
+    return () => stream.close();
+  }, [loadProducts]);
+
+  const resetFilters = () => {
+    setSelectedCategory("All");
+    setStockFilter("");
+    setSortOrder("");
+    setPriceOrder("");
+  };
+
+  // Derive the displayed products by applying frontend filters/sorting
+  const displayedProducts = (() => {
+    let list = [...products];
+
+    // Stock filter
+    if (stockFilter) {
+      list = list.filter((p) => {
+        const status =
+          p.stockStatus || (p.stock > 0 ? "In Stock" : "Out of Stock");
+        return status === stockFilter;
+      });
+    }
+
+    // Sort by name
+    if (sortOrder === "A to Z") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOrder === "Z to A") {
+      list.sort((a, b) => b.name.localeCompare(a.name));
+    }
+
+    // Sort by price (price sort takes precedence over name sort when set)
+    if (priceOrder === "High to Low") {
+      list.sort((a, b) => (b.retailPrice ?? 0) - (a.retailPrice ?? 0));
+    } else if (priceOrder === "Low to High") {
+      list.sort((a, b) => (a.retailPrice ?? 0) - (b.retailPrice ?? 0));
+    }
+
+    return list;
+  })();
+
+  const activeFilterCount = [stockFilter, sortOrder, priceOrder].filter(
+    Boolean,
+  ).length;
+
+  const heading = catalogSearch.trim()
+    ? t("home.resultsFor", { query: catalogSearch.trim() })
+    : selectedCategory === "All"
+      ? t("home.allProducts")
+      : selectedCategory;
+
   return (
     <main
       style={{
         background: "var(--color-background)",
-
         width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        minHeight: "100%",
       }}
     >
-      {/* Navbar */}
-
       <div
         style={{
           width: "100%",
-
           display: "flex",
-
           alignItems: "stretch",
+          flex: 1,
         }}
       >
         <aside
           style={{
             width: 328,
-
             flex: "0 0 328px",
-
             background: "var(--color-surface-lowest)",
-
             borderRight: "1px solid var(--color-outline-variant)",
-
             boxShadow: "var(--shadow-level-1)",
-
             padding: "var(--spacing-2xl) var(--spacing-xl)",
-
             display: "flex",
-
             flexDirection: "column",
-
             alignItems: "center",
           }}
         >
           <h3
             style={{
               width: "100%",
-
               marginBottom: "var(--spacing-lg)",
-
               fontSize: "var(--text-headline-sm)",
-
               fontWeight: 700,
             }}
           >
-            Categories
+            {t("home.categories")}
           </h3>
-
           <div
             style={{
               width: "100%",
-
               display: "flex",
-
               flexDirection: "column",
-
               alignItems: "center",
-
               gap: "var(--spacing-sm)",
             }}
           >
-            {categories.map((c) => (
+            {categories.map((category) => (
               <button
-                key={c}
+                type="button"
+                key={category}
+                onClick={() => setSelectedCategory(category)}
                 style={{
                   width: 237,
-
                   height: 48,
-
                   border: 0,
-
                   borderRadius: "var(--radius-default)",
-
-                  background: "var(--color-surface-categories)",
+                  background:
+                    selectedCategory === category
+                      ? "var(--color-primary-fixed)"
+                      : "var(--color-surface-categories)",
                   display: "flex",
-
                   alignItems: "center",
-
                   justifyContent: "space-between",
-
                   padding: "0 var(--spacing-md)",
-
                   cursor: "pointer",
                 }}
               >
-                {c}
-
+                {category}
                 <ChevronRight size={16} />
               </button>
             ))}
           </div>
-
-          <div
+          <button
+            type="button"
+            onClick={resetFilters}
             style={{
               width: 237,
-
               marginTop: "var(--spacing-lg)",
-
               fontWeight: 900,
+              border: 0,
+              background: "transparent",
+              textAlign: "left",
+              cursor: "pointer",
             }}
           >
-            See All →
-          </div>
-
+            {t("home.seeAll")}
+          </button>
           <div
             style={{
               marginTop: 128,
-
               width: 237,
-
               padding: "var(--spacing-lg)",
-
               borderRadius: "var(--radius-md)",
-
               background: "rgba(255,180,99,.1)",
-
               color: "var(--color-secondary)",
             }}
           >
-            <strong>ⓘ Note:</strong>
-
-            <div
-              style={{
-                marginTop: "var(--spacing-sm)",
-              }}
-            >
-              Pickup-only, collect from Pathivara Wholesale center located at
-              the main market hub.
+            <strong>ⓘ {t("home.note")}</strong>
+            <div style={{ marginTop: "var(--spacing-sm)" }}>
+              {t("home.pickupNote")}
             </div>
           </div>
         </aside>
-
         <section
           style={{
             flex: 1,
-
             padding: "52px var(--spacing-2xl)",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           <div
             style={{
               display: "flex",
-
               justifyContent: "space-between",
-
               alignItems: "center",
-
-              marginBottom: 52,
+              marginBottom: filterOpen ? 16 : 52,
             }}
           >
-            <h1
-              style={{
-                margin: 0,
-
-                fontSize: 30,
-
-                fontWeight: 700,
-              }}
-            >
-              All Products
+            <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700 }}>
+              {heading}
             </h1>
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setFilterOpen((open) => !open)}
+                style={{
+                  border: 0,
+                  background: "transparent",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color: "#414943",
+                  fontSize: 16,
+                  fontWeight: 400,
+                }}
+              >
+                {t("home.filter")}
+                {activeFilterCount > 0 && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      background: "var(--color-primary)",
+                      color: "var(--color-on-primary)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {activeFilterCount}
+                  </span>
+                )}
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transition: "transform 0.2s",
+                    transform: filterOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
+              </button>
 
-            <button
-              style={{
-                border: 0,
+              {filterOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 10px)",
+                    right: 0,
+                    zIndex: 100,
+                    background: "#FAFAF8",
+                    border: "1px solid var(--color-outline-variant)",
+                    borderRadius: 12,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                    padding: "20px 24px",
+                    minWidth: 200,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  {/* Stock */}
+                  <p
+                    style={{
+                      margin: "0 0 8px",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Stock
+                  </p>
+                  {["In Stock", "Low Stock", "Out of Stock"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setStockFilter((prev) => (prev === opt ? "" : opt));
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        fontSize: 14,
+                        fontWeight: stockFilter === opt ? 700 : 400,
+                        color:
+                          stockFilter === opt
+                            ? "var(--color-primary)"
+                            : "inherit",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
 
-                background: "transparent",
+                  {/* Sort */}
+                  <p
+                    style={{
+                      margin: "16px 0 8px",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Sort
+                  </p>
+                  {["A to Z", "Z to A"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setSortOrder((prev) => (prev === opt ? "" : opt));
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        fontSize: 14,
+                        fontWeight: sortOrder === opt ? 700 : 400,
+                        color:
+                          sortOrder === opt
+                            ? "var(--color-primary)"
+                            : "inherit",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
 
-                cursor: "pointer",
+                  {/* Price */}
+                  <p
+                    style={{
+                      margin: "16px 0 8px",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Price
+                  </p>
+                  {["High to Low", "Low to High"].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        setPriceOrder((prev) => (prev === opt ? "" : opt));
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        padding: "4px 0",
+                        fontSize: 14,
+                        fontWeight: priceOrder === opt ? 700 : 400,
+                        color:
+                          priceOrder === opt
+                            ? "var(--color-primary)"
+                            : "inherit",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
 
-                display: "flex",
-
-                alignItems: "center",
-
-                gap: 4,
-
-                color: "#414943",
-
-                fontSize: 16,
-
-                fontWeight: 400,
-              }}
-            >
-              Filter
-              <ChevronDown size={16} />
-            </button>
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStockFilter("");
+                        setSortOrder("");
+                        setPriceOrder("");
+                        setFilterOpen(false);
+                      }}
+                      style={{
+                        marginTop: 16,
+                        background: "none",
+                        border: "1px solid var(--color-outline-variant)",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--color-primary)",
+                        alignSelf: "flex-start",
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-
           <div
             style={{
               display: "grid",
-
-              gridTemplateColumns: "repeat(auto-fit,minmax(297px,1fr))",
-
-              gap: 34,
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 299px))",
+              gap: 32,
             }}
           >
-            {products.map((p) => (
-              <ProductCard key={p.name} product={p} />
-            ))}
+            {loading ? (
+              <div>{t("home.loadingProducts")}</div>
+            ) : error ? (
+              <div className="text-red-700">{error}</div>
+            ) : displayedProducts.length === 0 ? (
+              <div>{t("home.noProducts")}</div>
+            ) : (
+              displayedProducts.map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))
+            )}
           </div>
         </section>
       </div>

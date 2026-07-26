@@ -1,7 +1,16 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Nav from "./components/layout/Nav";
 import Footer from "./components/layout/Footer";
+import NotificationPrompt from "./components/layout/NotificationPrompt";
 import LanguageModal from "./features/home/LanguageModal";
 import LandingPage from "./features/home/LandingPage";
 import Login from "./features/auth/Login";
@@ -17,13 +26,11 @@ import MainNavbar from "./components/layout/MainNav";
 import WholesaleForm from "./features/wholesale/WholesaleForm";
 import WholesalePending from "./features/wholesale/WholesalePending";
 import WholesaleApproved from "./features/wholesale/WholesaleApprove";
+import WholesaleRejected from "./features/wholesale/WholesaleReject";
 import ViewProductDetailIS from "./features/products/ViewProductDetailsIS";
 import CartPage from "./features/checkout/CartPage";
-import ProductDetailOS from "./features/products/VIewProductDetailsOS";
 import Checkout from "./features/checkout/CheckoutPage";
 import PaymentQr from "./features/checkout/PaymentQrPage";
-import PaymentProofPage from "./features/checkout/PaymentQrPage";
-import PaymentConfirm from "./features/checkout/PaymentProofSubmitted";
 import PaymentProofSubmitted from "./features/checkout/PaymentProofSubmitted";
 import TrackOrderPage from "./features/order/TrackOrder";
 import OrderSuccess from "./features/order/OrderSuccess";
@@ -37,6 +44,26 @@ import AdminOverviewPage from "./features/admin/AdminOverviewPage";
 import AdminUsersPage from "./features/admin/AdminUsersPage";
 import AdminWholesalePage from "./features/admin/AdminWholesalePage";
 import AdminPaymentsPage from "./features/admin/AdminPaymentsPage";
+import AdminProductsPage from "./features/admin/AdminProductsPage";
+import AdminOrdersPage from "./features/admin/AdminOrdersPage";
+import AdminComplaintsPage from "./features/admin/AdminComplaintsPage";
+import AdminSettingsPage from "./features/admin/AdminSettingsPage";
+import ProfilePage from "./features/auth/ProfilePage";
+import { useStore } from "./store/store";
+
+function AuthSession() {
+  const { token, refreshUser } = useStore();
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    refreshUser();
+    const intervalId = window.setInterval(refreshUser, 30000);
+    return () => window.clearInterval(intervalId);
+  }, [token, refreshUser]);
+
+  return null;
+}
 
 function Layout({ children }) {
   return (
@@ -44,6 +71,7 @@ function Layout({ children }) {
       <Nav />
       <main className="grow">{children}</main>
       <Footer />
+      <NotificationPrompt />
     </div>
   );
 }
@@ -54,50 +82,106 @@ function Layout2({ children }) {
       <MainNavbar />
       <main className="grow">{children}</main>
       <Footer />
+      <NotificationPrompt />
     </div>
+  );
+}
+
+function FirstVisitGate({ children }) {
+  const { onboarded } = useStore();
+  if (!onboarded)
+    return (
+      <Layout>
+        <LanguageModal />
+      </Layout>
+    );
+  return children;
+}
+
+// The product page handles both stock states, so the old out-of-stock URL just
+// forwards to it, carrying the ?id= through.
+function LegacyProductRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/view-product${search}`} replace />;
+}
+
+function GuestOnly({ children }) {
+  const { token, user } = useStore();
+  if (!token) return children;
+  return (
+    <Navigate to={user?.role === "admin" ? "/admin" : "/homepage"} replace />
   );
 }
 
 function App() {
   return (
     <Router>
+      <AuthSession />
+      <ToastContainer
+        position="top-right"
+        autoClose={3500}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss={false}
+        pauseOnHover
+        theme="light"
+      />
       <Routes>
         <Route
           path="/"
           element={
-            <Layout>
-              <LandingPage />
-            </Layout>
+            <GuestOnly>
+              <Layout>
+                <LandingPage />
+              </Layout>
+            </GuestOnly>
           }
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/login"
+          element={
+            <GuestOnly>
+              <FirstVisitGate>
+                <Login />
+              </FirstVisitGate>
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestOnly>
+              <FirstVisitGate>
+                <Register />
+              </FirstVisitGate>
+            </GuestOnly>
+          }
+        />
         <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/otp" element={<OtpVerification />} />
         <Route path="/change-password" element={<ChangePassword />} />
-        <Route path="/language-model" element={<LanguageModal />} />
         <Route
           path="/account-active"
           element={
-            <Layout>
+            <Layout2>
               <AccountActive />
-            </Layout>
+            </Layout2>
           }
         />
         <Route
           path="/wholesale-pending"
           element={
-            <Layout>
+            <Layout2>
               <WholesalePending />
-            </Layout>
+            </Layout2>
           }
         />
         <Route
           path="/wholesale-form"
           element={
-            <Layout>
+            <Layout2>
               <WholesaleForm />
-            </Layout>
+            </Layout2>
           }
         />
         <Route
@@ -117,18 +201,29 @@ function App() {
           }
         />
         <Route
-          path="/view-product-os"
+          path="/profile"
           element={
             <Layout2>
-              <ProductDetailOS />
+              <ProfilePage />
             </Layout2>
           }
         />
+        {/* Out-of-stock products render on /view-product too, which switches to
+            the Notify flow on its own. Kept so old links still resolve. */}
+        <Route path="/view-product-os" element={<LegacyProductRedirect />} />
         <Route
           path="/wholesale-approved"
           element={
             <Layout2>
               <WholesaleApproved />
+            </Layout2>
+          }
+        />
+        <Route
+          path="/wholesale-rejected"
+          element={
+            <Layout2>
+              <WholesaleRejected />
             </Layout2>
           }
         />
@@ -173,7 +268,7 @@ function App() {
           }
         />
         <Route
-          path="/track-order"
+          path="/track"
           element={
             <Layout2>
               <TrackOrderPage />
@@ -212,14 +307,7 @@ function App() {
             </Layout2>
           }
         />
-        <Route
-          path="/about"
-          element={
-            <Layout>
-              <About />
-            </Layout>
-          }
-        />
+        <Route path="/about" element={<About />} />
         <Route
           path="/contact"
           element={
@@ -229,12 +317,27 @@ function App() {
           }
         />
 
-        {/* ── Admin Routes ─────────────────────── */}
         <Route
           path="/admin"
           element={
             <AdminLayout>
               <AdminOverviewPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <AdminLayout>
+              <AdminProductsPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <AdminLayout>
+              <AdminOrdersPage />
             </AdminLayout>
           }
         />
@@ -255,10 +358,26 @@ function App() {
           }
         />
         <Route
+          path="/admin/complaints"
+          element={
+            <AdminLayout>
+              <AdminComplaintsPage />
+            </AdminLayout>
+          }
+        />
+        <Route
           path="/admin/payments"
           element={
             <AdminLayout>
               <AdminPaymentsPage />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <AdminLayout>
+              <AdminSettingsPage />
             </AdminLayout>
           }
         />

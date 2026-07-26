@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,32 +9,126 @@ import {
   CreditCard,
   BadgeCheck,
 } from "lucide-react";
-
-const timeSlots = [
-  { id: "9-11", label: "9-11 AM", disabled: true },
-  { id: "11-1", label: "11-1 PM" },
-  { id: "2-4", label: "2-4 PM" },
-];
+import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
+import { useStore } from "../../store/store";
+import Spinner from "../../components/common/Spinner";
+import useCartPricing from "../../hooks/useCartPricing";
+import { useGoBack } from "../../hooks/useBackNavigation";
+import { apiRequest, authHeader } from "../../services/api";
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const goBack = useGoBack("/cart");
+  const {
+    user,
+    token,
+    cart,
+    clearCart,
+    setCheckoutOrder,
+    synchronizeCartPrices,
+  } = useStore();
   const [day, setDay] = useState("today");
-  const [timeSlot, setTimeSlot] = useState("11-1");
+  const [timeSlot, setTimeSlot] = useState("");
   const [payment, setPayment] = useState("digital");
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [timeSlots, setTimeSlots] = useState([]);
+
+  // Per-order contact override — defaults to the account, but the buyer can be
+  // reached on a different name/number for this order without changing it.
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactOverride, setContactOverride] = useState(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftPhone, setDraftPhone] = useState("");
+  const [contactError, setContactError] = useState("");
+
+  const contactName = contactOverride?.name ?? (user?.fullName || "");
+  const contactPhone = contactOverride?.phone ?? (user?.phone || "");
+
+  const openContactEdit = () => {
+    setDraftName(contactName);
+    setDraftPhone(contactPhone);
+    setContactError("");
+    setEditingContact(true);
+  };
+
+  const saveContact = () => {
+    const phone = draftPhone.trim();
+    if (!/^\d{10}$/.test(phone)) {
+      setContactError(t("checkout.invalidPhone"));
+      return;
+    }
+    setContactOverride({ name: draftName.trim(), phone });
+    setEditingContact(false);
+  };
+
+  useEffect(() => {
+    apiRequest("/settings")
+      .then((data) => {
+        const slots = data.settings?.pickupSlots || [];
+        setTimeSlots(slots);
+        setTimeSlot((current) => current || slots[0]?.label || "");
+      })
+      .catch(() => setTimeSlots([]));
+  }, []);
+
+  const { totals } = useCartPricing();
+  const { subtotal, discount, tax, total: grandTotal } = totals;
+
+  const handleConfirm = async () => {
+    if (!cart || cart.length === 0) return;
+    if (!user || !token) return navigate("/login");
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const data = await apiRequest("/orders", {
+        method: "POST",
+        headers: {
+          ...authHeader(token),
+        },
+        body: JSON.stringify({
+          items: cart.map((item) => ({
+            product: item.product._id,
+            quantity: item.quantity,
+            expectedUnitPrice: item.price,
+          })),
+          pickupSlot: `${day} ${timeSlot}`,
+          paymentMethod:
+            payment === "digital" ? "Digital QR Transfer" : "Pay at Pickup",
+          notes,
+          contactName,
+          contactPhone,
+        }),
+      });
+      setCheckoutOrder(data.order);
+      clearCart();
+      toast.success(t("checkout.orderPlaced"));
+      navigate(payment === "digital" ? "/payment" : "/order-success");
+    } catch (err) {
+      if (err.data?.items) synchronizeCartPrices(err.data.items);
+      setError(err.message);
+      toast.error(err.message || "Could not place the order");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1512px] px-4 py-10 sm:px-8 lg:px-[100px] lg:py-14 2xl:px-[202px]  bg-background text-on-background">
       <div className="mb-8 flex items-center gap-3">
         <button
-          onClick={() => navigate(-1)}
-          aria-label="Go back"
+          onClick={goBack}
+          aria-label={t("common.goBack")}
           className="flex h-6 w-6 items-center justify-center text-on-surface transition-opacity hover:opacity-70"
         >
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-[32px] font-bold leading-10 text-on-surface">
-          Checkout
+          {t("checkout.title")}
         </h1>
       </div>
 
@@ -47,19 +141,77 @@ export default function Checkout() {
               <div className="flex items-center gap-4">
                 <User size={16} className="text-on-surface-variant" />
                 <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                  Contact Details
+                  {t("checkout.contactDetails")}
                 </h2>
               </div>
-              <button className="text-[13px] font-semibold text-[#3F81EA] transition-opacity hover:opacity-80">
-                Edit
-              </button>
+              {!editingContact && (
+                <button
+                  onClick={openContactEdit}
+                  className="text-[13px] font-semibold text-[#3F81EA] transition-opacity hover:opacity-80"
+                >
+                  {t("checkout.edit")}
+                </button>
+              )}
             </div>
-            <div className="flex flex-col items-start gap-1">
-              <p className="text-base font-semibold text-on-surface">
-                Aryan Shah
-              </p>
-              <p className="text-base text-on-surface-variant">98XXXXXXX</p>
-            </div>
+
+            {editingContact ? (
+              <div className="flex w-full flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-on-surface-variant">
+                    {t("checkout.contactNameLabel")}
+                  </label>
+                  <input
+                    type="text"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    className="h-11 w-full rounded-[8px] border border-outline-border bg-[#F4FBF4] px-3.5 text-base text-on-surface outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-on-surface-variant">
+                    {t("checkout.contactPhoneLabel")}
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={draftPhone}
+                    onChange={(e) =>
+                      setDraftPhone(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                    className="h-11 w-full rounded-[8px] border border-outline-border bg-[#F4FBF4] px-3.5 text-base text-on-surface outline-none focus:border-primary"
+                  />
+                  {contactError && (
+                    <p className="text-[13px] text-red-500">{contactError}</p>
+                  )}
+                </div>
+                <p className="text-[13px] text-on-surface-variant">
+                  {t("checkout.contactHint")}
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={saveContact}
+                    className="rounded-[8px] bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    {t("checkout.save")}
+                  </button>
+                  <button
+                    onClick={() => setEditingContact(false)}
+                    className="rounded-[8px] border border-outline-border px-4 py-2 text-[13px] font-semibold text-on-surface-variant transition-colors hover:bg-surface-low"
+                  >
+                    {t("checkout.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start gap-1">
+                <p className="text-base font-semibold text-on-surface">
+                  {contactName || "Guest"}
+                </p>
+                <p className="text-base text-on-surface-variant">
+                  {contactPhone || "No Phone"}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Pickup Time Slot */}
@@ -67,18 +219,18 @@ export default function Checkout() {
             <div className="flex items-center gap-3">
               <ShoppingBasket size={20} className="text-on-surface-variant" />
               <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                Pickup Time Slot
+                {t("checkout.pickupSlot")}
               </h2>
             </div>
 
             <div className="flex w-full flex-col items-start gap-3">
               <span className="text-[13px] font-semibold uppercase tracking-[0.65px] text-on-surface-variant">
-                Select Day
+                {t("checkout.selectDay")}
               </span>
               <div className="flex items-start gap-3">
                 {[
-                  { id: "today", label: "Today" },
-                  { id: "tomorrow", label: "Tomorrow" },
+                  { id: "today", label: t("checkout.today") },
+                  { id: "tomorrow", label: t("checkout.tomorrow") },
                 ].map((d) => (
                   <button
                     key={d.id}
@@ -97,25 +249,27 @@ export default function Checkout() {
 
             <div className="flex w-full flex-col items-start gap-3 py-1">
               <span className="text-[13px] font-semibold uppercase tracking-[0.65px] text-on-surface-variant">
-                Select Time
+                {t("checkout.selectTime")}
               </span>
               <div className="flex flex-wrap items-start gap-3">
                 {timeSlots.map((slot) => (
                   <button
-                    key={slot.id}
-                    disabled={slot.disabled}
-                    onClick={() => setTimeSlot(slot.id)}
+                    key={slot.label}
+                    onClick={() => setTimeSlot(slot.label)}
                     className={`rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
-                      slot.disabled
-                        ? "cursor-not-allowed border-outline-border bg-surface-lowest text-on-surface-variant opacity-50"
-                        : timeSlot === slot.id
-                          ? "border-primary bg-primary text-white"
-                          : "border-outline-border bg-surface-lowest text-on-surface-variant"
+                      timeSlot === slot.label
+                        ? "border-primary bg-primary text-white"
+                        : "border-outline-border bg-surface-lowest text-on-surface-variant"
                     }`}
                   >
                     {slot.label}
                   </button>
                 ))}
+                {timeSlots.length === 0 && (
+                  <p className="text-base text-on-surface-variant">
+                    {t("checkout.noSlots")}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -125,7 +279,7 @@ export default function Checkout() {
                 className="mt-0.5 shrink-0 text-on-surface-variant"
               />
               <p className="text-base text-on-surface-variant">
-                Pickup-only order. NO delivery address.
+                {t("checkout.pickupOnly")}
               </p>
             </div>
           </section>
@@ -135,13 +289,13 @@ export default function Checkout() {
             <div className="flex items-center gap-3.5">
               <NotebookPen size={18} className="text-on-surface-variant" />
               <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                Order Notes
+                {t("checkout.orderNotes")}
               </h2>
             </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Order notes optional"
+              placeholder={t("checkout.notesPlaceholder")}
               rows={4}
               className="w-full resize-none rounded-[10px] border border-outline-border bg-[#F4FBF4] px-4.25 py-3.75 text-base text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -154,40 +308,42 @@ export default function Checkout() {
             {/* Price Breakdown */}
             <div className="flex flex-col items-start gap-6 border-b border-outline-border p-6">
               <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                Price Breakdown
+                {t("checkout.priceBreakdown")}
               </h2>
               <div className="flex w-full flex-col items-start gap-4">
                 <div className="flex w-full items-start justify-between">
                   <span className="text-base text-on-surface-variant">
-                    Subtotal
+                    {t("checkout.subtotal")}
                   </span>
                   <span className="text-base text-on-surface-variant">
-                    Rs.2000
+                    Rs.{subtotal}
                   </span>
                 </div>
-                <div className="flex w-full items-start justify-between">
-                  <span className="text-base font-medium text-outline-border-pill">
-                    Bulk discount
-                  </span>
-                  <span className="text-base font-medium text-outline-border-pill">
-                    - Rs.900
-                  </span>
-                </div>
+                {discount > 0 && (
+                  <div className="flex w-full items-start justify-between">
+                    <span className="text-base text-on-surface-variant">
+                      {t("checkout.bulkDiscount")}
+                    </span>
+                    <span className="text-base text-on-surface-variant">
+                      -Rs.{discount}
+                    </span>
+                  </div>
+                )}
                 <div className="flex w-full items-start justify-between">
                   <span className="text-base text-on-surface-variant">
-                    Tax/Fee
+                    {t("checkout.taxFee")}
                   </span>
                   <span className="text-base text-on-surface-variant">
-                    Rs.0
+                    Rs.{tax}
                   </span>
                 </div>
               </div>
               <div className="flex w-full items-center justify-between border-t border-outline-border pt-4">
                 <span className="text-[22px] font-bold text-on-surface">
-                  Total Due
+                  {t("checkout.totalDue")}
                 </span>
                 <span className="text-2xl font-semibold text-on-surface">
-                  Rs.1100
+                  Rs.{grandTotal}
                 </span>
               </div>
             </div>
@@ -197,7 +353,7 @@ export default function Checkout() {
               <div className="flex items-center gap-2.5">
                 <CreditCard size={18} className="text-on-surface-variant" />
                 <h2 className="text-[22px] font-bold leading-[130%] text-on-surface">
-                  Payment options
+                  {t("checkout.paymentOptions")}
                 </h2>
               </div>
 
@@ -222,7 +378,7 @@ export default function Checkout() {
                     )}
                   </span>
                   <span className="ml-3 text-base font-semibold text-on-surface">
-                    Pay at Pickup
+                    {t("checkout.payAtPickup")}
                   </span>
                 </button>
 
@@ -246,7 +402,7 @@ export default function Checkout() {
                     )}
                   </span>
                   <span className="ml-3 text-base font-semibold text-on-surface">
-                    Digital Transfer / QR
+                    {t("checkout.digitalTransfer")}
                   </span>
                 </button>
               </div>
@@ -260,11 +416,25 @@ export default function Checkout() {
                   className="mt-0.5 shrink-0 text-primary"
                 />
                 <p className="text-[13px] font-semibold text-on-surface-variant">
-                  First order guarantee: receive exactly what you ordered.
+                  {t("checkout.guarantee")}
                 </p>
               </div>
-              <button className="flex w-full items-center justify-center rounded-[10px] bg-primary py-4.25 text-lg font-semibold text-white  transition-opacity hover:opacity-90">
-                Confirm Order
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+
+              <button
+                onClick={handleConfirm}
+                disabled={isSubmitting || cart.length === 0 || !timeSlot}
+                className="flex w-full items-center justify-center rounded-[10px] bg-primary py-4.25 text-lg font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Spinner size={18} />
+                    {t("checkout.placingOrder")}
+                  </span>
+                ) : (
+                  t("checkout.placeOrder")
+                )}
               </button>
             </div>
           </div>

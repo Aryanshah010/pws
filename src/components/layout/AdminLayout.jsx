@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -10,34 +10,155 @@ import {
   LogOut,
   ChevronRight,
   Bell,
+  Package,
+  ClipboardList,
+  MessageSquareWarning,
+  Settings,
 } from "lucide-react";
-import { useAdminStore } from "../../store/adminStore";
+import { useStore } from "../../store/store";
+import { API_URL, apiRequest, authHeader } from "../../services/api";
 
 const NAV_ITEMS = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/users", label: "All Users", icon: Users },
   { to: "/admin/wholesale", label: "Wholesale Requests", icon: Store },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
+  {
+    to: "/admin/complaints",
+    label: "Complaints",
+    icon: MessageSquareWarning,
+  },
+  { to: "/admin/settings", label: "Store Settings", icon: Settings },
 ];
+
+const timeAgo = (value) => {
+  const minutes = Math.round((Date.now() - new Date(value).getTime()) / 60000);
+  if (!Number.isFinite(minutes)) return "";
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)}h ago`;
+  return `${Math.round(minutes / 1440)}d ago`;
+};
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const { wholesaleRequests, payments } = useAdminStore();
+  const { token, logout } = useStore();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [pendingWholesale, setPendingWholesale] = useState(0);
+  const [pendingPayments, setPendingPayments] = useState(0);
+  const [openComplaints, setOpenComplaints] = useState(0);
+  const notificationsRef = useRef(null);
 
-  const pendingWholesale = wholesaleRequests.filter(
-    (r) => r.status === "pending",
-  ).length;
-  const pendingPayments = payments.filter((p) => p.status === "pending").length;
+  const loadNotifications = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await apiRequest("/orders/notifications", {
+        headers: authHeader(token),
+      });
+      setNotifications(data.notifications || []);
+    } catch {
+      /* keep the last known feed on a failed refresh */
+    }
+  }, [token]);
+
+  const loadBadges = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [wholesale, orders, complaints] = await Promise.all([
+        apiRequest("/auth/wholesale-requests", { headers: authHeader(token) }),
+        apiRequest("/orders/admin/all", { headers: authHeader(token) }),
+        apiRequest("/orders/admin/complaints", { headers: authHeader(token) }),
+      ]);
+      setPendingWholesale(
+        (wholesale.users || []).filter(
+          (item) => item.wholesaleStatus === "pending",
+        ).length,
+      );
+      setPendingPayments(
+        (orders.orders || []).filter(
+          (item) => item.paymentStatus === "Verifying",
+        ).length,
+      );
+      setOpenComplaints(
+        (complaints.complaints || []).filter(
+          (item) => item.status !== "Resolved",
+        ).length,
+      );
+    } catch {
+      /* badges are advisory; keep the last known counts */
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadNotifications();
+    loadBadges();
+    const stream = new EventSource(
+      `${API_URL}/events${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    );
+    const refresh = () => {
+      loadNotifications();
+      loadBadges();
+    };
+    stream.addEventListener("admin-updated", refresh);
+    stream.addEventListener("order-updated", refresh);
+    stream.addEventListener("account-updated", refresh);
+    return () => stream.close();
+  }, [loadNotifications, loadBadges, token]);
+
+  const openNotification = async (item) => {
+    setNotificationsOpen(false);
+    if (!item.read) {
+      try {
+        await apiRequest(`/orders/notifications/${item._id}/read`, {
+          method: "PUT",
+          headers: authHeader(token),
+        });
+        loadNotifications();
+      } catch {
+        // A failed read receipt should never block navigation.
+      }
+    }
+    if (item.link) navigate(item.link);
+  };
+
+  const markAllRead = async () => {
+    try {
+      await apiRequest("/orders/notifications/read", {
+        method: "PUT",
+        headers: authHeader(token),
+      });
+      loadNotifications();
+    } catch {
+      /* nothing actionable for the admin here */
+    }
+  };
+
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    const onPointerDown = (event) => {
+      if (!notificationsRef.current?.contains(event.target)) {
+        setNotificationsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [notificationsOpen]);
 
   const badges = {
     "/admin/wholesale": pendingWholesale,
     "/admin/payments": pendingPayments,
+    "/admin/complaints": openComplaints,
   };
 
   return (
     <div className="min-h-screen flex bg-[#F0F4F0]">
-      {/* ── Sidebar ─────────────────────────── */}
+      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-primary transition-transform duration-300 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:z-auto`}
@@ -106,7 +227,10 @@ export default function AdminLayout({ children }) {
             Back to Store
           </Link>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
           >
             <LogOut size={16} />
@@ -115,7 +239,7 @@ export default function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* ── Overlay (mobile) ─────────────────── */}
+      {/* Overlay (mobile) */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
@@ -123,7 +247,7 @@ export default function AdminLayout({ children }) {
         />
       )}
 
-      {/* ── Main Content ─────────────────────── */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#C1C8C1]/60 px-4 sm:px-8 h-16 flex items-center gap-4 shadow-sm">
@@ -135,12 +259,70 @@ export default function AdminLayout({ children }) {
           </button>
           <div className="flex-1" />
           {/* Notifications */}
-          <button className="relative p-2 rounded-lg hover:bg-[#E2EAE3] text-[#404943] transition">
-            <Bell size={20} />
-            {pendingWholesale + pendingPayments > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#BA1A1A]" />
+          <div className="relative" ref={notificationsRef}>
+            <button
+              onClick={() => {
+                setNotificationsOpen((open) => !open);
+                loadNotifications();
+              }}
+              className="relative p-2 rounded-lg hover:bg-[#E2EAE3] text-[#404943] transition"
+              aria-label="Notifications"
+              aria-expanded={notificationsOpen}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#BA1A1A]" />
+              )}
+            </button>
+            {notificationsOpen && (
+              <div className="absolute right-0 mt-2 z-50 w-80 rounded-xl border border-[#C1C8C1] bg-white p-3 shadow-lg">
+                <div className="mb-2 flex items-center justify-between">
+                  <strong className="text-sm">Notifications</strong>
+                  <button
+                    onClick={markAllRead}
+                    className="text-xs text-primary"
+                    disabled={!unreadCount}
+                  >
+                    Mark all read
+                  </button>
+                </div>
+                {notifications.length ? (
+                  <div className="max-h-96 overflow-y-auto overscroll-contain">
+                    {notifications.map((item) => (
+                      <button
+                        key={item._id}
+                        type="button"
+                        onClick={() => openNotification(item)}
+                        disabled={!item.link}
+                        className={`block w-full border-t border-[#E2EAE3] py-3 pr-1 text-left text-sm transition-colors ${item.read ? "text-[#717973]" : "text-[#1B1C1A]"} ${item.link ? "cursor-pointer hover:bg-[#F4FBF4]" : "cursor-default"}`}
+                      >
+                        <span className="flex items-start gap-2">
+                          {!item.read && (
+                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#BA1A1A]" />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block font-semibold">
+                              {item.title}
+                            </span>
+                            <span className="block line-clamp-2">
+                              {item.message}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-[#717973]">
+                              {timeAgo(item.createdAt)}
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="p-3 text-sm text-[#717973]">
+                    No notifications yet.
+                  </p>
+                )}
+              </div>
             )}
-          </button>
+          </div>
           {/* Admin avatar */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-[#1b5e40] text-white text-sm font-bold flex items-center justify-center select-none">
