@@ -3,13 +3,13 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle2, Download, MessageSquare, Truck, ArrowLeft } from "lucide-react";
 import { useStore } from "../../store/store";
 import { downloadReceipt } from "../../utils/pdfGenerator";
-import { useHomePath } from "../../hooks/useBackNavigation";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function OrderSuccess() {
   const { t } = useTranslation();
   const { checkoutOrder, user } = useStore();
   const navigate = useNavigate();
-  const homePath = useHomePath();
+  const goBack = useGoBack("/homepage");
   const orderId = checkoutOrder
     ? `PWS-${checkoutOrder._id.slice(-4).toUpperCase()}`
     : "—";
@@ -17,11 +17,11 @@ export default function OrderSuccess() {
   return (
     <div className="flex flex-1 flex-col px-4 py-12 sm:py-20 bg-[var(--color-background)]">
       <button
-        onClick={() => navigate(homePath)}
-        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-6 transition-colors w-fit"
+        onClick={goBack}
+        aria-label={t("common.goBack")}
+        className=" hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-6"
       >
-        <ArrowLeft size={16} />
-        {t("common.backToHome")}
+        <ArrowLeft size={24} />
       </button>
       <div className="flex flex-1 items-center justify-center">
       <div className="flex w-full max-w-[860px] min-h-[522px] flex-col items-center justify-center gap-6 rounded-md border border-[var(--color-outline-border)] bg-[var(--color-surface-lowest)] px-8 py-10 text-center shadow-[var(--shadow-level-1)]">

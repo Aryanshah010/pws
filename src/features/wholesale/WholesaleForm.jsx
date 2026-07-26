@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { MapPin, ChevronDown, Upload, Store, Info, ArrowLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import { useStore } from "../../store/store";
-import { useHomePath } from "../../hooks/useBackNavigation";
+import { useGoBack } from "../../hooks/useBackNavigation";
 import Spinner from "../../components/common/Spinner";
 import { apiRequest, authHeader } from "../../services/api";
 
@@ -23,6 +23,7 @@ export default function WholesaleForm() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const goBack = useGoBack();
   const { token: storeToken, setUser } = useStore();
   const fromRegistration = Boolean(location.state?.fromRegistration);
   const activeToken = storeToken || location.state?.token || null;
@@ -105,11 +106,12 @@ export default function WholesaleForm() {
         {/* Page Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate(homePath)}
-            className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-2 transition-colors"
+            type="button"
+            onClick={goBack}
+            aria-label={t("common.goBack")}
+            className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-2"
           >
-            <ArrowLeft size={16} />
-            {t("common.backToHome")}
+            <ArrowLeft size={24} />
           </button>
           <h1 className="text-headline-md sm:text-headline-lg font-bold text-primary-container leading-tight">
             {t("wholesale.requestTitle")}

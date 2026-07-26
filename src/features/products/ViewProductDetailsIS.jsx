@@ -256,7 +256,7 @@ export default function ViewProductDetailIS() {
                         className={`w-30.25 h-[48px] border-0 rounded-default flex items-center justify-center gap-1.5 font-bold shadow-(--shadow-level-2) ${
                           isOutOfStock && restockRequested
                             ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            : "bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-gray-100"
+                            : "bg-outline-border-pill text-(--color-on-secondary) cursor-pointer hover:bg-outline-border-pill/80"
                         }`}
                       >
                         {isOutOfStock ? <Bell size={16} /> : null}
@@ -281,7 +281,7 @@ export default function ViewProductDetailIS() {
 
             {/* Out Of Stock Contextual Notice Banner */}
             {isOutOfStock && (
-              <div className="flex items-start gap-3 rounded-md border border-secondary-fixed-dim bg-secondary-fixed p-4 shadow-(--shadow-level-1)">
+              <div className="flex items-start gap-3 rounded-md border mt-4 border-secondary-fixed-dim bg-secondary-fixed p-4 shadow-(--shadow-level-1)">
                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-on-secondary-container" />
                 <p className="text-sm font-semibold text-on-secondary-container leading-relaxed">
                   {t("product.outOfStockNotice")}

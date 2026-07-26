@@ -4,14 +4,15 @@ import { Hourglass, Info, ArrowLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
-import { useHomePath } from "../../hooks/useBackNavigation";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function WholesalePending() {
   const { t } = useTranslation();
   const { user: storeUser, token, refreshUser } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const homePath = useHomePath();
+  const homePath = token ? "/homepage" : "/login";
+  const goBack = useGoBack(homePath);
   const fromRegistration = Boolean(location.state?.fromRegistration);
   const user = location.state?.user || storeUser;
   const details = user?.wholesaleDetails || {};
@@ -38,11 +39,11 @@ export default function WholesalePending() {
   return (
     <div className="min-h-screen bg-color-surface flex flex-col p-4 sm:p-6 md:p-8">
       <button
-        onClick={() => navigate(homePath)}
-        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-6 transition-colors w-fit"
+        onClick={goBack}
+        aria-label={t("common.goBack")}
+        className=" hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-6 w-fit"
       >
-        <ArrowLeft size={16} />
-        {t("common.backToHome")}
+        <ArrowLeft size={24} />
       </button>
       <div className="flex flex-1 items-center justify-center">
       <div className="w-full max-w-168 bg-(--color-surface-lowest) rounded-md border border-outline-border shadow-(--shadow-level-2) overflow-hidden">

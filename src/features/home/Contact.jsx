@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, MapPin, Mail, MessageSquare } from "lucide-react";
 import { apiRequest } from "../../services/api";
-import { useHomePath } from "../../hooks/useBackNavigation";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function Contact() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const homePath = useHomePath();
+  const goBack = useGoBack();
   const [whatsApp, setWhatsApp] = useState("");
 
   useEffect(() => {
@@ -20,11 +20,11 @@ export default function Contact() {
   return (
     <div className="max-w-6xl mx-auto px-md py-xl min-h-screen font-sans">
       <button
-        onClick={() => navigate(homePath)}
-        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-lg transition-colors"
+        onClick={goBack}
+        aria-label={t("common.goBack")}
+        className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-lg"
       >
-        <ArrowLeft size={16} />
-        {t("common.backToHome")}
+        <ArrowLeft size={24} />
       </button>
 
       <h1 className="text-headline-md md:text-headline-lg font-bold text-primary mb-md">

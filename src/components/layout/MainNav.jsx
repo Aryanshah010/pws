@@ -186,7 +186,7 @@ export default function Navbar() {
   return (
     <header className="w-full sticky top-0 z-50">
       {/* Top utility bar */}
-      <div className="w-full bg-[#6C977D] py-1.5 px-0 sm:px-">
+      <div className="w-full bg-[#6C977D] py-1.5 px-7.5 sm:px-">
         <div className="max-w-[1512px] mx-auto flex justify-end items-center gap-6">
           <Link
             to="/about"

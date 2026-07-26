@@ -5,13 +5,13 @@ import { CheckCircle2, ArrowLeft } from "lucide-react";
 import { useStore } from "../../store/store";
 import { apiRequest } from "../../services/api";
 import { wholesaleBasePrice } from "../../utils/pricing";
-import { useHomePath } from "../../hooks/useBackNavigation";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function WholesaleApproved() {
   const { t } = useTranslation();
   const { user, token, refreshUser } = useStore();
   const navigate = useNavigate();
-  const homePath = useHomePath();
+  const goBack = useGoBack("/homepage");
   const details = user?.wholesaleDetails || {};
   const [priceRows, setPriceRows] = useState([]);
 
@@ -42,11 +42,11 @@ export default function WholesaleApproved() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-background)] px-4 py-10 sm:py-16">
       <button
-        onClick={() => navigate(homePath)}
-        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-6 transition-colors w-fit"
+        onClick={goBack}
+        aria-label={t("common.goBack")}
+        className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-6 w-fit"
       >
-        <ArrowLeft size={16} />
-        {t("common.backToHome")}
+        <ArrowLeft size={24} />
       </button>
       <div className="flex flex-1 items-center justify-center">
       <div className="flex w-full max-w-[672px] flex-col items-center rounded-2xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-lowest)] p-6 shadow-[var(--shadow-level-3)] sm:p-10">

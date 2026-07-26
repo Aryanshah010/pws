@@ -2,14 +2,12 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "../../store/store";
 import { ArrowLeft } from "lucide-react";
-import { useHomePath } from "../../hooks/useBackNavigation";
-import { useNavigate } from "react-router-dom";
+import { useGoBack } from "../../hooks/useBackNavigation";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
   const { user } = useStore();
-  const navigate = useNavigate();
-  const homePath = useHomePath();
+  const goBack = useGoBack();
 
   if (!user) {
     return (
@@ -22,11 +20,11 @@ export default function ProfilePage() {
   return (
     <div className="max-w-[800px] mx-auto w-full px-4 py-8 font-sans">
       <button
-        onClick={() => navigate(homePath)}
-        className="flex items-center gap-xs text-label-sm font-semibold text-on-surface-variant hover:text-primary mb-2 transition-colors"
+        onClick={goBack}
+        aria-label={t("common.goBack")}
+        className="p-2 hover:bg-surface-dim rounded-full transition-colors text-(--color-on-surface) mb-2"
       >
-        <ArrowLeft size={16} />
-        {t("common.backToHome")}
+        <ArrowLeft size={24} />
       </button>
       <h1 className="text-[32px] font-bold text-[#00452B] mb-6">
         {t("auth.myProfile")}
